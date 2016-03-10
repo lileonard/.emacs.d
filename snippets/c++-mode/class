@@ -1,0 +1,12 @@
+# name: class ... { ... }
+# key: class
+# --
+class ${1:Name}
+{
+public:
+    ${1:$(yas-substr yas-text "[^: ]*")}($2);
+    ~${1:$(yas-substr yas-text "[^: ]*")}();
+
+private:
+
+};

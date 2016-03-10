@@ -1,0 +1,5 @@
+# -*- mode: snippet -*-
+# name: cudaFree
+# key: cudaFree
+# --
+cudaFree(${1:buffer});

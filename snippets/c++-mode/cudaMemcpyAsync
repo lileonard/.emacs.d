@@ -1,0 +1,5 @@
+# -*- mode: snippet -*-
+# name: cudaMemcpyAsync
+# key: cudaMemcpyAsync
+# --
+cudaMemcpyAsync(${1:dest}, ${2:src}, ${3:size_t}, cudaMemcpyDefault, streams[${4:i}]);

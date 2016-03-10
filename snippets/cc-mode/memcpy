@@ -1,0 +1,5 @@
+# -*- mode: snippet -*-
+# name: memcpy
+# key: memcpy
+# --
+memcpy(${1:dest}, ${2:src}, ${3:size_t});

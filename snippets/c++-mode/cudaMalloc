@@ -1,0 +1,5 @@
+# -*- mode: snippet -*-
+# name: cudaMalloc
+# key: cudaMalloc
+# --
+cudaMalloc(&${1:buffer}, ${2:size_t});

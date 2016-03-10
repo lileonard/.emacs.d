@@ -1,0 +1,5 @@
+# -*- mode: snippet -*-
+# name: static_cast
+# key: static
+# --
+static_cast<${1:Type}>(${2:para});

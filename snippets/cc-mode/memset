@@ -1,0 +1,5 @@
+# -*- mode: snippet -*-
+# name: memset
+# key: memset
+# --
+memset(${1:buffer}, ${2:0}, ${3:size_t});

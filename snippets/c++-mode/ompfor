@@ -1,0 +1,6 @@
+# -*- mode: snippet -*-
+# name: ompfor
+# key: ompfor
+# --
+int OMP_aofThr = omp_get_num_procs();
+#pragma omp parallel for num_threads(OMP_aofThr) private(a, b, c)

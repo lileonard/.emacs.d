@@ -1,0 +1,4 @@
+# name: rand()
+# key: rand
+# --
+((rand()-RAND_MAX/2)*3.0)/(RAND_MAX/2);

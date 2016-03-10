@@ -1,0 +1,5 @@
+# -*- mode: snippet -*-
+# name: cudaStreamCreate
+# key: cudaStreamCreate
+# --
+cudaStreamCreate(&stream${1:No.});

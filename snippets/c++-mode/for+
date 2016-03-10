@@ -1,0 +1,8 @@
+# -*- mode: snippet -*-
+# name: for+
+# key: for+
+# --
+for (${1:iter}=${2:var}.begin(); $1!=$2.end(); ++$1) 
+{
+    $0
+}

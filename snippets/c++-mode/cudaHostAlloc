@@ -1,0 +1,5 @@
+# -*- mode: snippet -*-
+# name: cudaHostAlloc
+# key: cudaHostAlloc
+# --
+cudaHostAlloc(&${1:buffer}, ${2:size_t}, cudaHostAllocPortable);
