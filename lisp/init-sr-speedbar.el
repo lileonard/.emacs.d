@@ -1,13 +1,3 @@
-
-(defun ad-advised-definition-p (definition)
-  "Return non-nil if DEFINITION was generated from advice information."
-  (if (or (ad-lambda-p definition)
-          ;;(macrop definition)
-          (ad-compiled-p definition))
-      (let ((docstring (ad-docstring definition)))
-        (and (stringp docstring)
-             (get-text-property 0 'dynamic-docstring-function docstring)))))
-
 (require 'sr-speedbar)
 (setq dframe-update-speed t)
 (setq speedbar-frame-parameters
@@ -26,7 +16,7 @@
 (set-face-font 'speedbar-face "Monospace-13")
 (setq speedbar-mode-hook '(lambda () (buffer-face-set 'speedbar-face)))
 
-;; regular speedbar configq
+;; ;; regular speedbar configq
 (setq speedbar-show-unknown-files t)
 (setq speedbar-verbosity-level 1)
 (setq speedbar-use-images nil)

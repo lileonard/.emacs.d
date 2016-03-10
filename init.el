@@ -61,7 +61,7 @@
 (require 'init-projectile)
 (require 'init-linum-mode)
 (require 'init-hs-minor-mode)
-(require 'init-swiper)
+;;(require 'init-swiper)
 (require 'init-expand-region)
 ;;settings that from others
 (require 'init-ivy)

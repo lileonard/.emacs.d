@@ -1,4 +1,6 @@
 ;; ;; ;; org-mode
+
+(require 'org)  
 (setq  org-completion-use-ido t
        org-edit-timestamp-down-means-later t
        org-archive-mark-done nil
@@ -140,9 +142,10 @@
                 (lambda (url &optional new)
                   (w3m-browse-url url t))))))
     ad-do-it))
-
-
 (require 'org-bullets)
-(add-hook 'org-mode-hook (lambda () (org-bullets-mode 1)))
+(add-hook 'org-mode-hook (lambda ()
+                           (org-bullets-mode 1)))
+
+(define-key org-mode-map (kbd "<C-tab>") nil)
 
 (provide 'init-org)

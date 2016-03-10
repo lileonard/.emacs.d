@@ -128,30 +128,6 @@ Suitable for inclusion in `c-offsets-alist'."
       c-macro-prompt-flag t
       abbrev-mode t)
 
-
-(defun c-includes-settings ()
-  "Settings for `c-includes'."
-  (setq c-includes-binding t)
-  (setq c-includes-path my-sys-c-include))
-(eval-after-load "c-includes"
-  `(c-includes-settings))
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; input "inc " then do a lot
-(mapc (lambda (mode)
-        (define-abbrev-table mode '(("inc" "" skeleton-include 1))))
-      '(c-mode-abbrev-table c++-mode-abbrev-table))
-(define-skeleton skeleton-include
-  "generate include<>" ""
-  > "#include <"
-  (completing-read
-   "Include File:"
-   (mapcar #'(lambda (f) 
-               (list f )) 
-           (apply 'append
-                  (mapcar
-                   #'(lambda (dir)
-                       (directory-files dir))
-                   my-sys-c-include))))">")
 ;; Customizations for all modes in CC Mode through
 ;; google-c-style is good I still need something for my own
 (defconst my-c-style
@@ -178,7 +154,7 @@ Suitable for inclusion in `c-offsets-alist'."
     )
   "My C Programming Style")
 ;; offset customizations not in my-c-style
-(setq c-offsets-alist '((member-init-intro . ++)))
+
 ;; c style settings ends here
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;Alt+-Note selested words(if selected) or current line(if unselected)
@@ -207,7 +183,6 @@ Replaces default behaviour of comment-dwim, when it inserts comment at the end o
       (save-excursion
         (goto-char (cdr langelem))
         (vector (+ (current-column) 8))))))
-
 (defun my-indent-setup ()
   (setcdr (assoc 'arglist-cont-nonempty c-offsets-alist)
           '(c-lineup-gcc-asm-reg my-c-lineup-arglist)))
@@ -256,31 +231,6 @@ Replaces default behaviour of comment-dwim, when it inserts comment at the end o
   ;; we like auto-newline and hungry-delete
   (c-toggle-auto-hungry-state 1))
 (add-hook 'c-mode-common-hook 'my-c-mode-common-hook)
-
-(defun c/c++-hightligh-included-files ()
-  (interactive)
-  (when (or (eq major-mode 'c-mode)
-            (eq major-mode 'c++-mode))
-    (save-excursion
-      (goto-char (point-min))
-      ;; remove all overlay first
-      (mapc (lambda (ov) (if (overlay-get ov 'c/c++-hightligh-included-files)
-                             (delete-overlay ov)))
-            (overlays-in (point-min) (point-max)))
-      (while (re-search-forward "^#include[ \t]+[\"<]\\(.*\\)[\">]" nil t nil)
-        (let* ((begin  (match-beginning 1))
-               (end (match-end 1))
-               (ov (make-overlay begin end)))
-          (overlay-put ov 'c/c++-hightligh-included-files t)
-          (overlay-put ov 'keymap c/c++-hightligh-included-files-key-map)
-          (overlay-put ov 'face 'underline))))))
-(add-hook 'c-mode-common-hook 'c/c++-hightligh-included-files)
-;; press enter to jump to pointed .h file
-(defvar c/c++-hightligh-included-files-key-map nil)
-(if c/c++-hightligh-included-files-key-map nil
-  (setq c/c++-hightligh-included-files-key-map (make-sparse-keymap))
-  (define-key c/c++-hightligh-included-files-key-map (kbd "<RET>") 'find-file-at-point))
-(setq c/c++-hightligh-included-files-timer (run-with-idle-timer 4 t 'c/c++-hightligh-included-files))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;my highlight words
 (defun my-c-mode-highlight ()
@@ -325,5 +275,109 @@ Replaces default behaviour of comment-dwim, when it inserts comment at the end o
       1 font-lock-warning-face prepend))))
 (add-hook 'c-mode-common-hook 'my-c-mode-highlight)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun c-includes-settings ()
+  "Settings for `c-includes'."
+  (setq c-includes-binding t)
+  (setq c-includes-path my-sys-c-include))
+(eval-after-load "c-includes"
+  `(c-includes-settings))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; input "inc " then do a lot
+;; (mapc (lambda (mode)
+;;         (define-abbrev-table mode '(("inc" "" skeleton-include 1))))
+;;       '(c-mode-abbrev-table c++-mode-abbrev-table))
+;; (define-skeleton skeleton-include
+;;   "generate include<>" ""
+;;   > "#include <"
+;;   (completing-read
+;;    "Include File:"
+;;    (mapcar #'(lambda (f) 
+;;                (list f )) 
+;;            (apply 'append
+;;                   (mapcar
+;;                    #'(lambda (dir)
+;;                        (directory-files dir))
+;;                    my-sys-c-include))))">")
+
+;; 输入 inc , 可以自动提示输入文件名称,可以自动补全.
+;; Provided by yangyingchao@gmail.com
+(mapc
+ (lambda (mode)
+   (define-abbrev-table mode '(
+                               ("inc" "" skeleton-include 1)
+                               )))
+ '(c-mode-abbrev-table c++-mode-abbrev-table))
+(defvar inc-minibuffer-compl-list nil "nil")
+
+(defun yc/update-minibuffer-complete-table ( )
+  "Complete minibuffer"
+  (interactive)
+  (let ((prompt (minibuffer-prompt))
+        (comp-part (minibuffer-contents-no-properties)))
+    (when (and (string= "Include File:" prompt)
+               (> (length comp-part) 0))
+      (setq minibuffer-completion-table
+            (append minibuffer-completion-table
+                    (let ((inc-files nil)
+                          (dirname nil)
+                          (tmp-name nil))
+                      (mapc
+                       (lambda (d)
+                         (setq dirname (format "%s/%s" d comp-part))
+                         (when (file-exists-p dirname)
+                           (mapc
+                            (lambda (x)
+                              (when (not (or (string= "." x)
+                                             (string= ".." x)))
+                                (setq tmp-name (format "%s/%s" comp-part x))
+                                (add-to-list 'inc-files tmp-name)))
+                            (directory-files dirname))))
+                       my-sys-c-include)
+                      inc-files)))))
+  (insert "/"))
+
+(let ((map minibuffer-local-completion-map))
+  (define-key map "/" 'yc/update-minibuffer-complete-table))
+
+(defun yc/update-inc-marks ( )
+  "description"
+  (let ((statement (buffer-substring-no-properties
+                    (point-at-bol) (point-at-eol)))
+        (inc-file nil)
+        (to-begin nil)
+        (to-end nil)
+        (yc/re-include
+         (rx "#include" (+ ascii) "|file|" (group (+ ascii)) "|file|")))
+    (when (string-match yc/re-include statement)
+      (setq inc-file (match-string 1 statement))
+      (if (file-exists-p (format "./%s" inc-file))
+          (setq to-begin "\"" to-end "\"")
+        (setq to-begin "<" to-end ">")
+        )
+      (move-beginning-of-line 1)
+      (kill-line)
+      (insert (format "#include %s%s%s" to-begin inc-file to-end))
+      (move-end-of-line 1))))
+
+(define-skeleton skeleton-include
+  "generate include<>" ""
+  > "#include |file|"
+  (completing-read
+   "Include File:"
+   (mapcar
+    (lambda (f) (list f ))
+    (apply
+     'append
+     (mapcar
+      (lambda (dir)
+        (directory-files
+         dir nil
+         "\\(\\.h\\)?"))
+      my-sys-c-include))))
+  "|file|"
+  (yc/update-inc-marks))
+
+
 
 (provide 'my-c-config)

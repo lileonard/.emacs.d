@@ -131,7 +131,4 @@
 
 (require 'golden-ratio)
 
-(require 'smooth-scrolling)
-(smooth-scrolling-mode 1)
-
 (provide 'init-small-packages)

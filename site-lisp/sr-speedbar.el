@@ -8,7 +8,6 @@
 ;; Copyright (C) 2009, Peter Lunicks, all rights reversed.
 ;; Created: 2008
 ;; Version: 20140914.2339
-;; Package-Version: 20141004.532
 ;; X-Original-Version: 0.1.10
 ;; Last-Updated: 2014-08-03 11:30:00
 ;; URL: http://www.emacswiki.org/emacs/download/sr-speedbar.el
@@ -79,6 +78,10 @@
 ;;      M-x customize-group RET sr-speedbar RET
 
 ;;; Change log:
+;;
+;; * 04 Aug 2015:
+;;   * Tamas Levai <levait@tmit.bme.hu>:
+;;      * fix compilation warnings
 ;;
 ;; * 15 Sep 2014:
 ;;   * Tu, Do Hoang <tuhdo1710@gmail.com>
@@ -257,7 +260,9 @@
 ;;; Require
 (require 'speedbar)
 (require 'advice)
-(require 'cl)
+(require 'cl-lib)
+(eval-when-compile
+  (require 'cl))
 
 ;;; Code:
 
@@ -359,6 +364,11 @@ Default is nil."
 
 (defvar sr-speedbar-last-refresh-dictionary nil
   "The last refresh dictionary record of 'sr-speedbar-refresh'.")
+
+(eval-when-compile
+  (defvar ecb-activated-window-configuration nil)
+  (defun ecb-activate ())
+  (defun ecb-deactivate ()))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Interactive functions ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;###autoload
@@ -619,8 +629,8 @@ And the example function that can occur above problem is `pop-to-buffer'."
              (sr-speedbar-window-exist-p sr-speedbar-window)
              (not (sr-speedbar-window-p)) ;not in `sr-speedbar' window
              (if (featurep 'helm)
-                 (not helm-alive-p)
-               t))
+		 (not helm-alive-p)
+	       t))
     (split-window-vertically)
     (windmove-down)))
 
