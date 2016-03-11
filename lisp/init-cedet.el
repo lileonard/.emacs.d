@@ -5,9 +5,6 @@
 ;; Author: Li Yuanheng <liyuanheng.leo@gmail.com>
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Load  CEDET
-(autoload 'cedet "cedet" "cedet" t)
-(setq with-no-warnings t)
 ;; basic modes
 (dolist (hook '(emacs-lisp-mode-hook  
                 c-mode-common-hook  
@@ -23,8 +20,9 @@
                    (global-semantic-highlight-func-mode)
                    (global-semantic-idle-completions-mode)
                    (global-semantic-decoration-mode)
+                   (global-semantic-stickyfunc-mode)
                    ;;(global-semantic-show-unmatched-syntax-mode)
-                   ;; commit it for my tabbra 
+                   ;; commit it for my tabbra
                    )))
 
 ;; semanticdb path
@@ -55,7 +53,12 @@
 (eval-after-load "cc-mode"
   '(my-semantic-include-setting))
 ;; if the cursor on a function press f4 to jump to the of the function
-(global-set-key (kbd "<f4>") 'semantic-ia-fast-jump)
+(defun alexott/cedet-hook ()
+  (local-set-key (kbd "<f4>") 'semantic-ia-fast-jump)
+  (local-set-key (kbd "<s-f4>") 'semantic-ia-show-summary))
+(add-hook 'c-mode-common-hook 'alexott/cedet-hook)
+(add-hook 'c-mode-hook 'alexott/cedet-hook)
+(add-hook 'c++-mode-hook 'alexott/cedet-hook)
 
 (autoload 'fa-config-default "function-args" nil t)
 (defun my-function-args-settings()

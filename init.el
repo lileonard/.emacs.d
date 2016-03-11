@@ -64,7 +64,6 @@
 ;;(require 'init-swiper)
 (require 'init-expand-region)
 ;;settings that from others
-(require 'init-ivy)
 (require 'coding-settings)
 ;; my settings
 (require 'my-c-config)
