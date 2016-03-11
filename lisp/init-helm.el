@@ -1,15 +1,16 @@
 (require 'helm)
+(autoload 'helm-semantic-or-imenu "helm-semantic.el" nil t)
+(autoload 'helm-show-kill-ring "helm-ring.el" nil t)
 (setq helm-recentf-fuzzy-match t
       helm-buffers-fuzzy-matching t
       helm-locate-fuzzy-match t
       helm-semantic-fuzzy-match t
       helm-imenu-fuzzy-match t
       helm-lisp-fuzzy-completion t)
-(require 'helm-grep)
 
-(define-key helm-map (kbd "<tab>") 'helm-execute-persistent-action) ; rebihnd tab to do persistent action
-(define-key helm-map (kbd "C-i") 'helm-execute-persistent-action) ; make TAB works in terminal
-(define-key helm-map (kbd "C-z")  'helm-select-action) ; list actions using C-z
+(require 'helm-grep)
+(define-key helm-map (kbd "<tab>") 'helm-execute-persistent-action) ;; rebihnd tab to do persistent action
+(define-key helm-map (kbd "C-i") 'helm-execute-persistent-action) ;; make TAB works in terminal
 
 (define-key helm-grep-mode-map (kbd "<return>")  'helm-grep-mode-jump-other-window)
 (define-key helm-grep-mode-map (kbd "n")  'helm-grep-mode-jump-other-window-forward)
@@ -33,8 +34,6 @@
       )
 
 (add-to-list 'helm-sources-using-default-as-input 'helm-source-man-pages)
-
-(global-set-key (kbd "M-x") 'helm-M-x)
 (global-set-key (kbd "M-y") 'helm-show-kill-ring)
 (global-set-key (kbd "C-x b") 'helm-mini)
 (global-set-key (kbd "C-x C-f") 'helm-find-files)
@@ -71,28 +70,20 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Locate the helm-swoop folder to your path
 (require 'helm-swoop)
-
 ;; Change the keybinds to whatever you like :)
-(global-set-key (kbd "C-c h o") 'helm-swoop)
-(global-set-key (kbd "C-c s") 'helm-multi-swoop-all)
-
 ;; When doing isearch, hand the word over to helm-swoop
 (define-key isearch-mode-map (kbd "M-i") 'helm-swoop-from-isearch)
-
 ;; From helm-swoop to helm-multi-swoop-all
 (define-key helm-swoop-map (kbd "M-i") 'helm-multi-swoop-all-from-helm-swoop)
-
 ;; Save buffer when helm-multi-swoop-edit complete
 (setq helm-multi-swoop-edit-save t)
-
 ;; If this value is t, split window inside the current window
 (setq helm-swoop-split-with-multiple-windows t)
-
 ;; Split direcion. 'split-window-vertically or 'split-window-horizontally
 (setq helm-swoop-split-direction 'split-window-vertically)
-
 ;; If nil, you can slightly boost invoke speed in exchange for text color
 (setq helm-swoop-speed-or-color t)
+(global-set-key (kbd "C-f") 'helm-swoop)
 
 (require 'helm-flx)
 (helm-flx-mode 1)
@@ -109,8 +100,7 @@
  helm-gtags-use-input-at-cursor t
  helm-gtags-pulse-at-cursor t
  helm-gtags-prefix-key "\C-cg"
- helm-gtags-suggested-key-mapping t
- )
+ helm-gtags-suggested-key-mapping t)
 ;; Enable helm-gtags-mode in languages that GNU Global supports
 (add-hook 'c-mode-hook 'helm-gtags-mode)
 (add-hook 'c++-mode-hook 'helm-gtags-mode)
@@ -128,7 +118,6 @@
 
 (autoload 'helm-descbinds "helm-descbinds.el" "key bind in emacs" t)
 
-(autoload 'helm-swoop "helm-swoop.el" "take the place of swiper" t)
-(global-set-key (kbd "C-f") 'helm-swoop)
+
 
 (provide 'init-helm)

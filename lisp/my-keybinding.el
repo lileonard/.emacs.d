@@ -32,7 +32,6 @@
 
 (global-set-key (kbd "<escape>") 'keyboard-escape-quit)
 
-(define-key global-map (kbd "s-f") 'grep-find)
 ;; my mouse
 ;; "<drag-mouse-8>"
 ;; <drag-mouse-8>

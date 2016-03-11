@@ -1,16 +1,16 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'fuzzy)
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'smex)   
 (smex-initialize) 
 (global-set-key (kbd "M-x") 'smex)
 (global-set-key (kbd "M-X") 'smex-major-mode-commands)
- 
+ ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (autoload 'goto-last-change "goto-last-change" nil t)
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'session)
 (add-hook 'after-init-hook 'session-initialize)
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'rainbow-delimiters)
 (add-hook 'c-mode-common-hook      #'rainbow-delimiters-mode)
 (add-hook 'cmake-mode-hook         #'rainbow-delimiters-mode)
@@ -32,7 +32,7 @@
 (if (display-graphic-p)
     (eval-after-load "rainbow-delimiters" '(assemblage-rainbow-delim-set-face)))
 
-;; source pair
+;; s;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;ource pair
 (autoload 'sourcepair-load "sourcepair" "source pair for c/c++ and h" t)
 (global-set-key (kbd "<f6>") 'sourcepair-load)
 (defun sourcepair-settings ()
@@ -51,12 +51,13 @@
            ".hh" ".HH" ".hxx" "XX")))
 (eval-after-load "sourcepair"  
   `(sourcepair-settings))
-
-(require 'browse-kill-ring)
-(global-set-key (kbd "M-y") 'browse-kill-ring)
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Package: ws-butler
+(require 'ws-butler)
+(add-hook 'c-mode-common-hook 'ws-butler-mode)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (autoload 'phi-rectangle "phi-rectangle.el" "phi-rectangle" t)
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'highlight-symbol)
 (highlight-symbol-mode 1)
 (setq highlight-symbol-idle-delay 0.5)
@@ -65,15 +66,15 @@
 (global-set-key (kbd "<S-f11>")    'highlight-symbol-prev)
 (global-set-key (kbd "<M-S-f11>")  'highlight-symbol-query-replace)
 (global-set-key (kbd "<M-f11>")    'highlight-regexp)
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'ctypes)
 (ctypes-auto-parse-mode 1)
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'undo-tree)
 (global-undo-tree-mode 1)
 (define-key global-map [(control z)]  'undo-tree-undo)
 (define-key global-map [(control y)]  'undo-tree-redo)
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'cua-rect)
 (defun hkb-mouse-mark-cua-rectangle (event)
   (interactive "e")
@@ -82,30 +83,30 @@
     (cua-mouse-resize-rectangle event)))
 (global-set-key (kbd "<s-mouse-1>") 'hkb-mouse-mark-cua-rectangle)
 (define-key cua--rectangle-keymap (kbd "<s-mouse-1>") 'hkb-mouse-mark-cua-rectangle)
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; turn on save place so that when opening a file, the cursor will be at the last position.
 (require 'saveplace)
 (setq save-place-file (concat user-emacs-directory "saveplace.el")) ; use standard emacs dir
 (setq-default save-place t)
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'c-toggle-dot-pointer)
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'highlight-indentation)
 (set-face-background 'highlight-indentation-face "#061939")
 ;;(set-face-background 'highlight-indentation-current-column-face "blue")
 (add-hook 'c-mode-common-hook      'highlight-indentation-mode)
 (add-hook 'emacs-lisp-mode-hook    'highlight-indentation-mode)
 (add-hook 'python-mode-hook        'highlight-indentation-mode)
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (autoload 'highlight-numbers "highlight-numbers.el" nil t)
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; belong to cedet 1.1 but deleted in new version of cedet
 (require 'linemark)
 (global-set-key (kbd "<f2>")      'viss-bookmark-toggle)
 (global-set-key (kbd "<S-f2>")    'viss-bookmark-prev-buffer)
 (global-set-key (kbd "<C-f2>")    'viss-bookmark-next-buffer)
 (global-set-key (kbd "<C-S-f2>")  'viss-bookmark-clear-all-buffer)
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'ediff)
 (defmacro csetq (variable value)
   `(funcall (or (get ',variable 'custom-set)
@@ -119,26 +120,24 @@
   (define-key ediff-mode-map "j" 'ediff-next-difference)
   (define-key ediff-mode-map "k" 'ediff-previous-difference))
 (add-hook 'ediff-mode-hook 'ora-ediff-hook)
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'smart-cursor-color)
 (smart-cursor-color-mode 1)
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'popwin)
 (popwin-mode 1)             
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'hungry-delete)
 (add-hook 'emacs-lisp-mode-hook  #'(lambda () (hungry-keyboard emacs-lisp-mode-map)))
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'golden-ratio)
 (add-to-list 'golden-ratio-exclude-modes "ediff-mode")
 (add-to-list 'golden-ratio-exclude-modes "helm-mode")
 (add-to-list 'golden-ratio-exclude-modes "dired-mode")
 (add-to-list 'golden-ratio-inhibit-functions 'pl/helm-alive-p)
-
 (defun pl/helm-alive-p ()
   (if (boundp 'helm-alive-p)
       (symbol-value 'helm-alive-p)))
-
 ;; do not enable golden-raio in thses modes
 (setq golden-ratio-exclude-modes '("ediff-mode"
                                    "gud-mode"
@@ -157,6 +156,7 @@
                                    "magit-status-mode"
                                    "IELM"
                                    "eshell-mode" "dired-mode"))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'diff)
 ;; show whitespace in diff-mode
 (add-hook 'diff-mode-hook (lambda ()
@@ -172,6 +172,6 @@
                                           newline
                                           newline-mark))
                             (whitespace-mode 1)))
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (provide 'init-small-packages)
