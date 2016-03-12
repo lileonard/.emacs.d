@@ -1,4 +1,6 @@
-;;debug settings 
+;;debug settings
+
+
 (setq gdb-many-windows t
       gdb-show-main t
       gud-chdir-before-run nil

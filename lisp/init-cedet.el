@@ -20,9 +20,10 @@
                    (global-semantic-highlight-func-mode)
                    (global-semantic-idle-completions-mode)
                    (global-semantic-decoration-mode)
-                   (global-semantic-stickyfunc-mode)
-                   ;;(global-semantic-show-unmatched-syntax-mode)
-                   ;; commit it for my tabbra
+                   
+                   ;; (global-semantic-stickyfunc-mode)
+                   ;; (global-semantic-show-unmatched-syntax-mode)
+                   ;; commit it for my tab-bar
                    )))
 
 ;; semanticdb path

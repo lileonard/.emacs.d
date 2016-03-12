@@ -95,24 +95,53 @@
 (add-hook 'after-save-hook 'ztl-modification-state-change)
 (add-hook 'first-change-hook 'ztl-on-buffer-modification)
 
+;;;; 设置tabbar外观
+;; 设置默认主题: 字体, 背景和前景颜色，大小
+(set-face-attribute
+ 'tabbar-default nil
+ :family "Comic Sans MS" ;"Vera Sans YuanTi Mono"
+ :background "gray30"
+ :foreground "#dcdccc"
+ :height 0.8
+ )
+
+;; 设置左边按钮外观：外框框边大小和颜色
 (set-face-attribute
  'tabbar-button nil
- :foreground "black"
- :box '(:line-width 2 :color "gray" :style released-button))
+ :inherit 'tabbar-default
+ :box '(:line-width 1 :color "gray30")
+ )
+(set-face-attribute
+ 'tabbar-separator nil
+ :inherit 'tabbar-default
+ :foreground "blue"
+ :background "dark gray"
+ :box '(:line-width 1 :color "gray11" :style 'released-button)
+ )
+                                        ;(setq tabbar-separator-value "§")
+(setq tabbar-separator (list 0.5))
+;; 设置当前tab外观：颜色，字体，外框大小和颜色
 (set-face-attribute
  'tabbar-selected nil
- :box '(:line-width 2 :color "gray" :style pressed-button)
- :foreground "blue")
+ :inherit 'tabbar-default
+ :foreground "orange" ;"DarkGreen"
+ :background "gray33" ;"LightGoldenrod"
+ :box '(:line-width 1 :color "DarkGoldenrod" :style 'pressed-button)
+ :weight 'bold
+ )
+;; 设置非当前tab外观：外框大小和颜色
 (set-face-attribute
  'tabbar-unselected nil
- :box '(:line-width 2 :color "white" :style released-button)
- :foreground "black")
+ :inherit 'tabbar-default
+ :box '(:line-width 1 :color "gray11" :style 'released-button))
+
 (set-face-attribute
  'tabbar-modified nil
- :box '(:line-width 2 :color "white" :style released-button)
+ :box '(:line-width 1 :color "white" :style released-button)
  :foreground "red")
 
 (global-set-key (kbd "<C-tab>") 'tabbar-forward)
 (global-set-key (kbd "<s-tab>") 'tabbar-backward)
 (global-set-key (kbd "<backtab>") 'tabbar-backward)
+
 (provide 'init-tabbar)
