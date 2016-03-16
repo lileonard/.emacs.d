@@ -1,4 +1,5 @@
- ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; from a Chinese Emacser and I change a little to adjust it to modern color theme
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'hl-line)
 (global-hl-line-mode 1)
 
@@ -10,7 +11,7 @@
       (let ((my-color (mapcar
                        (lambda (x)
                          (let ((y (/ #XFFFF 4))
-                               ;; delta is the color adjust parament
+                                ;; delta is the color adjust parament
                                (delta #X1002))
                            (cond ((< x (* y 1))
                                   (+ x delta))
@@ -20,9 +21,8 @@
                                   (- x delta))
                                  (t
                                   (- x delta))))) color)))
-        (message "%S %S" color my-color)
         (set-face-attribute
-         'my-hl-line-face nil
+         'hl-line nil
          :background
          (concat "#"
                  (mapconcat

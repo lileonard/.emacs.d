@@ -13,4 +13,3 @@ Leonard.Li`s emacs settings
 [emacsist](http://www.emacsist.com/)<br />
 [awesome-awesomeness](https://github.com/bayandin/awesome-awesomeness/)<br />
 [zeef emacs](https://emacs.zeef.com/ehartc/)<br />
-[Alex Ott's home page (English)](http://alexott.net/en/index.html/)<br />

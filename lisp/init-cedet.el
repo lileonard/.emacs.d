@@ -36,6 +36,11 @@
 (autoload 'semantic/bovine/gcc "semantic/bovine/gcc" "gcc" t)
 (autoload 'semantic-add-system-include "semantic/bovine/c" "c" t)
 ;; project include setting
+
+
+
+
+
 (defun my-semantic-include-setting ()
   (let ((include-sys-dirs my-sys-c-include))
     (setq include-sys-dirs (append include-sys-dirs my-sys-c-include))

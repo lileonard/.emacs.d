@@ -3,8 +3,7 @@
 ;; Copyright (C) 2011-2015 Bozhidar Batsov
 
 ;; Author: Bozhidar Batsov
-;; URL: https://github.com/bbatsov/helm-projectile
-;; Package-Version: 20160220.2226
+;; URL: https://github.com/bbatsov/projectile
 ;; Created: 2011-31-07
 ;; Keywords: project, convenience
 ;; Version: 0.13.0
@@ -673,11 +672,10 @@ If it is nil, or ack/ack-grep not found then use default grep command."
          (helm-grep-default-command (if use-ack-p
                                         (concat ack-executable " -H --no-group --no-color " ack-ignored-pattern " %p %f")
                                       (if (and projectile-use-git-grep (eq (projectile-project-vcs) 'git))
-                                          "git --no-pager grep --no-color -n%c -e %p -- %f"
+                                          "git --no-pager grep --no-color -n -e %p -- %f"
                                         "grep -a -r %e -n%cH -e %p %f .")))
-         (helm-grep-default-recurse-command helm-grep-default-command))
-
-    (setq helm-source-grep
+         (helm-grep-default-recurse-command helm-grep-default-command)
+         (helm-source-grep
           (helm-build-async-source
               (capitalize (helm-grep-command t))
             :header-name (lambda (name)
@@ -703,7 +701,7 @@ If it is nil, or ack/ack-grep not found then use default grep command."
                      "Find file other window" 'helm-grep-other-window)
             :persistent-action 'helm-grep-persistent-action
             :persistent-help "Jump to line (`C-u' Record in mark ring)"
-            :requires-pattern 2))
+            :requires-pattern 2)))
     (helm
      :sources 'helm-source-grep
      :input (if (region-active-p)
@@ -763,7 +761,7 @@ DIR is the project root, if not set then current directory is used"
 ;;;###autoload
 (defun helm-projectile-ag (&optional options)
   "Helm version of projectile-ag."
-  (interactive (if current-prefix-arg (list (read-string "option: " "" 'helm-ag--extra-options-history))))
+  (interactive (if current-prefix-arg (list (read-string "option: " "" 'helm-ag-command-history))))
   (if (require 'helm-ag nil  'noerror)
       (if (projectile-project-p)
           (let* ((grep-find-ignored-files (-union (projectile-ignored-files-rel) grep-find-ignored-files))

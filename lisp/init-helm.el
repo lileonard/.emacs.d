@@ -1,4 +1,8 @@
 (require 'helm)
+(require 'helm-types)
+(require 'helm-locate)
+(require 'helm-buffers)
+(require 'helm-files)
 (autoload 'helm-semantic-or-imenu "helm-semantic.el" nil t)
 (autoload 'helm-show-kill-ring "helm-ring.el" nil t)
 (setq helm-recentf-fuzzy-match t
@@ -11,7 +15,6 @@
 (require 'helm-grep)
 (define-key helm-map (kbd "<tab>") 'helm-execute-persistent-action) ;; rebihnd tab to do persistent action
 (define-key helm-map (kbd "C-i") 'helm-execute-persistent-action) ;; make TAB works in terminal
-
 (define-key helm-grep-mode-map (kbd "<return>")  'helm-grep-mode-jump-other-window)
 (define-key helm-grep-mode-map (kbd "n")  'helm-grep-mode-jump-other-window-forward)
 (define-key helm-grep-mode-map (kbd "p")  'helm-grep-mode-jump-other-window-backward)
@@ -88,19 +91,16 @@
 (require 'helm-flx)
 (helm-flx-mode 1)
 
-(require 'helm-projectile)  
-(helm-projectile-on)
+(require 'helm-projectile)
 (global-set-key (kbd "M-f") 'helm-projectile-grep)
 
 (require 'helm-gtags)
-
-(setq
- helm-gtags-ignore-case t
- helm-gtags-auto-update t
- helm-gtags-use-input-at-cursor t
- helm-gtags-pulse-at-cursor t
- helm-gtags-prefix-key "\C-cg"
- helm-gtags-suggested-key-mapping t)
+(setq helm-gtags-ignore-case t
+      helm-gtags-auto-update t
+      helm-gtags-use-input-at-cursor t
+      helm-gtags-pulse-at-cursor t
+      helm-gtags-prefix-key "\C-cg"
+      helm-gtags-suggested-key-mapping t)
 ;; Enable helm-gtags-mode in languages that GNU Global supports
 (add-hook 'c-mode-hook 'helm-gtags-mode)
 (add-hook 'c++-mode-hook 'helm-gtags-mode)
