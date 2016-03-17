@@ -1,6 +1,7 @@
 ;; ;; ;; org-mode
 
-(require 'org)  
+(require 'org)
+
 (setq  org-completion-use-ido t
        org-edit-timestamp-down-means-later t
        org-archive-mark-done nil

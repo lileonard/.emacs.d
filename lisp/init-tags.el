@@ -3,8 +3,6 @@
               "~/.emacs.d/site-lisp/tags"))
 
 (require 'ctags)
-;; Alternatively, you can install it using the Marmalade ELPA repository.
-;; Don't ask before rereading the TAGS files if they have changed
 (setq tags-revert-without-query t)
 ;; Do case-sensitive tag searches
 (setq tags-case-fold-search nil) ;; t=case-insensitive, nil=case-sensitive

@@ -1,4 +1,4 @@
-;; deep-blue-theme.el --- lileonard's new deep blue theme
+;;  deep-blue-theme.el --- lileonard's new deep blue theme
 ;;  using emacs build in theme management   -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2016  Li Yuanheng
