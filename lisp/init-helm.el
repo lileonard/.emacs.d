@@ -4,13 +4,18 @@
 (require 'helm-buffers)
 (require 'helm-files)
 (autoload 'helm-semantic-or-imenu "helm-semantic.el" nil t)
-(autoload 'helm-show-kill-ring "helm-ring.el" nil t)
 (setq helm-recentf-fuzzy-match t
       helm-buffers-fuzzy-matching t
       helm-locate-fuzzy-match t
       helm-semantic-fuzzy-match t
       helm-imenu-fuzzy-match t
       helm-lisp-fuzzy-completion t)
+
+;; defface helm-source-header
+(set-face-attribute
+ 'helm-selection nil
+ :background "#551A8B"
+ :foreground "#FFF68F")
 
 (require 'helm-grep)
 (define-key helm-map (kbd "<tab>") 'helm-execute-persistent-action) ;; rebihnd tab to do persistent action
@@ -37,7 +42,6 @@
       )
 
 (add-to-list 'helm-sources-using-default-as-input 'helm-source-man-pages)
-(global-set-key (kbd "M-y") 'helm-show-kill-ring)
 (global-set-key (kbd "C-x b") 'helm-mini)
 (global-set-key (kbd "C-x C-f") 'helm-find-files)
 (global-set-key (kbd "C-h SPC") 'helm-all-mark-rings)
@@ -88,6 +92,25 @@
 (setq helm-swoop-speed-or-color t)
 (global-set-key (kbd "C-f") 'helm-swoop)
 
+(set-face-attribute
+ 'helm-swoop-target-line-face nil
+ :background "black"
+ :foreground "#dcdccc")
+(set-face-attribute
+ 'helm-swoop-target-word-face nil
+ :background "gray13"
+ :foreground "red")
+
+(defun helm-swoop-flash-word ($match-beg $match-end)
+  (interactive)
+  (unwind-protect
+      (let (($o (make-overlay $match-beg $match-end)))
+        (when $o
+          (overlay-put $o 'face 'helm-swoop-target-word-face)
+          (overlay-put $o 'helm-swoop-overlay-word-frash t)))
+    (run-with-idle-timer
+     3.6 nil (lambda () (helm-swoop--delete-overlay 'helm-swoop-overlay-word-frash)))))
+
 (require 'helm-flx)
 (helm-flx-mode 1)
 
@@ -115,9 +138,6 @@
 (define-key helm-gtags-mode-map (kbd "C-c <") 'helm-gtags-previous-history)
 (define-key helm-gtags-mode-map (kbd "C-c >") 'helm-gtags-next-history)
 
-
 (autoload 'helm-descbinds "helm-descbinds.el" "key bind in emacs" t)
-
-
 
 (provide 'init-helm)

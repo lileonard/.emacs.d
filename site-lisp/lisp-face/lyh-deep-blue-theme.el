@@ -1,4 +1,4 @@
-;;; deep-blue-theme.el --- lileonard's new deep blue theme
+;; deep-blue-theme.el --- lileonard's new deep blue theme
 ;;  using emacs build in theme management   -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2016  Li Yuanheng
@@ -8,8 +8,6 @@
 ;; based on 
 ;; 2001 by Tomas Cerha
 ;; 2013 by Syohei YOSHIDA
-
-
 
 (deftheme lyh-deep-blue
   "lyh-deep-blue theme")
@@ -21,7 +19,6 @@
  '(mouse ((t (:foregound "white"))))
  '(cursor ((t (:foregound "green"))))
  '(border ((t (:foregound "black"))))
-
  '(Info-title-1-face ((t (:bold t :weight bold :height 1.728))))
  '(Info-title-2-face ((t (:bold t :weight bold :height 1.44))))
  '(Info-title-3-face ((t (:bold t :weight bold :height 1.2))))
@@ -41,13 +38,6 @@
  '(comint-highlight-input ((t (:bold t :weight bold))))
  '(comint-highlight-prompt ((t (:foreground "cyan"))))
  '(cursor ((t (:background "green" :foreground "black"))))
- '(cvs-filename-face ((t (:foreground "lightblue"))))
- '(cvs-handled-face ((t (:foreground "pink"))))
- '(cvs-header-face ((t (:bold t :foreground "lightyellow" :weight bold))))
- '(cvs-marked-face ((t (:bold t :foreground "green" :weight bold))))
- '(cvs-msg-face ((t (:italic t :slant italic))))
- '(cvs-need-action-face ((t (:foreground "orange"))))
- '(cvs-unknown-face ((t (:foreground "red"))))
  '(diary-face ((t (:foreground "orange red"))))
  '(diff-added-face ((t (nil))))
  '(diff-changed-face ((t (nil))))
@@ -92,22 +82,15 @@
  '(isearch ((t (:background "palevioletred2" :foreground "brown4"))))
  '(isearch-lazy-highlight-face ((t (:background "paleturquoise4"))))
  '(italic ((t (:italic t :slant italic))))
- '(menu ((t (:background "gray" :foreground "black"))))
- '(modeline ((t (:background "gray" :foreground "black" :box (:line-width 2 :style released-button)))))
- '(modeline-buffer-id ((t (:background "gray" :foreground "black" :box (:line-width 2 :style released-button)))))
- '(modeline-mousable ((t (:background "gray" :foreground "black" :box (:line-width 2 :style released-button)))))
  '(modeline-mousable-minor-mode ((t (:background "gray" :foreground "black" :box (:line-width 2 :style released-button)))))
  '(mouse ((t (:background "white"))))
- '(region ((t (:background "DarkCyan"))))
- '(scroll-bar ((t (:background "gray" :foreground "#506070"))))
+ '(region ((t (:background "#18506A"))))
  '(secondary-selection ((t (:background "yellow" :foreground "gray10"))))
  '(show-paren-match-face ((t (:bold t :foreground "yellow" :weight bold))))
  '(show-paren-mismatch-face ((t (:bold t :foreground "red" :weight bold))))
- '(tool-bar ((t (:background "grey75" :foreground "black" :box (:line-width 1 :style released-button)))))
  '(tooltip ((t (:background "lightyellow" :foreground "black"))))
  '(trailing-whitespace ((t (:background "#102e4e"))))
  '(underline ((t (:underline t))))
-
  '(widget-button-face ((t (:bold t :weight bold))))
  '(widget-button-pressed-face ((t (:foreground "red"))))
  '(widget-documentation-face ((t (:foreground "lime green"))))
