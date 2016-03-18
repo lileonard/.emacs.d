@@ -51,9 +51,9 @@
 ;; face settings
 (setq ac-candidate-limit ac-menu-height)
 (setq ac-candidate-max ac-candidate-menu-height)
-(set-face-background 'ac-candidate-face "#FAEBD7")
-(set-face-underline  'ac-candidate-face "#BEBEBE")
-(set-face-background 'ac-selection-face "#6495ED")
+;; (set-face-background 'ac-candidate-face "#FAEBD7")
+;; (set-face-underline  'ac-candidate-face "#BEBEBE")
+;; (set-face-background 'ac-selection-face "#6495ED")
 ;; hook AC into completion-at-point
 (defun sanityinc/auto-complete-at-point ()
   (when (and (not (minibufferp))

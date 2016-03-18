@@ -238,7 +238,7 @@ Replaces default behaviour of comment-dwim, when it inserts comment at the end o
   (font-lock-add-keywords
    nil
    '(("\\(++\\|-+\\|<<+\\|>>+\\|==+\\)" 
-      1 font-lock-warning-face prepend)))
+      1 font-lock-variable-name-face prepend)))
   (font-lock-add-keywords
    nil 
    '(("\\(&&+\\|||+\\|RAM_+\\|fftw_+\\)" 
@@ -259,11 +259,11 @@ Replaces default behaviour of comment-dwim, when it inserts comment at the end o
   (font-lock-add-keywords
    nil 
    '(("\\(gridDim+\\|blockDim+\\|blockIdx+\\|threadIdx+\\|warpSize+\\)" 
-      1 font-lock-warning-face prepend)))
+      1 font-lock-variable-name-face prepend)))
   (font-lock-add-keywords
    nil 
    '(("\\(ProcessId+\\|dev_+\\)" 
-      1 font-lock-warning-face prepend)))
+      1 font-lock-variable-name-face prepend)))
   (font-lock-add-keywords
    nil 
    '(("\\(__syncthreads()+\\|cudaDeviceSynchronize()+\\)" 
@@ -272,7 +272,7 @@ Replaces default behaviour of comment-dwim, when it inserts comment at the end o
   (font-lock-add-keywords
    nil 
    '(("\\(mpiProcessId+\\|mpiAofProcess+\\|MPI_+\\|ompThreadId+\\|ompAofThread+\\|cudaAofGPU+\\)" 
-      1 font-lock-warning-face prepend))))
+      1 font-lock-variable-name-face prepend))))
 (add-hook 'c-mode-common-hook 'my-c-mode-highlight)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

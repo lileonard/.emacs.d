@@ -62,7 +62,7 @@
 (require 'init-linum-mode)
 (require 'init-hs-minor-mode)
 (require 'init-expand-region)
-;;settings that from others
+;; settings that from others
 (require 'coding-settings)
 ;; my settings
 (require 'my-c-config)

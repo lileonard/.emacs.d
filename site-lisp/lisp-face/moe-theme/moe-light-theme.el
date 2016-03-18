@@ -608,7 +608,7 @@ Moe, moe, kyun!")
    `(ace-jump-face-foreground ((,class (:foreground ,red-2 :bold t))))
 
    ;; Rainbow-delimiters
-   `(rainbow-delimiters-depth-1-face ((,class (:bold t :foreground ,red-2))))
+   `(rainbow-delimiters-depth-1-face ((,class (:bold t :foreground ,purple-1))))
    `(rainbow-delimiters-depth-2-face ((,class (:bold t :foreground ,blue-2))))
    `(rainbow-delimiters-depth-3-face ((,class (:bold t :foreground ,green-3))))
    `(rainbow-delimiters-depth-4-face ((,class (:bold t :foreground ,magenta-2))))

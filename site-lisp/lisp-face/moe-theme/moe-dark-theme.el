@@ -33,7 +33,6 @@ Moe, moe, kyun!")
       (linum-dark "#87875f") (linum-light "#d7d7af")
       )
 
-
   (custom-theme-set-faces
    'moe-dark
    ;; Ensure sufficient contrast on low-color terminals.
