@@ -1,7 +1,6 @@
 ;; ;; ;; org-mode
 
 (require 'org)
-
 (setq  org-completion-use-ido t
        org-edit-timestamp-down-means-later t
        org-archive-mark-done nil
@@ -11,7 +10,6 @@
        org-html-validation-link nil
        org-export-kill-product-buffer-when-displayed t
        org-tags-column 80)
-
 ;; 在一个任务完成后，写心得或者备注并加上时间戳
 (setq org-todo-keywords
       '((sequence "TODO(t)" "DOING(i!)" "HANGUP(h!)" "|" "DONE(d!)" "CANCELLED(c!)")))
@@ -77,9 +75,9 @@
     (setq ecol (point))
     (org-table-copy-region bcol ecol nil)
     (setq lns (mapcar (lambda (x) (cons 
-                                   (org-sort-remove-invisible 
-                                    (substring-no-properties x) )
-                                   x))
+                              (org-sort-remove-invisible 
+                               (substring-no-properties x) )
+                              x))
                       ( mapcar 'car org-table-clip)))    
     (setq lns (org-do-sort lns "Column" ))
 
@@ -148,5 +146,6 @@
                            (org-bullets-mode 1)))
 
 (define-key org-mode-map (kbd "<C-tab>") nil)
+
 
 (provide 'init-org)

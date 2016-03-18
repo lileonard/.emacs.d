@@ -1,11 +1,3 @@
-;;------------------------;
-;;; Python Programming ;;;
-;;------------------------;
-
-;; -----------------------
-;; python.el configuration
-;; -----------------------
-;; from python.el
 (setq  python-shell-prompt-regexp "In \\[[0-9]+\\]: "
        python-shell-prompt-output-regexp "Out\\[[0-9]+\\]: "
        python-shell-completion-setup-code
@@ -34,7 +26,6 @@
 ;; ------------------
 ;; pydoc info
 (require 'pydoc-info)
-
 ;; ; jedi python completion
 ;; (include-elget-plugin "ctable")   ; required for epc
 ;; (include-elget-plugin "deferred") ; required for epc
@@ -44,14 +35,11 @@
 ;; (setq jedi:setup-keys t)
 ;; (autoload 'jedi:setup "jedi" nil t)
 ;; (add-hook 'python-mode-hook 'jedi:setup)
-
-
 (setq auto-mode-alist
       (append 
        (list '("\\.pyx" . python-mode)
              '("SConstruct" . python-mode))
        auto-mode-alist))
-
 ;; keybindings
 (eval-after-load 'python
   '(define-key python-mode-map (kbd "C-c !") 'python-shell-switch-to-shell))
@@ -65,8 +53,6 @@
     (elpy-mode 1)
     ;; http://emacs.stackexchange.com/questions/3322/python-auto-indent-problem/3338#3338
     ;; emacs 24.4 only
-    (setq electric-indent-chars (delq ?: electric-indent-chars))
-    ))
-
+    (setq electric-indent-chars (delq ?: electric-indent-chars))))
 (add-hook 'python-mode-hook 'python-mode-hook-setup)
 (provide 'init-python)
