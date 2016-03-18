@@ -56,16 +56,16 @@
                 (powerline-render rhs))))))
   (set-face-attribute 'powerline-active1 nil
                       :foreground "black"
-                      :background "#555555")
+                      :background "#777777")
   (set-face-attribute 'powerline-active2 nil
                       :foreground "black"
-                      :background "#888888")
+                      :background "#999999")
   (set-face-attribute 'powerline-inactive1 nil
                       :foreground "black"
-                      :background "#222222")
+                      :background "#555555")
   (set-face-attribute 'powerline-inactive2 nil
                       :foreground "black"
-                      :background "#333333"))
+                      :background "#666666"))
 
 (powerline-center-theme-lyh)
 

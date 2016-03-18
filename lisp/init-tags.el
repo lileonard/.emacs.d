@@ -1,7 +1,3 @@
-(add-to-list 'load-path
-             (expand-file-name
-              "~/.emacs.d/site-lisp/tags"))
-
 (require 'ctags)
 (setq tags-revert-without-query t)
 ;; Do case-sensitive tag searches

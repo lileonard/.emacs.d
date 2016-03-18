@@ -17,22 +17,9 @@
 (add-hook 'lisp-mode-hook          #'rainbow-delimiters-mode)
 (add-hook 'emacs-lisp-mode-hook    #'rainbow-delimiters-mode)
 (add-hook 'python-mode-hook        #'rainbow-delimiters-mode)
-;; Rainbow delimiters
-(defun assemblage-rainbow-delim-set-face ()
-  (set-face-attribute 'rainbow-delimiters-depth-1-face   nil :foreground "#D7D7D7")
-  (set-face-attribute 'rainbow-delimiters-depth-2-face   nil :foreground "#FFA07A")
-  (set-face-attribute 'rainbow-delimiters-depth-3-face   nil :foreground "#CEC87B")
-  (set-face-attribute 'rainbow-delimiters-depth-4-face   nil :foreground "#4EEE94")
-  (set-face-attribute 'rainbow-delimiters-depth-5-face   nil :foreground "#00FFFF")
-  (set-face-attribute 'rainbow-delimiters-depth-6-face   nil :foreground "#87CEFA")
-  (set-face-attribute 'rainbow-delimiters-depth-7-face   nil :foreground "#EEAEEE")
-  (set-face-attribute 'rainbow-delimiters-depth-8-face   nil :foreground "#8B00FF")
-  (set-face-attribute 'rainbow-delimiters-depth-9-face   nil :foreground "#EFFFEE")
-  (set-face-attribute 'rainbow-delimiters-unmatched-face nil :foreground "#AA0000"))
-(if (display-graphic-p)
-    (eval-after-load "rainbow-delimiters" '(assemblage-rainbow-delim-set-face)))
 
-;; s;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;ource pair
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;ource pair
 (autoload 'sourcepair-load "sourcepair" "source pair for c/c++ and h" t)
 (global-set-key (kbd "<f6>") 'sourcepair-load)
 (defun sourcepair-settings ()

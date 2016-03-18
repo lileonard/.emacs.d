@@ -61,7 +61,6 @@
 (require 'init-projectile)
 (require 'init-linum-mode)
 (require 'init-hs-minor-mode)
-;;(require 'init-swiper)
 (require 'init-expand-region)
 ;;settings that from others
 (require 'coding-settings)
@@ -72,7 +71,23 @@
 (require 'my-elisp-functions)
 (require 'my-calendar-config)
 (require 'my-keybinding)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; show start time and each init.el costs
 (autoload 'esup "esup" "Emacs Start Up Profiler." t)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(custom-set-variables
+ ;; custom-set-variables was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(custom-safe-themes
+   (quote
+    ("4b4a25140cc2e8843982be991e1a29ff7ee8dddc00548ba0843f1010a84977f8" "f81933744f47a010213537575f84085af3937b27748b4f5c9249c5e100856fc5" "613a7c50dbea57860eae686d580f83867582ffdadd63f0f3ebe6a85455ab7706" default)))
+ '(session-use-package t nil (session)))
+(custom-set-faces
+ ;; custom-set-faces was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ )

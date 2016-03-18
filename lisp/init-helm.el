@@ -12,11 +12,11 @@
       helm-imenu-fuzzy-match t
       helm-lisp-fuzzy-completion t)
 
-;; defface helm-source-header
-(set-face-attribute
- 'helm-selection nil
- :background "#551A8B"
- :foreground "#FFF68F")
+;; ;; defface helm-source-header
+;; (set-face-attribute
+;;  'helm-selection nil
+;;  :background "#551A8B"
+;;  :foreground "#FFF68F")
 
 (require 'helm-grep)
 (define-key helm-map (kbd "<tab>") 'helm-execute-persistent-action) ;; rebihnd tab to do persistent action
@@ -100,15 +100,15 @@
 (define-key isearch-mode-map (kbd "M-i") 'helm-swoop-from-isearch)
 ;; From helm-swoop to helm-multi-swoop-all
 (define-key helm-swoop-map (kbd "M-i") 'helm-multi-swoop-all-from-helm-swoop)
-;; face settings
-(set-face-attribute
- 'helm-swoop-target-line-face nil
- :background "black"
- :foreground "#dcdccc")
-(set-face-attribute
- 'helm-swoop-target-word-face nil
- :background "gray13"
- :foreground "red")
+;; ;; face settings
+;; (set-face-attribute
+;;  'helm-swoop-target-line-face nil
+;;  :background "black"
+;;  :foreground "#dcdccc")
+;; (set-face-attribute
+;;  'helm-swoop-target-word-face nil
+;;  :background "gray13"
+;;  :foreground "red")
 
 (defun helm-swoop-flash-word ($match-beg $match-end)
   (interactive)

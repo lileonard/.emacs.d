@@ -100,7 +100,7 @@
 (set-face-attribute
  'tabbar-default nil
  :family "Comic Sans MS" ;"Vera Sans YuanTi Mono"
- :background "gray30"
+ :background "#999999"
  :foreground "#dcdccc"
  :height 0.8
  )
