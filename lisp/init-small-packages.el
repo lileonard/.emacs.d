@@ -88,7 +88,7 @@
                        (lambda (x)
                          (let ((y (/ #XFFFF 4))
                                ;; delta is the color adjust parament
-                               (delta #X0730))
+                               (delta #X0630))
                            (cond ((< x (* y 1))
                                   (+ x delta))
                                  ((< x (* y 2))

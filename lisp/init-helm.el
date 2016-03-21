@@ -1,9 +1,9 @@
 ;; ;;; init-helm.el --- settings for helm and helm based plugins  -*- lexical-binding: t; -*-
 (require 'helm)
- (require 'helm-types)
- (require 'helm-locate)
- (require 'helm-buffers)
- (require 'helm-files)
+(require 'helm-types)
+(require 'helm-locate)
+(require 'helm-buffers)
+(require 'helm-files)
 (autoload 'helm-semantic-or-imenu "helm-semantic.el" nil t)
 (setq helm-recentf-fuzzy-match t
       helm-buffers-fuzzy-matching t
@@ -95,7 +95,7 @@
 ;; Always use the previous search for helm. Remember C-<backspace> will delete entire line
 (setq helm-swoop-pre-input-function
       (lambda () (if (boundp 'helm-swoop-pattern)
-                     helm-swoop-pattern "")))
+                helm-swoop-pattern "")))
 ;; hot key settings
 (global-set-key (kbd "C-f") 'helm-swoop)
 (define-key isearch-mode-map (kbd "M-i") 'helm-swoop-from-isearch)
@@ -119,8 +119,7 @@
           (overlay-put $o 'face 'helm-swoop-target-word-face)
           (overlay-put $o 'helm-swoop-overlay-word-frash t)))
     (run-with-idle-timer
-      3.6 nil (lambda () (helm-swoop--delete-overlay 'helm-swoop-overlay-word-frash)))))
-
+     2.2 nil (lambda () (helm-swoop--delete-overlay 'helm-swoop-overlay-word-frash)))))
 
 (require 'helm-flx)
 (helm-flx-mode 1)
@@ -128,4 +127,4 @@
 (require 'helm-projectile)
 (global-set-key (kbd "M-f") 'helm-projectile-grep)
 
- (provide 'init-helm)
+(provide 'init-helm)
