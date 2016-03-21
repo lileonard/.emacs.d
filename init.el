@@ -47,8 +47,8 @@
 (require 'init-python)
 ;; minor mode and plugin settings
 (require 'init-helm)
-;; (require 'init-ido)
-;; (require 'init-cedet)
+(require 'init-ido)
+(require 'init-cedet)
 (require 'init-sr-speedbar)
 (require 'init-yasnippet)
 (require 'init-autocomplete)

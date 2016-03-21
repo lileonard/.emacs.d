@@ -1,10 +1,9 @@
- ;;; smex.el --- M-x interface with Ido-style fuzzy matching. -*- lexical-binding: t; -*-
+;;; smex.el --- M-x interface with Ido-style fuzzy matching. -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2009-2014 Cornelius Mika and contributors
 ;;
 ;; Author: Cornelius Mika <cornelius.mika@gmail.com> and contributors
 ;; URL: http://github.com/nonsequitur/smex/
-;; Package-Version: 20151212.1409
 ;; Package-Requires: ((emacs "24"))
 ;; Version: 3.0
 ;; Keywords: convenience, usability
