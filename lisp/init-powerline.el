@@ -5,8 +5,6 @@
 ;; (powerline-vim-theme)
 ;; (powerline-nano-theme)
 
-
-
 (defun powerline-center-theme-with-moe-clolr-lyh ()
   "Setup a mode-line with major and minor modes centered."
   (interactive)

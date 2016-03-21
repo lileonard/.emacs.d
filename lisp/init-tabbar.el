@@ -3,7 +3,6 @@
 (tabbar-mwheel-mode)
 (setq tabbar-use-images nil)
 
-
 (defun tabbar-buffer-groups ()
   "Return the list of group names the current buffer belongs to.
      Return a list of one element based on major mode."
