@@ -1,4 +1,4 @@
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; notice that different OS has virus pathes of c/c++ include, many include lists should be changed 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; use of cedet:
@@ -46,31 +46,31 @@
 (require 'init-latex)
 (require 'init-python)
 ;; minor mode and plugin settings
-(require 'init-helm)
-(require 'init-ido)
-(require 'init-cedet)
-(require 'init-sr-speedbar)
-(require 'init-yasnippet)
-(require 'init-autocomplete)
-(require 'init-magit)
-(require 'init-tags)
-(require 'init-gud)
-(require 'init-eldoc)
-(require 'init-bookmark)
-(require 'init-highline)
-(require 'init-projectile)
-(require 'init-linum-mode)
-(require 'init-hs-minor-mode)
-(require 'init-expand-region)
+ (require 'init-helm)
+;; (require 'init-ido)
+;; (require 'init-cedet)
+ (require 'init-sr-speedbar)
+ (require 'init-yasnippet)
+;; (require 'init-autocomplete)
+;; (require 'init-magit)
+;; (require 'init-tags)
+;;(require 'init-gud)
+;;(require 'init-eldoc)
+;;(require 'init-bookmark)
+;;(require 'init-highline)
+;;(require 'init-projectile)
+;;(require 'init-linum-mode)
+;;(require 'init-hs-minor-mode)
+;;(require 'init-expand-region)
 ;; settings that from others
-(require 'coding-settings)
+;;(require 'coding-settings)
 ;; my settings
-(require 'my-c-config)
-(require 'my-compilation-settings)
-(require 'my-bracket-pair)
-(require 'my-elisp-functions)
-(require 'my-calendar-config)
-(require 'my-keybinding)
+;;(require 'my-c-config)
+;;(require 'my-compilation-settings)
+;;(require 'my-bracket-pair)
+;;(require 'my-elisp-functions)
+;;(require 'my-calendar-config)
+;;(require 'my-keybinding)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; show start time and each init.el costs

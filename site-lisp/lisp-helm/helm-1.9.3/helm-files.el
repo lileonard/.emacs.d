@@ -959,7 +959,7 @@ This doesn't replace inside the files, only modify filenames."
                for new = (concat (helm-basedir old)
                                  (replace-regexp-in-string
                                   regexp str
-                                  (helm-basename old) t))
+                                  (helm-basename old)))
                ;; If `regexp' is not matched in `old'
                ;; `replace-regexp-in-string' will
                ;; return `old' unmodified.

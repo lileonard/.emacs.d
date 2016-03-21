@@ -562,8 +562,7 @@ instead of `helm-walk-ignore-directories'."
   "Same as `file-expand-wildcards' but allow recursion.
 Recursion happen when PATTERN starts with two stars.
 Directories expansion is not supported."
-  (let ((bn (helm-basename pattern))
-        (case-fold-search nil))
+  (let ((bn (helm-basename pattern)))
     (if (and helm-file-globstar
              (string-match "\\`\\*\\{2\\}\\(.*\\)" bn))
         (helm-walk-directory (helm-basedir pattern)

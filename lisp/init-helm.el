@@ -1,9 +1,9 @@
-;;; init-helm.el --- settings for helm and helm based plugins  -*- lexical-binding: t; -*-
+;; ;;; init-helm.el --- settings for helm and helm based plugins  -*- lexical-binding: t; -*-
 (require 'helm)
-(require 'helm-types)
-(require 'helm-locate)
-(require 'helm-buffers)
-(require 'helm-files)
+ (require 'helm-types)
+ (require 'helm-locate)
+ (require 'helm-buffers)
+ (require 'helm-files)
 (autoload 'helm-semantic-or-imenu "helm-semantic.el" nil t)
 (setq helm-recentf-fuzzy-match t
       helm-buffers-fuzzy-matching t
@@ -19,7 +19,8 @@
 ;;  :foreground "#FFF68F")
 
 (require 'helm-grep)
-(define-key helm-map (kbd "<tab>") 'helm-execute-persistent-action) ;; rebihnd tab to do persistent action
+(define-key helm-map (kbd "<tab>") 'helm-execute-persistent-action)
+;; rebihnd tab to do persistent action
 (define-key helm-map (kbd "C-i") 'helm-execute-persistent-action) ;; make TAB works in terminal
 (define-key helm-grep-mode-map (kbd "<return>")  'helm-grep-mode-jump-other-window)
 (define-key helm-grep-mode-map (kbd "n")  'helm-grep-mode-jump-other-window-forward)
@@ -118,7 +119,7 @@
           (overlay-put $o 'face 'helm-swoop-target-word-face)
           (overlay-put $o 'helm-swoop-overlay-word-frash t)))
     (run-with-idle-timer
-     3.6 nil (lambda () (helm-swoop--delete-overlay 'helm-swoop-overlay-word-frash)))))
+      3.6 nil (lambda () (helm-swoop--delete-overlay 'helm-swoop-overlay-word-frash)))))
 
 
 (require 'helm-flx)
@@ -127,27 +128,4 @@
 (require 'helm-projectile)
 (global-set-key (kbd "M-f") 'helm-projectile-grep)
 
-(require 'helm-gtags)
-(setq helm-gtags-ignore-case t
-      helm-gtags-auto-update t
-      helm-gtags-use-input-at-cursor t
-      helm-gtags-pulse-at-cursor t
-      helm-gtags-prefix-key "\C-cg"
-      helm-gtags-suggested-key-mapping t)
-;; Enable helm-gtags-mode in languages that GNU Global supports
-(add-hook 'c-mode-hook 'helm-gtags-mode)
-(add-hook 'c++-mode-hook 'helm-gtags-mode)
-(add-hook 'java-mode-hook 'helm-gtags-mode)
-(add-hook 'asm-mode-hook 'helm-gtags-mode)
-
-;; key bindings
-(define-key helm-gtags-mode-map (kbd "C-c g a") 'helm-gtags-tags-in-this-function)
-(define-key helm-gtags-mode-map (kbd "C-j") 'helm-gtags-select)
-(define-key helm-gtags-mode-map (kbd "M-.") 'helm-gtags-dwim)
-(define-key helm-gtags-mode-map (kbd "M-,") 'helm-gtags-pop-stack)
-(define-key helm-gtags-mode-map (kbd "C-c <") 'helm-gtags-previous-history)
-(define-key helm-gtags-mode-map (kbd "C-c >") 'helm-gtags-next-history)
-
-(autoload 'helm-descbinds "helm-descbinds.el" "key bind in emacs" t)
-
-(provide 'init-helm)
+ (provide 'init-helm)
