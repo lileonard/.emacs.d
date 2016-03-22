@@ -95,11 +95,14 @@
 (add-hook 'first-change-hook 'ztl-on-buffer-modification)
 
 ;;;; 设置tabbar外观
+;; 设置tabbar间隔 
+;; (setq tabbar-separator-value "§")
+;; (setq tabbar-separator (list 0.1))
 ;; 设置默认主题: 字体, 背景和前景颜色，大小
 (set-face-attribute
  'tabbar-default nil
  :family "Comic Sans MS" ;"Vera Sans YuanTi Mono"
- :background "#999999"
+ :background "#888888"
  :foreground "#dcdccc"
  :height 0.8
  )
@@ -117,22 +120,21 @@
  :background "dark gray"
  :box '(:line-width 1 :color "gray11" :style 'released-button)
  )
-                                        ;(setq tabbar-separator-value "§")
-(setq tabbar-separator (list 0.5))
+
 ;; 设置当前tab外观：颜色，字体，外框大小和颜色
 (set-face-attribute
  'tabbar-selected nil
  :inherit 'tabbar-default
- :foreground "orange" ;"DarkGreen"
- :background "gray33" ;"LightGoldenrod"
- :box '(:line-width 1 :color "DarkGoldenrod" :style 'pressed-button)
+ :foreground "orange" 
+ :background "#666666" 
+ :box '(:line-width 1 :color "#111111" :style 'pressed-button)
  :weight 'bold
  )
 ;; 设置非当前tab外观：外框大小和颜色
 (set-face-attribute
  'tabbar-unselected nil
  :inherit 'tabbar-default
- :box '(:line-width 1 :color "gray11" :style 'released-button))
+ :box '(:line-width 1 :color "#BBBBBB" :style 'released-button))
 
 (set-face-attribute
  'tabbar-modified nil

@@ -27,6 +27,10 @@
        (set-face-attribute
         'font-lock-string-face nil
         :foreground "#556B2F")
+       (set-face-attribute
+        'font-lock-keyword-face nil
+        :bold t
+        :foreground "DeepSkyBlue1")
        (set-foreground-color "#363636"))
       ((eq (frame-parameter nil 'background-mode) 'dark)
        (set-face-attribute
@@ -38,6 +42,10 @@
        (set-face-attribute
         'font-lock-string-face nil
         :foreground "light blue")
+       (set-face-attribute
+        'font-lock-keyword-face nil
+        :bold t
+        :foreground "DeepSkyBlue1")
        (set-foreground-color "#E0E0E0")
        (set-background-color "#073642")))
 (provide 'init-colortheme)
