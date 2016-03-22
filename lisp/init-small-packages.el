@@ -17,6 +17,9 @@
 (add-hook 'lisp-mode-hook          #'rainbow-delimiters-mode)
 (add-hook 'emacs-lisp-mode-hook    #'rainbow-delimiters-mode)
 (add-hook 'python-mode-hook        #'rainbow-delimiters-mode)
+(set-face-attribute
+ 'rainbow-delimiters-depth-1-face nil
+ :foreground "#CD661D")
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;ource pair
 (autoload 'sourcepair-load "sourcepair" "source pair for c/c++ and h" t)

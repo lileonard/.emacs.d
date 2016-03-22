@@ -20,15 +20,12 @@
                    (global-semantic-highlight-func-mode)
                    (global-semantic-idle-completions-mode)
                    (global-semantic-decoration-mode)
-                   
                    ;; (global-semantic-stickyfunc-mode)
                    ;; (global-semantic-show-unmatched-syntax-mode)
                    ;; commit it for my tab-bar
                    )))
-
 ;; semanticdb path
 (setq semanticdb-default-save-directory "~/.emacs.d/.semanticdb/")
-
 ;;customise my CEDET
 ;; Include settings
 (autoload 'semantic/db "semantic/db" "db" t)
@@ -36,11 +33,6 @@
 (autoload 'semantic/bovine/gcc "semantic/bovine/gcc" "gcc" t)
 (autoload 'semantic-add-system-include "semantic/bovine/c" "c" t)
 ;; project include setting
-
-
-
-
-
 (defun my-semantic-include-setting ()
   (let ((include-sys-dirs my-sys-c-include))
     (setq include-sys-dirs (append include-sys-dirs my-sys-c-include))
