@@ -1,7 +1,7 @@
 ;; my deep blue theme
-(add-to-list 'custom-theme-load-path
-             (file-name-as-directory
-              "/home/lyh/.emacs.d/site-lisp/lisp-face/color-theme/moe-theme"))
+;; (add-to-list 'custom-theme-load-path
+;;              (file-name-as-directory
+;;               "/home/lyh/.emacs.d/site-lisp/lisp-face/color-theme/moe-theme"))
 ;; (add-to-list 'custom-theme-load-path
 ;;              (file-name-as-directory
 ;;               "/home/lyh/.emacs.d/site-lisp/lisp-face/color-theme"))
@@ -31,14 +31,13 @@
       ((eq (frame-parameter nil 'background-mode) 'dark)
        (set-face-attribute
         'font-lock-comment-face nil
-        :foreground "#B2B2B2")
+        :foreground "#548B54")
        (set-face-attribute
         'font-lock-preprocessor-face nil
         :foreground "#DAA520")
        (set-face-attribute
         'font-lock-string-face nil
         :foreground "light blue")
-       (set-foreground-color "#E0E0E0")))
-
-
+       (set-foreground-color "#E0E0E0")
+       (set-background-color "#073642")))
 (provide 'init-colortheme)

@@ -24,21 +24,24 @@
                                             (powerline-current-separator)
                                             (cdr powerline-default-separator-dir))))
            (lhs (list
-                 ;; (powerline-buffer-id nil 'l)
+                 ;;(powerline-buffer-id nil 'l)
                  (funcall separator-left mode-line face1)
-                 (powerline-narrow face1 'l)
-                 (powerline-vc face1)))
+                 ;; (powerline-narrow face1 'l)
+                 (powerline-vc face1)
+                 ))
            (rhs (list
                  (powerline-raw global-mode-string face1 'r)
-                 ;; (powerline-raw "%4l" face1 'r) ;;显示号
+                 ;; 显示行号
+                 ;; (powerline-raw "%4l" face1 'r)
                  ;; (powerline-raw ":" face1)
+                 ;; 显示列号
                  (powerline-raw "%3c" face1 'r)
+                 ;; 显示百分比
                  (funcall separator-right face1 mode-line)
-                 (powerline-raw "%6p" nil 'r)
-                 ;; (powerline-hud face2 face1)
-                 ))
+                 (powerline-raw "%1p" nil 'r)
+                 (powerline-hud face2 face1)))
            (center (list
-                    (powerline-raw " " face1)
+                    ;;(powerline-raw " " face1)
                     (funcall separator-left face1 face2)
                     (when (and (boundp 'erc-track-minor-mode) erc-track-minor-mode)
                       (powerline-raw erc-modified-channels-object face2 'l))
