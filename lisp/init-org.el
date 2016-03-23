@@ -1,15 +1,111 @@
 ;; ;; ;; org-mode
 
 (require 'org)
-(setq  org-completion-use-ido t
-       org-edit-timestamp-down-means-later t
-       org-archive-mark-done nil
-       org-catch-invisible-edits 'show
-       org-export-coding-system 'utf-8
-       org-fast-tag-selection-single-key 'expert
-       org-html-validation-link nil
-       org-export-kill-product-buffer-when-displayed t
-       org-tags-column 80)
+
+(setq
+ ;; follow links by pressing ENTER on them
+ org-return-follows-link t
+ ;; allow changing between todo stats directly by hotkey
+ org-use-fast-todo-selection t
+ ;; syntax highlight code in source blocks
+ org-src-fontify-natively t
+ ;; for the leuven theme, fontify the whole heading line
+ org-fontify-whole-heading-line t
+ ;; force UTF-8
+ org-export-coding-system 'utf-8
+ ;; use ido completion when I can
+ org-completion-use-ido t
+ ;; don't indent source code
+ org-edit-src-content-indentation 0
+ ;; don't adapt indentation
+ org-adapt-indentation nil
+ ;; preserve the indentation inside of source blocks
+ org-src-preserve-indentation t
+ ;; Imenu should use 3 depth instead of 2
+ org-imenu-depth 3
+ ;; always start the agenda on today
+ org-agenda-start-on-weekday nil
+ ;; Use sticky agenda's so they persist
+ org-agenda-sticky t
+ ;; show 4 agenda days
+ org-agenda-span 4
+ ;; special begin/end of line to skip tags and stars
+ org-special-ctrl-a/e t
+ ;; special keys for killing a headline
+ org-special-ctrl-k t
+ ;; don't adjust subtrees that I copy
+ org-yank-adjusted-subtrees nil
+ ;; try to be smart when editing hidden things
+ org-catch-invisible-edits 'smart
+ ;; blank lines are removed when exiting the code edit buffer
+ org-src-strip-leading-and-trailing-blank-lines t
+ ;; how org-src windows are set up when hitting C-c '
+ org-src-window-setup 'current-window
+ ;;org-src-window-setup 'other-window
+ ;; Overwrite the current window with the agenda
+ org-agenda-window-setup 'current-window
+ ;; Use full outline paths for refile targets - we file directly with IDO
+ org-refile-use-outline-path t
+ ;; Targets complete directly with IDO
+ org-outline-path-complete-in-steps nil
+ ;; Allow refile to create parent tasks with confirmation
+ org-refile-allow-creating-parent-nodes (quote confirm)
+ ;; never leave empty lines in collapsed view
+ org-cycle-separator-lines 0
+ ;; Use cider as the clojure backend
+ org-babel-clojure-backend 'cider
+ ;; don't run stuff automatically on export
+ org-export-babel-evaluate nil
+ ;; export tables as CSV instead of tab-delineated
+ org-table-export-default-format "orgtbl-to-csv"
+ ;; always enable noweb, results as code and exporting both
+ org-babel-default-header-args
+ (cons '(:noweb . "yes")
+       (assq-delete-all :noweb org-babel-default-header-args))
+ org-babel-default-header-args
+ (cons '(:exports . "both")
+       (assq-delete-all :exports org-babel-default-header-args))
+ ;; I don't want to be prompted on every code block evaluation
+ org-confirm-babel-evaluate nil
+ ;; Do not dim blocked tasks
+ org-agenda-dim-blocked-tasks nil
+ ;; Compact the block agenda view
+ org-agenda-compact-blocks t
+ ;; Mark entries as done when archiving
+ org-archive-mark-done nil
+ ;; Where to put headlines when archiving them
+ org-archive-location "%s_archive::* Archived Tasks"
+ ;; Sorting order for tasks on the agenda
+ org-agenda-sorting-strategy
+ (quote ((agenda habit-down
+                 time-up
+                 priority-down
+                 user-defined-up
+                 effort-up
+                 category-keep)
+         (todo priority-down category-up effort-up)
+         (tags priority-down category-up effort-up)
+         (search priority-down category-up)))
+
+ ;; Enable display of the time grid so we can see the marker for the current time
+ org-agenda-time-grid (quote ((daily today remove-match)
+                              #("----------------" 0 16 (org-heading t))
+                              (0900 1100 1300 1500 1700)))
+ ;; Include the diary file in the agenda
+ org-agenda-include-diary t
+ org-agenda-diary-file "~/diary"
+ org-agenda-insert-diary-extract-time t
+ ;; keep the agenda filter until manually removed
+ org-agenda-persistent-filter t
+ org-agenda-repeating-timestamp-show-all t
+ ;; Show all agenda dates - even if they are empty
+ org-agenda-show-all-dates t
+ org-edit-timestamp-down-means-later t
+ org-fast-tag-selection-single-key 'expert
+ org-html-validation-link nil
+ org-export-kill-product-buffer-when-displayed t
+ org-tags-column 80)
+
 ;; 在一个任务完成后，写心得或者备注并加上时间戳
 (setq org-todo-keywords
       '((sequence "TODO(t)" "DOING(i!)" "HANGUP(h!)" "|" "DONE(d!)" "CANCELLED(c!)")))

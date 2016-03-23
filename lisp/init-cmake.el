@@ -54,5 +54,4 @@
 (setq cmake-project-default-build-dir-name "build/")
 (global-set-key (kbd "<C-f9>")   'cmake-project-configure-project)
 (global-set-key (kbd "<f9>")     'compile)
-
 (provide 'init-cmake)

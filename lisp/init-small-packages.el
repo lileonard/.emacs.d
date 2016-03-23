@@ -190,5 +190,11 @@
                                           newline-mark))
                             (whitespace-mode 1)))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(require 'smooth-scrolling)
+(smooth-scrolling-mode 1)
+(setq smooth-scroll-margin 3)
+
+(require 'volatile-highlights)
+(volatile-highlights-mode t)
 
 (provide 'init-small-packages)
