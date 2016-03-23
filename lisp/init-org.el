@@ -1,7 +1,5 @@
 ;; ;; ;; org-mode
-
 (require 'org)
-
 (setq
  ;; follow links by pressing ENTER on them
  org-return-follows-link t

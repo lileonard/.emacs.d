@@ -1,10 +1,11 @@
 (require 'powerline)
+;; (require 'powerline-themes)
 ;; (powerline-default-theme)
 ;; (powerline-center-theme)
 ;; (powerline-center-evil-theme)
 ;; (powerline-vim-theme)
 ;; (powerline-nano-theme)
-
+;; %X has the same meanning with frame settings
 (defun powerline-center-theme-with-moe-clolr-lyh ()
   "Setup a mode-line with major and minor modes centered."
   (interactive)
@@ -24,7 +25,9 @@
                                             (powerline-current-separator)
                                             (cdr powerline-default-separator-dir))))
            (lhs (list
-                 ;;(powerline-buffer-id nil 'l)
+                 ;; (powerline-raw "@_@" nil 'l)
+                 ;; (powerline-buffer-id nil 'l)
+                 ;; (powerline-raw (getenv-internal "LOGNAME") nil 'l)
                  (funcall separator-left mode-line face1)
                  ;; (powerline-narrow face1 'l)
                  (powerline-vc face1)
@@ -35,11 +38,12 @@
                  ;; (powerline-raw "%4l" face1 'r)
                  ;; (powerline-raw ":" face1)
                  ;; 显示列号
-                 (powerline-raw "%3c" face1 'r)
+                 (powerline-raw "%2c" face1 'r)
                  ;; 显示百分比
                  (funcall separator-right face1 mode-line)
-                 (powerline-raw "%1p" nil 'r)
-                 (powerline-hud face2 face1)))
+                 (powerline-raw "%6p" nil 'r)
+                 ;; (powerline-hud face2 face1)
+                 ))
            (center (list
                     ;;(powerline-raw " " face1)
                     (funcall separator-left face1 face2)

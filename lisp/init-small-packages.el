@@ -115,10 +115,22 @@
 (add-hook 'emacs-lisp-mode-hook    'highlight-indentation-mode)
 (add-hook 'python-mode-hook        'highlight-indentation-mode)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(autoload 'highlight-numbers "highlight-numbers.el" nil t)
+(require 'highlight-numbers)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; belong to cedet 1.1 but deleted in new version of cedet
 (require 'linemark)
+(cond ((eq (frame-parameter nil 'background-mode) 'light)
+       (set-face-attribute
+        'linemark-funny-face nil
+        :background "#9AFF9A"
+        ;; :foreground "#585858"
+        ))
+      ((eq (frame-parameter nil 'background-mode) 'dark)
+       (set-face-attribute
+        'linemark-funny-face nil
+        :background "#555555"
+        ;; :foreground "#585858"
+        )))
 (global-set-key (kbd "<f2>")      'viss-bookmark-toggle)
 (global-set-key (kbd "<S-f2>")    'viss-bookmark-prev-buffer)
 (global-set-key (kbd "<C-f2>")    'viss-bookmark-next-buffer)

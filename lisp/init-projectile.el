@@ -1,6 +1,9 @@
-(require 'projectile)
+(autoload 'projectile-mode "projectile.el" nil t)
 ;; 默认全局使用
-(projectile-global-mode)
+(add-hook 'c-mode-common-hook    'projectile-mode)
+(add-hook 'emacs-lisp-mode-hook  'projectile-mode)
+(add-hook 'python-mode-hook      'projectile-mode)
+;;(projectile-global-mode)
 ;; 默认打开缓存
 (setq projectile-enable-caching t)
 (setq projectile-completion-system 'helm)
@@ -10,8 +13,7 @@
 (setq projectile-file-exists-local-cache-expire (* 5 60))
 (add-to-list 'projectile-globally-ignored-directories "backup")
 
-
-;; 仅仅在*.c *.cpp *.h中搜索
+;; 仅仅在特定文件中搜索
 (defun projectile-erlgrep ()
   "Perform rgrep in the project."
   (interactive)
@@ -26,6 +28,6 @@
     (let ((grep-find-ignored-directories nil)
           (grep-find-ignored-files nil))
       (grep-compute-defaults)
-      (rgrep search-regexp "*.erl .hrl .cpp .c .python .py .h" root-dir))))
+      (rgrep search-regexp " *.cpp *.c *.cu *.python *.py *.h *.el" root-dir))))
 
 (provide 'init-projectile)

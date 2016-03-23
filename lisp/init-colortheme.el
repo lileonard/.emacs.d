@@ -9,7 +9,7 @@
 ;;  (enable-theme 'lyh-deep-blue)
 ;; (load-theme 'moe-light t t)
 ;; (enable-theme 'moe-light)
-;;moe theme
+;; moe theme
 (require 'moe-theme)
 (require 'moe-theme-switcher)
 (setq moe-light-pure-white-background-in-terminal t)

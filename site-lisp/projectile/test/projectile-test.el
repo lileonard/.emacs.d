@@ -182,7 +182,8 @@
       (should (equal (projectile-relevant-known-projects) '("/path/to/project2"))))))
 
 (ert-deftest projectile-test-projects-cleaned ()
-  (let* ((directories (cl-loop repeat 3 collect (make-temp-file "projectile-cleanup" t)))
+  (let* ((projectile-known-projects-file (projectile-test-tmp-file-path))
+         (directories (cl-loop repeat 3 collect (make-temp-file "projectile-cleanup" t)))
          (projectile-known-projects directories))
     (unwind-protect
         (progn
@@ -191,7 +192,8 @@
           (delete-directory (car directories))
           (projectile-cleanup-known-projects)
           (should (equal projectile-known-projects (cdr directories))))
-      (--each directories (ignore-errors (delete-directory it))))))
+      (--each directories (ignore-errors (delete-directory it)))
+      (delete-file projectile-known-projects-file nil))))
 
 (ert-deftest projectile-test-project-root-is-absolute ()
   (let* ((root-directory (make-temp-file "projectile-absolute" t))
@@ -596,7 +598,10 @@
                                                     "src/food/cat.c")))
   (should (equal 0
                  (projectile-dirname-matching-count "src/weed/sea.c"
-                                                    "src/food/sea.c"))))
+                                                    "src/food/sea.c")))
+  (should (equal 0
+                 (projectile-dirname-matching-count "test/demo-test.el"
+                                                    "demo.el"))))
 
 (ert-deftest projectile-test-find-matching-test ()
   (projectile-test-with-sandbox
@@ -635,6 +640,31 @@
           (should (equal "app/models/food/sea.rb"
                          (projectile-find-matching-file
                           "spec/models/food/sea_spec.rb"))))))))
+
+(ert-deftest projectile-test-exclude-out-of-project-submodules ()
+  (projectile-test-with-files
+      (;; VSC root is here
+       "project/"
+       "project/.git/"
+       "project/.gitmodules"
+       ;; Current project root is here:
+       "project/web-ui/"
+       "project/web-ui/.projectile"
+       ;; VCS git submodule will return the following submodules,
+       ;; relative to current project root, 'project/web-ui/':
+       "project/web-ui/vendor/client-submodule/"
+       "project/server/vendor/server-submodule/")
+    (let ((project (file-truename (expand-file-name "project/web-ui"))))
+      (noflet ((projectile-files-via-ext-command
+                (arg) (when (string= default-directory project)
+                        '("vendor/client-submodule"
+                          "../server/vendor/server-submodule")))
+               (projectile-project-root
+                () project))
+
+        ;; assert that it only returns the submodule 'project/web-ui/vendor/client-submodule/'
+        (should (equal (list (expand-file-name "vendor/client-submodule/" project))
+                       (projectile-get-all-sub-projects project)))))))
 
 ;; Local Variables:
 ;; indent-tabs-mode: nil

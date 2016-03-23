@@ -75,10 +75,13 @@
 (global-set-key (kbd "<s-up>") 'windmove-up)
 (global-set-key (kbd "<s-down>") 'windmove-down)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;these 3 lines turn off GUI junk
-(menu-bar-mode -1)
-(tool-bar-mode -1)
-;; (scroll-bar-mode -1)
+;; turn off GUI junk
+(if (functionp 'tool-bar-mode)
+    (tool-bar-mode -1))
+(if (functionp 'menu-bar-mode)
+    (menu-bar-mode -1))
+(if (functionp 'scroll-bar-mode)
+    (scroll-bar-mode -1))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; (toggle-frame-fullscreen)
 (toggle-frame-maximized)
