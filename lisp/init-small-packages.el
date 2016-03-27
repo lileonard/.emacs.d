@@ -202,8 +202,31 @@
 (require 'smooth-scrolling)
 (smooth-scrolling-mode 1)
 (setq smooth-scroll-margin 3)
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'volatile-highlights)
 (volatile-highlights-mode t)
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(require 'ibuffer)
+(global-set-key (kbd "<C-S-iso-lefttab>") 'ibuffer)
+(require 'ibuffer-vc)
+(add-hook 'ibuffer-hook
+          (lambda ()
+            (ibuffer-vc-set-filter-groups-by-vc-root)
+            (unless (eq ibuffer-sorting-mode 'alphabetic)
+              (ibuffer-do-sort-by-alphabetic))))
+(global-set-key (kbd "C-x C-b") 'ibuffer)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(require 'buff-menu+)
+(require 'buffer-move)
+(global-set-key (kbd "<s-left>") 'windmove-left)
+(global-set-key (kbd "<s-right>") 'windmove-right)
+(global-set-key (kbd "<s-up>") 'windmove-up)
+(global-set-key (kbd "<s-down>") 'windmove-down)
+;; cursor settings
+(require 'cursor-chg)
+(change-cursor-mode 1)
+(cond ((eq (frame-parameter nil 'background-mode) 'light)
+       (setq curchg-default-cursor-color "#333333"))
+       ((eq (frame-parameter nil 'background-mode) 'dark)
+        (setq curchg-default-cursor-color "#BBBBBB")))
 (provide 'init-small-packages)

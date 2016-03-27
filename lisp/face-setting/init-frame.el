@@ -1,10 +1,4 @@
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(require 'init-colortheme)
-(require 'init-font)
-(require 'init-colortheme)
-(require 'init-powerline)
-(require 'init-tabbar)
-;;frame and appearance settings
+;; frame and appearance settings
 ;;----------------------------------------------------------------------------
 ;; Show a marker in the left fringe for lines not in the buffer
 ;;----------------------------------------------------------------------------
@@ -17,19 +11,6 @@
       use-file-dialog t
       use-dialog-box t
       display-time-mode nil)
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(setq-default
- initial-scratch-message
- (concat ";; Hi "(or user-login-name "")" welcome!
-;; This buffer is for notes that you don't want to save, and for Lisp evaluation. \n;;"))
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; cursor settings
-(require 'cursor-chg)
-(change-cursor-mode 1)
-(cond ((eq (frame-parameter nil 'background-mode) 'light)
-       (setq curchg-default-cursor-color "#333333"))
-       ((eq (frame-parameter nil 'background-mode) 'dark)
-        (setq curchg-default-cursor-color "#BBBBBB")))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;设置窗格标题更有意义。
 ;; (%-constructs are allowed when the string is the entire mode-line-format
@@ -70,23 +51,7 @@
                            (:eval (number-to-string window-system-version))
                            ;;" : "
                            " || code system: %z"))
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(require 'ibuffer)
-(global-set-key (kbd "<C-S-iso-lefttab>") 'ibuffer)
-(require 'ibuffer-vc)
-(add-hook 'ibuffer-hook
-          (lambda ()
-            (ibuffer-vc-set-filter-groups-by-vc-root)
-            (unless (eq ibuffer-sorting-mode 'alphabetic)
-              (ibuffer-do-sort-by-alphabetic))))
-(global-set-key (kbd "C-x C-b") 'ibuffer)
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(require 'buff-menu+)
-(require 'buffer-move)
-(global-set-key (kbd "<s-left>") 'windmove-left)
-(global-set-key (kbd "<s-right>") 'windmove-right)
-(global-set-key (kbd "<s-up>") 'windmove-up)
-(global-set-key (kbd "<s-down>") 'windmove-down)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; turn off GUI junk
 (if (functionp 'tool-bar-mode)
@@ -104,4 +69,5 @@
 ;;         (top . 0)
 ;;         (width . 333)
 ;;         (height . 666)))
-(provide 'init-face)
+(provide 'init-frame)
+
