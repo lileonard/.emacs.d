@@ -30,12 +30,8 @@
 
 ;; basic settings
 (require 'init-basicset)
-;; face settings
-(require 'init-colortheme)
+;; face
 (require 'init-face)
-(require 'init-font)
-(require 'init-powerline)
-(require 'init-tabbar)
 ;; major mode settings
 (require 'init-small-packages)
 (require 'init-modbindings)

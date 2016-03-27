@@ -1,4 +1,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(require 'init-colortheme)
+(require 'init-font)
+(require 'init-colortheme)
+(require 'init-powerline)
+(require 'init-tabbar)
 ;;frame and appearance settings
 ;;----------------------------------------------------------------------------
 ;; Show a marker in the left fringe for lines not in the buffer
