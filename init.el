@@ -32,7 +32,6 @@
 (require 'init-basicset)
 ;; face
 (require 'init-face)
-
 (require 'init-small-packages)
 (require 'init-major-modes)
 (require 'init-minor-modes)
