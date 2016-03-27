@@ -1,3 +1,7 @@
+2016-03-23  Li Yuanheng  <liyuanheng.leo@gmail.com>
+
+	* site-lisp/projectile/test/projectile-test.el (projectile): 
+
 Leonard.Li`s emacs settings  
 ===================================  
 

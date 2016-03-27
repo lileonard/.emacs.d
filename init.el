@@ -32,7 +32,7 @@
 (require 'init-basicset)
 ;; face settings
 (require 'init-colortheme)
-(require 'init-framebuffers)
+(require 'init-face)
 (require 'init-font)
 (require 'init-powerline)
 (require 'init-tabbar)

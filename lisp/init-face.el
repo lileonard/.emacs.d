@@ -17,6 +17,14 @@
  initial-scratch-message
  (concat ";; Hi "(or user-login-name "")" welcome!
 ;; This buffer is for notes that you don't want to save, and for Lisp evaluation. \n;;"))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; cursor settings
+(require 'cursor-chg)
+(change-cursor-mode 1)
+(cond ((eq (frame-parameter nil 'background-mode) 'light)
+       (setq curchg-default-cursor-color "#333333"))
+       ((eq (frame-parameter nil 'background-mode) 'dark)
+        (setq curchg-default-cursor-color "#BBBBBB")))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;设置窗格标题更有意义。
 ;; (%-constructs are allowed when the string is the entire mode-line-format
@@ -91,4 +99,4 @@
 ;;         (top . 0)
 ;;         (width . 333)
 ;;         (height . 666)))
-(provide 'init-framebuffers)
+(provide 'init-face)
