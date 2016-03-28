@@ -115,22 +115,10 @@
 (add-hook 'emacs-lisp-mode-hook    'highlight-indentation-mode)
 (add-hook 'python-mode-hook        'highlight-indentation-mode)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(require 'highlight-numbers)
+(autoload 'highlight-numbers "highlight-numbers.el" nil t)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; belong to cedet 1.1 but deleted in new version of cedet
 (require 'linemark)
-(cond ((eq (frame-parameter nil 'background-mode) 'light)
-       (set-face-attribute
-        'linemark-funny-face nil
-        :background "#9AFF9A"
-        ;; :foreground "#585858"
-        ))
-      ((eq (frame-parameter nil 'background-mode) 'dark)
-       (set-face-attribute
-        'linemark-funny-face nil
-        :background "#555555"
-        ;; :foreground "#585858"
-        )))
 (global-set-key (kbd "<f2>")      'viss-bookmark-toggle)
 (global-set-key (kbd "<S-f2>")    'viss-bookmark-prev-buffer)
 (global-set-key (kbd "<C-f2>")    'viss-bookmark-next-buffer)
@@ -149,6 +137,9 @@
   (define-key ediff-mode-map "j" 'ediff-next-difference)
   (define-key ediff-mode-map "k" 'ediff-previous-difference))
 (add-hook 'ediff-mode-hook 'ora-ediff-hook)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(require 'smart-cursor-color)
+(smart-cursor-color-mode 1)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'popwin)
 (popwin-mode 1)             
@@ -199,34 +190,5 @@
                                           newline-mark))
                             (whitespace-mode 1)))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(require 'smooth-scrolling)
-(smooth-scrolling-mode 1)
-(setq smooth-scroll-margin 3)
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(require 'volatile-highlights)
-(volatile-highlights-mode t)
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(require 'ibuffer)
-(global-set-key (kbd "<C-S-iso-lefttab>") 'ibuffer)
-(require 'ibuffer-vc)
-(add-hook 'ibuffer-hook
-          (lambda ()
-            (ibuffer-vc-set-filter-groups-by-vc-root)
-            (unless (eq ibuffer-sorting-mode 'alphabetic)
-              (ibuffer-do-sort-by-alphabetic))))
-(global-set-key (kbd "C-x C-b") 'ibuffer)
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(require 'buff-menu+)
-(require 'buffer-move)
-(global-set-key (kbd "<s-left>") 'windmove-left)
-(global-set-key (kbd "<s-right>") 'windmove-right)
-(global-set-key (kbd "<s-up>") 'windmove-up)
-(global-set-key (kbd "<s-down>") 'windmove-down)
-;; cursor settings
-(require 'cursor-chg)
-(change-cursor-mode 1)
-(cond ((eq (frame-parameter nil 'background-mode) 'light)
-       (setq curchg-default-cursor-color "#333333"))
-       ((eq (frame-parameter nil 'background-mode) 'dark)
-        (setq curchg-default-cursor-color "#BBBBBB")))
+
 (provide 'init-small-packages)

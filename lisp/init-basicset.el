@@ -37,8 +37,8 @@
       dired-recursive-deletes 'top)
 (fset 'yes-or-no-p 'y-or-n-p)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; (setq default-cursor-type '(bar . 2))
-;; (blink-cursor-mode -1)
+(setq-default cursor-type 'bar)
+;;(blink-cursor-mode -1)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (setq track-eol 1
       backup-by-copying t

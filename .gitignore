@@ -18,7 +18,3 @@ makefile
 Makefile
 srecode-map.el
 auto-save-list
-GPATH
-GTAGS
-GRTAGS
-TAGS

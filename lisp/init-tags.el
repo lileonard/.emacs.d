@@ -63,4 +63,17 @@
 (global-set-key (kbd "<s-f8>") 'ggtags-find-other-symbol)
 (define-key ggtags-mode-map (kbd "M-,") 'pop-tag-mark)
 
+
+;; Before using the ggtags
+;; remember to create a GTAGS database
+;; by running gtags at your project root in terminal:
+
+;; $ cd /path/to/project/root
+;; $ gtags
+
+;; After this, a few files are created:
+
+;; $ ls G*
+;; GPATH   GRTAGS  GTAGS
+
 (provide 'init-tags)

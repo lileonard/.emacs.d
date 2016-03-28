@@ -51,26 +51,24 @@
 (eval-after-load "cc-mode"
   '(my-semantic-include-setting))
 ;; if the cursor on a function press f4 to jump to the of the function
-
-(defun my-cedet-hook ()
+(defun alexott/cedet-hook ()
   (local-set-key (kbd "<f4>") 'semantic-ia-fast-jump)
-  (local-set-key (kbd "<s-f4>") 'semantic-ia-show-summary)
-  (local-set-key [(control return)] 'semantic-ia-complete-symbol)
-  (local-set-key "\C-c>" 'semantic-complete-analyze-inline)
-  (local-set-key "\C-c?" 'semantic-analyze-proto-impl-toggle))
-(add-hook 'c-mode-common-hook 'my-cedet-hook)
+  (local-set-key (kbd "<s-f4>") 'semantic-ia-show-summary))
+(add-hook 'c-mode-common-hook 'alexott/cedet-hook)
+(add-hook 'c-mode-hook 'alexott/cedet-hook)
+(add-hook 'c++-mode-hook 'alexott/cedet-hook)
 
 (autoload 'fa-config-default "function-args" nil t)
 (defun my-function-args-settings()
-  (fa-config-default)
-  (set-face-attribute
-   'fa-face-hint nil
-   :background "black"
-   :foreground "gray66")
-  (set-face-attribute
-   'fa-face-type nil
-   :background "black"
-   :foreground "white"))
+(fa-config-default)
+(set-face-attribute
+ 'fa-face-hint nil
+ :background "black"
+ :foreground "gray66")
+(set-face-attribute
+ 'fa-face-type nil
+ :background "black"
+ :foreground "white"))
 (eval-after-load "cc-mode"
   '(my-function-args-settings))
 
