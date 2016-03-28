@@ -138,9 +138,6 @@
   (define-key ediff-mode-map "k" 'ediff-previous-difference))
 (add-hook 'ediff-mode-hook 'ora-ediff-hook)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(require 'smart-cursor-color)
-(smart-cursor-color-mode 1)
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'popwin)
 (popwin-mode 1)             
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -190,5 +187,11 @@
                                           newline-mark))
                             (whitespace-mode 1)))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
+;; cursor settings
+(require 'cursor-chg)
+(change-cursor-mode 1)
+(cond ((eq (frame-parameter nil 'background-mode) 'light)
+       (setq curchg-default-cursor-color "#333333"))
+       ((eq (frame-parameter nil 'background-mode) 'dark)
+        (setq curchg-default-cursor-color "#BBBBBB")))
 (provide 'init-small-packages)
