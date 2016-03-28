@@ -10,13 +10,11 @@
 ;;  just put all the "xxx.el" files into load-path ~/.emacs.d/plugins then require & enjoy it
 ;;  all the xxx.el files could be found at EmacsWiki , Github ,MELPA
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 ;; Added by Package.el.  This must come before configurations of
 ;; installed packages.  Don't delete this line.  If you don't want it,
 ;; just comment it out by adding a semicolon to the start of the line.
 ;; You may delete these explanatory comments.
 ;; package source setting but I prefer to manually install plugins
-
 (setq gc-cons-threshold 100000000)
 (require 'package)
 (package-initialize)
