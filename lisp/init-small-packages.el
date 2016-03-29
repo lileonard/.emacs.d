@@ -1,5 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'fuzzy)
+(require 'pos-tip)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'smex)   
 (smex-initialize) 
@@ -22,7 +23,7 @@
  :foreground "#CD661D")
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;ource pair
-(autoload 'sourcepair-load "sourcepair" "source pair for c/c++ and h" t)
+(autoload 'sourcepair-load "sourcepair.el" "source pair for c/c++ and h" t)
 (global-set-key (kbd "<f6>") 'sourcepair-load)
 (defun sourcepair-settings ()
   "Settings for `sourcepair'."
@@ -30,7 +31,7 @@
   ;; pair path                 
   (setq sourcepair-source-path 
         '( "./" "../../*" "./sr" "../src" ))
-  (setq sourcepair-header-path -custom-include-dirs)
+  (setq sourcepair-header-path my-custom-include-dirs)
   ;; pair extersion            
   (setq sourcepair-source-efxtenons
         '( ".cpp" ".CPP" ".Cpp" ".cxx" ".CXX" ".cc"
@@ -211,4 +212,7 @@
 (global-set-key (kbd "<s-right>") 'windmove-right)
 (global-set-key (kbd "<s-up>") 'windmove-up)
 (global-set-key (kbd "<s-down>") 'windmove-down)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+ 
 (provide 'init-small-packages)

@@ -38,8 +38,7 @@
                  (powerline-raw "%3c" face1 'r)
                  ;; 显示百分比
                  (funcall separator-right face1 mode-line)
-                 (powerline-raw "%1p" nil 'r)
-                 (powerline-hud face2 face1)))
+                 (powerline-raw "%6p" nil 'r)))
            (center (list
                     ;;(powerline-raw " " face1)
                     (funcall separator-left face1 face2)

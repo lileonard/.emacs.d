@@ -42,6 +42,7 @@
         help-xref-following nil
         c-tab-always-indent nil
         c-insert-tab-function 'indent-for-tab-command
+        ac-quick-help-prefer-pos-tip t
         )
   (setq-default ac-expand-on-auto-complete nil)
   )
@@ -90,10 +91,6 @@
 (ac-exuberant-ctags-setup)
 ;; In your project root directory, do follow command to make tags file.
 ;; ctags --verbose -R --fields="+afikKlmnsSzt"
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; basic settings for pos-tip
-(require 'pos-tip)
-(setq ac-quick-help-prefer-pos-tip t)   ;;default is t
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; basic settings for ac-math
 (autoload 'ac-math "ac-math" "ac-math" t)

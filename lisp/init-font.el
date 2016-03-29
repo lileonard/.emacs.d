@@ -2,9 +2,7 @@
 ;; font and line space settings
 ;; (add-to-list 'default-frame-alist '(font . "DejaVu Sans Mono-14"))
 ;; (add-to-list 'default-frame-alist '(font . "Monospace-13"))
-
-(require 'cl)
-
+(autoload 'find-if "cl" nil nil)
 (defun qiang-font-existsp (font)
   (if (null (x-list-fonts font))
       nil t))

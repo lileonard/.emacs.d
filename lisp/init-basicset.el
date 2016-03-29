@@ -33,7 +33,7 @@
 (setq user-full-name "Li Yuanheng"
       user-mail-address "liyuanheng.leo@gmail.com")
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(setq dired-recursive-copies 'top
+(setq dired-recursive-copies  'top
       dired-recursive-deletes 'top)
 (fset 'yes-or-no-p 'y-or-n-p)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -55,11 +55,8 @@
               default-tab-width 4)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;c-c:copy c-x:cut c-v:paste 
-
 (cua-mode t)
 (setq cua-keep-region-after-copy t) ;; Standard Windows behaviour
-
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (global-whitespace-mode 1)
 ;;(setq whitespace-tabpace-style (quote (spaces tabs newline space-mark tab-mark newline-mark)))
@@ -71,7 +68,6 @@
         (newline-mark 10 [182 10]) ; 10 LINE FEED
         (tab-mark 9 [8677 9]) ; 9 TAB, 9655 WHITE RIGHT-POINTING TRIANGLE 「」
         ))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; don't let the cursor go into minibuffer prompt
 (setq minibuffer-prompt-properties 
