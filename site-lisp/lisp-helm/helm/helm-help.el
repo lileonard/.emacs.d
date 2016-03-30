@@ -359,6 +359,16 @@ also using not recursive wilcard (e.g. \"*.el\") is perfectly fine for this.
 This feature (\"**\") is activated by default with the option `helm-file-globstar'.
 The directory selection with \"**foo/\" like bash shopt globstar option is not supported yet.
 
+*** Query replace on filenames
+
+You can rename your files by replacing only part of filenames matching
+a regexp.
+
+e.g Rename recursively all files with \".JPG\" extension to \".jpg\":
+Use the helm-file-globstar feature described in previous section by
+entering at end of helm-find-files pattern \"**.JPG\", then hit `M-%`,
+at first prompt enter \"JPG\", at second \"jpg\" and hit `RET`.
+
 *** Copying renaming asynchronously
 
 If you use async library (if you have installed helm from MELPA you do) you can enable
@@ -586,7 +596,11 @@ than 1 megabyte:
 
 *** You can save your results in a `helm-grep-mode' buffer, see commands below
 
-Once in this buffer you can use emacs-wgrep to edit your changes.
+Once in this buffer you can use emacs-wgrep (external package not bundled with helm)
+to edit your changes.
+
+*** Helm grep is supporting multi matching starting from version 1.9.4.
+Just add a space between each pattern like in most helm commands.
 
 *** Important
 

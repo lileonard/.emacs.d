@@ -494,6 +494,7 @@ than `w3m-browse-url' use it."
                                     candidate)))
                           (bookmark--jump-via bmk 'switch-to-buffer))))
    (persistent-help :initform "Show contact - Prefix with C-u to append")
+   (mode-line :initform (list "Contact(s)" helm-mode-line-string))
    (filtered-candidate-transformer :initform
                                    '(helm-adaptive-sort
                                      helm-highlight-bookmark))
@@ -523,8 +524,7 @@ than `w3m-browse-url' use it."
 ;;
 
 (defun helm-highlight-bookmark (bookmarks _source)
-  "Used as `filtered-candidate-transformer' to colorize bookmarks.
-Work both with standard Emacs bookmarks and bookmark-extensions.el."
+  "Used as `filtered-candidate-transformer' to colorize bookmarks."
   (let ((non-essential t))
     (cl-loop for i in bookmarks
           for isfile        = (bookmark-get-filename i)

@@ -585,6 +585,19 @@ The default is to enable this by default and then toggle
   :group 'helm
   :type 'boolean)
 
+(defcustom helm-tramp-connection-min-time-diff 5
+  "Value of `tramp-connection-min-time-diff' for helm remote processes.
+If set to zero helm remote processes are not delayed.
+Setting this to a value less than 5 or disabling it with a zero value
+is risky, however on emacs versions starting at 24.5 it seems
+it is now possible to disable it.
+Anyway at any time in helm you can suspend your processes while typing
+by hitting \\<helm-map> `\\[helm-toggle-suspend-update]'.
+Only async sources than use a sentinel calling
+`helm-process-deferred-sentinel-hook' are affected by this."
+  :type 'integer
+  :group 'helm)
+
 
 ;;; Faces
 ;;
@@ -1365,9 +1378,9 @@ existing Helm function names."
 (defun helm--normalize-filter-sources (sources)
   (cl-loop for s in sources collect
            (cl-typecase s
-             (symbolp (assoc-default 'name (symbol-value s)))
-             (listp   (assoc-default 'name s))
-             (stringp s))))
+             (symbol (assoc-default 'name (symbol-value s)))
+             (list   (assoc-default 'name s))
+             (string s))))
 
 (defun helm-set-sources (sources &optional no-init no-update)
   "Set SOURCES during `helm' invocation.
@@ -1444,7 +1457,7 @@ It is a function symbol \(sole action\) or list
 of \(action-display . function\)."
   (unless (helm-empty-buffer-p (helm-buffer-get))
     (helm-aif (helm-attr 'action-transformer)
-        (helm-composed-funcall-with-source
+        (helm-funcall-with-source
          (helm-get-current-source) it
          (helm-attr 'action nil 'ignorefn)
          ;; Check if the first given transformer
@@ -1598,7 +1611,7 @@ was deleted and the candidates list not updated."
 
 
 ;; Core: tools
-
+;;
 (defun helm-funcall-with-source (source functions &rest args)
   "Call from SOURCE FUNCTIONS list or single function FUNCTIONS with ARGS.
 FUNCTIONS is either a symbol or a list of functions.
@@ -1609,12 +1622,21 @@ Return the result of last function call."
     (helm-log "helm-source-name = %S" helm-source-name)
     (helm-log "functions = %S" functions)
     (helm-log "args = %S" args)
-    (cl-loop with result for fn in funs
+    (cl-loop with result
+             for fn in funs
              do (setq result (apply fn args))
+             when (and args (cdr funs))
+             ;; In filter functions, ARGS is a list of one or two elements where
+             ;; the first element is the list of candidates and the second
+             ;; a list containing the source.
+             ;; When more than one fn, set the candidates list to what returns
+             ;; this fn to compute the modified candidates with the next fn
+             ;; and so on.
+             do (setcar args result)
              finally return result)))
 
 (defun helm-funcall-foreach (sym &optional sources)
-  "Call the associated function to SYM for each source if any."
+  "Call the associated function(s) to SYM for each source if any."
   (let ((sources (or sources (helm-get-sources))))
     (cl-dolist (source sources)
       (helm-aif (assoc-default sym source)
@@ -1622,8 +1644,7 @@ Return the result of last function call."
 
 (defun helm-normalize-sources (sources)
   "If SOURCES is only one source, make a list of one element."
-  (cond ((or (and sources
-                  (symbolp sources))
+  (cond ((or (and sources (symbolp sources))
              (and (listp sources) (assq 'name sources)))
          (list sources))
         (sources)
@@ -1631,8 +1652,8 @@ Return the result of last function call."
 
 (defun helm-get-candidate-number (&optional in-current-source)
   "Return candidates number in `helm-buffer'.
-If IN-CURRENT-SOURCE is provided return number of candidates
-in the source where point is."
+If IN-CURRENT-SOURCE is provided return number of candidates of current source
+only."
   (with-helm-buffer
     (if (or (helm-empty-buffer-p)
             (helm-empty-source-p))
@@ -1674,48 +1695,6 @@ in the source where point is."
            (keyboard-quit)
            ;; See comment about this in `with-local-quit'.
            (eval '(ignore nil)))))
-
-(defun helm-compose (arg-lst func-lst)
-  "Apply arguments specified in ARG-LST with each function of FUNC-LST.
-The result of each function will be the new `car' of ARG-LST.
-Each function in FUNC-LST must accept (length ARG-LST) arguments
-\(See examples below) .
-This function allows easy sequencing of transformer functions.
-Where generally, ARG-LST is '(candidates-list source) and FUNC-LST a
-list of transformer functions that take one or two arguments depending
-on 'filtered-candidate-transformer' or 'candidate-transformer'.
-e.g.
-filtered-candidate-transformer:
-\(helm-compose '((1 2 3 4 5 6 7)
-                '((name . \"A helm source\") (candidates . (a b c))))
-              '((lambda (candidates _source)
-                  (cl-loop for i in candidates
-                        when (cl-oddp i) collect i))
-                (lambda (candidates _source)
-                  (cl-loop for i in candidates collect (1+ i)))))
-=>(2 4 6 8)
-
-candidate-transformer:
-\(helm-compose '((1 2 3 4 5 6 7))
-                '((lambda (candidates)
-                  (cl-loop for i in candidates
-                        when (cl-oddp i) collect i))
-                (lambda (candidates)
-                  (cl-loop for i in candidates collect (1+ i)))))
-=> (2 4 6 8)."
-  (cl-dolist (func func-lst)
-    (setcar arg-lst (apply func arg-lst)))
-  (car arg-lst))
-
-(defun helm-composed-funcall-with-source (source funcs &rest args)
-  "With SOURCE apply `helm-funcall-with-source' with each FUNCS and ARGS.
-This is used in transformers to modify candidates list."
-  (if (functionp funcs)
-      (apply 'helm-funcall-with-source source funcs args)
-      (apply 'helm-funcall-with-source source
-             (lambda (&rest oargs) (helm-compose oargs funcs))
-             args)))
-
 
 ;; Core: entry point
 ;; `:allow-nest' is not in this list because it is treated before.
@@ -1814,10 +1793,10 @@ Other keywords are interpreted as local variables of this helm
 session. The `helm-' prefix can be omitted. For example,
 
 \(helm :sources 'helm-source-buffers-list
-       :buffer \"*buffers*\" :candidate-number-limit 10\)
+       :buffer \"*helm buffers*\" :candidate-number-limit 10\)
 
 starts helm session with `helm-source-buffers' source in
-*buffers* buffer and sets variable `helm-candidate-number-limit'
+*helm buffers* buffer and sets variable `helm-candidate-number-limit'
 to 10 as a session local variable.
 
 \(fn &key SOURCES INPUT PROMPT RESUME PRESELECT BUFFER KEYMAP DEFAULT HISTORY ALLOW-NEST OTHER-LOCAL-VARS)"
@@ -1912,6 +1891,7 @@ ANY-KEYMAP ANY-DEFAULT ANY-HISTORY See `helm'."
   (helm-log "any-history = %S" any-history)
   (setq helm--prompt (or any-prompt "pattern: "))
   (let ((non-essential t)
+        mode-line-in-non-selected-windows
         (input-method-verbose-flag helm-input-method-verbose-flag)
         (old--cua cua-mode)
         (helm--maybe-use-default-as-input
@@ -2038,9 +2018,8 @@ as a string with ARG."
   "Select an `helm-buffer' in `helm-buffers' list to resume a helm session.
 Return nil if no `helm-buffer' found."
   (when helm-buffers
-    (or (helm :sources '(((name . "Resume helm buffer")
-                          (candidates . helm-buffers)
-                          (action . identity)))
+    (or (helm :sources (helm-build-sync-source "Resume helm buffer"
+                          :candidates helm-buffers)
               :resume 'noresume
               :buffer "*helm resume*")
         (keyboard-quit))))
@@ -2228,7 +2207,9 @@ value of `helm-full-frame' or `helm-split-window-default-side'."
   (if (or (buffer-local-value 'helm-full-frame (get-buffer buffer))
           (and (eq helm-split-window-default-side 'same)
                (one-window-p t)))
-      (progn (delete-other-windows) (switch-to-buffer buffer))
+      (progn (and (not (minibufferp helm-current-buffer))
+                  (delete-other-windows))
+             (switch-to-buffer buffer))
     (when (and (or helm-always-two-windows helm-autoresize-mode
                    (and (not helm-split-window-in-side-p)
                         (eq (save-selected-window
@@ -2268,7 +2249,7 @@ For ANY-RESUME ANY-INPUT ANY-DEFAULT and ANY-SOURCES See `helm'."
     (helm-initial-setup any-default))
   (setq helm-alive-p t)
   (unless (eq any-resume 'noresume)
-    (helm-recent-push helm-buffer 'helm-buffers)
+    (helm--recent-push helm-buffer 'helm-buffers)
     (setq helm-last-buffer helm-buffer))
   (when any-input
     (setq helm-input any-input
@@ -2298,11 +2279,12 @@ For ANY-RESUME ANY-INPUT ANY-DEFAULT and ANY-SOURCES See `helm'."
   "Restore position in `helm-current-buffer' when quitting."
   (helm-current-position 'restore))
 
-(defun helm-recent-push (elt list-var)
-  "Add ELT to the value of LIST-VAR as most recently used value."
-  (let ((m (member elt (symbol-value list-var))))
-    (and m (set list-var (delq (car m) (symbol-value list-var))))
-    (push elt (symbol-value list-var))))
+(defun helm--recent-push (elm sym)
+  "Move ELM of SYM value on top and set SYM to this new value."
+  (pcase (symbol-value sym)
+    ((and (pred (member elm)) l)
+     (set sym (delete elm l))))
+  (push elm (symbol-value sym)))
 
 (defun helm--current-buffer ()
   "[internal] Return `current-buffer' BEFORE `helm-buffer' is initialized.
@@ -2856,13 +2838,13 @@ Cache the candidates if there is no cached value yet."
 (defun helm-process-candidate-transformer (candidates source)
   "Execute `candidate-transformer' function(s) on CANDIDATES in SOURCE."
   (helm-aif (assoc-default 'candidate-transformer source)
-      (helm-composed-funcall-with-source source it candidates)
+      (helm-funcall-with-source source it candidates)
     candidates))
 
 (defun helm-process-filtered-candidate-transformer (candidates source)
   "Execute `filtered-candidate-transformer' function(s) on CANDIDATES in SOURCE."
   (helm-aif (assoc-default 'filtered-candidate-transformer source)
-      (helm-composed-funcall-with-source source it candidates source)
+      (helm-funcall-with-source source it candidates source)
     candidates))
 
 (defmacro helm--maybe-process-filter-one-by-one-candidate (candidate source)
@@ -2947,9 +2929,9 @@ cons cell."
         (t candidate)))
 
 (defun helm-process-pattern-transformer (pattern source)
-  "Execute pattern-transformer attribute PATTERN function in SOURCE."
+  "Execute pattern-transformer attribute function(s) on PATTERN in SOURCE."
   (helm-aif (assoc-default 'pattern-transformer source)
-      (helm-composed-funcall-with-source source it pattern)
+      (helm-funcall-with-source source it pattern)
     pattern))
 
 (defun helm-default-match-function (candidate)
@@ -3242,8 +3224,10 @@ and `helm-pattern'."
       ;; Filter candidates with this func, otherwise just compute
       ;; candidates.
       (helm-process-filtered-candidate-transformer
+       ;; ; Using in-buffer method or helm-pattern is empty
+       ;; in this case compute all candidates.
        (if (or (equal helm-pattern "")
-               (equal matchfns '(identity)))
+               (helm--candidates-in-buffer-p matchfns))
            ;; Compute all candidates up to LIMIT.
            (helm-take-first-elements
             (helm-get-cached-candidates source) limit)
@@ -3251,6 +3235,9 @@ and `helm-pattern'."
          (helm-match-from-candidates
           (helm-get-cached-candidates source) matchfns matchpartfn limit source))
        source))))
+
+(defun helm--candidates-in-buffer-p (matchfns)
+  (equal matchfns '(identity)))
 
 (defun helm-render-source (source matches)
   "Display MATCHES from SOURCE according to its settings."
@@ -3633,7 +3620,8 @@ this additional info after the source name by overlay."
   "Defer remote processes in sentinels.
 Meant to be called at the beginning of a sentinel process
 function."
-  (when (and (string= event "finished\n")
+  (when (and (not (zerop helm-tramp-connection-min-time-diff))
+             (string= event "finished\n")
              (or (file-remote-p file)
                  ;; `helm-suspend-update-flag'
                  ;; is non-`nil' here only during a
@@ -3651,9 +3639,7 @@ function."
     ;; recent Emacs versions, this has been fixed so tramp returns nil
     ;; in such conditions. Note: `tramp-connection-min-time-diff' cannot
     ;; have values less than 5 seconds otherwise the process dies.
-    (run-at-time (or (and (boundp 'tramp-connection-min-time-diff)
-                          tramp-connection-min-time-diff)
-                     5)
+    (run-at-time helm-tramp-connection-min-time-diff
                  nil (lambda ()
                        (when helm-alive-p ; Don't run timer fn after quit.
                          (setq helm-suspend-update-flag nil)
@@ -4376,6 +4362,7 @@ to a list of forms.\n\n")
         (helm-run-after-exit
          #'helm-debug-open-last-log)
         (setq helm-debug t)
+        (with-helm-buffer (setq truncate-lines nil))
         (message "Debugging enabled"))))
 (put 'helm-enable-or-switch-to-debug 'helm-only t)
 
@@ -4735,7 +4722,10 @@ To customize `helm-candidates-in-buffer' behavior, use `search',
                      ;; case skip this false line.
                      ;; See comment >>>[1] in
                      ;; `helm--search-from-candidate-buffer-1'.
-                     (and (looking-at pattern) (forward-line 1)))
+                     (and (condition-case nil
+                              (looking-at pattern)
+                            (invalid-regexp nil))
+                          (forward-line 1)))
                 nconc
                 (cl-loop with pos-lst
                          while (and (setq pos-lst (funcall searcher pattern))
@@ -5362,7 +5352,8 @@ visible or invisible in all sources of current helm session"
   (let* ((coerced (helm-coerce-selection real source))
          (wilds   (and wildcard
                        (condition-case nil
-                           (helm-file-expand-wildcards coerced t)
+                           (helm-file-expand-wildcards
+                            coerced t)
                          (error nil)))))
     ;; Avoid returning a not expanded wilcard fname.
     ;; e.g assuming "/tmp" doesn't contain "*.el"
