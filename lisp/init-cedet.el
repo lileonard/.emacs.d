@@ -51,12 +51,10 @@
 (eval-after-load "cc-mode"
   '(my-semantic-include-setting))
 ;; if the cursor on a function press f4 to jump to the of the function
-(defun alexott/cedet-hook ()
-  (local-set-key (kbd "<f4>") 'semantic-ia-fast-jump)
-  (local-set-key (kbd "<s-f4>") 'semantic-ia-show-summary))
-(add-hook 'c-mode-common-hook 'alexott/cedet-hook)
-(add-hook 'c-mode-hook 'alexott/cedet-hook)
-(add-hook 'c++-mode-hook 'alexott/cedet-hook)
+
+(global-set-key (kbd "<f4>") 'semantic-ia-fast-jump)
+(global-set-key (kbd "<s-f4>") 'semantic-ia-show-summary)
+(global-set-key (kbd "<s-f1>") 'semantic-ia-complete-symbol-menu)
 
 (autoload 'fa-config-default "function-args" nil t)
 (defun my-function-args-settings()
