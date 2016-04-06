@@ -10,6 +10,10 @@
 (setq projectile-file-exists-local-cache-expire (* 5 60))
 (add-to-list 'projectile-globally-ignored-directories "backup")
 
+;; mode-line setting
+(custom-set-variables
+ '(projectile-mode-line
+   '(:eval (format " Pro[%s]" (projectile-project-name)))))
 
 ;; 仅仅在*.c *.cpp *.h中搜索
 (defun projectile-erlgrep ()

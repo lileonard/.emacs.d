@@ -64,6 +64,9 @@
 (global-undo-tree-mode 1)
 (define-key global-map [(control z)]  'undo-tree-undo)
 (define-key global-map [(control y)]  'undo-tree-redo)
+;; mode-line setting
+(custom-set-variables
+ '(undo-tree-mode-lighter "Undo"))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'cua-rect)
 (defun hkb-mouse-mark-cua-rectangle (event)
