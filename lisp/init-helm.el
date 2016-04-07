@@ -92,10 +92,14 @@
 (setq helm-swoop-use-fuzzy-match t)
 ;; ;; Go to the opposite side of line from the end or beginning of line
 (setq helm-swoop-move-to-line-cycle t)
-;; Always use the previous search for helm. Remember C-<backspace> will delete entire line
+;; If there is no symbol at the cursor, use the last used words instead.
+
 (setq helm-swoop-pre-input-function
-      (lambda () (if (boundp 'helm-swoop-pattern)
-                helm-swoop-pattern "")))
+      (lambda ()
+        (let (($pre-input (thing-at-point 'symbol)))
+          (if (eq (length $pre-input) 0)
+              helm-swoop-pattern ;; this variable keeps the last used words
+            $pre-input))))
 ;; hot key settings
 (global-set-key (kbd "C-f") 'helm-swoop)
 (define-key isearch-mode-map (kbd "M-i") 'helm-swoop-from-isearch)

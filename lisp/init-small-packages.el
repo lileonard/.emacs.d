@@ -228,6 +228,8 @@
 (global-set-key (kbd "<s-up>") 'windmove-up)
 (global-set-key (kbd "<s-down>") 'windmove-down)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
+(require 'swiper)
+(setq ivy-use-virtual-buffers t)
+(global-set-key "\C-s" 'swiper)
  
 (provide 'init-small-packages)

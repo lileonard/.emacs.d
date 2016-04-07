@@ -29,6 +29,7 @@
    ("\\.py$"        .          python-mode)
    ("CMakeLists\\.txt\\'"   .  cmake-mode)
    ("\\.cmake\\'"           .  cmake-mode)
+   (".gitignore"    .          text-mode)
    ))
 
 (provide 'init-modbindings)
