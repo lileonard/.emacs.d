@@ -86,12 +86,7 @@
 (setq truncate-partial-width-windows nil)
 (setq-default grep-scroll-output t)
 ;; 随着grep输出结果的增多,buffer自动滚动
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; 自动在“,” 后面加入“ ”
-(global-set-key (kbd ",")
-                #'(lambda ()
-                    (interactive)
-                    (insert ", ")))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; 美化显示符号（elisp），比如lambda会显示为λ
 (global-prettify-symbols-mode 1)

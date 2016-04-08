@@ -311,7 +311,13 @@ The result is like this:
 (font-lock-add-keywords 'c-mode   (font-lock-width-keyword 96))
 (font-lock-add-keywords 'emacs-lisp-mode   (font-lock-width-keyword 96))
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defun my-c-auto-blank ()
+  (global-set-key (kbd ",")
+                  #'(lambda ()
+                      (interactive)
+                      (insert ", ")))
   (global-set-key (kbd "+")
                   #'(lambda ()
                       (interactive)
@@ -338,4 +344,14 @@ The result is like this:
                       (insert "--"))))
 (add-hook 'c++-mode-hook 'my-c-auto-blank)
 (add-hook 'c-mode-hook 'my-c-auto-blank)
+
+(defun my-text-auto-blank ()
+  (global-set-key (kbd ",")
+                  #'(lambda ()
+                      (interactive)
+                      (insert ", "))))
+(add-hook 'text-mode-hook  'my-text-auto-blank)
+(add-hook 'org-mode-hook   'my-text-auto-blank)
+(add-hook 'latex-mode-hook 'my-text-auto-blank)
+
 (provide 'my-elisp-functions)
