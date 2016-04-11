@@ -22,7 +22,7 @@
            (progn (moe-dark)))))
 (defun switch-at-fixed-time ()
   (let ((now (string-to-number (format-time-string "%H"))))
-    (if (and (>= now 09) (<= now 19))
+    (if (and (>= now 09) (<= now 18))
         (moe-load-theme 'light)
       (moe-load-theme 'dark))
     nil))

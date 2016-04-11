@@ -1,4 +1,5 @@
 ;;; cmake-mode.el --- major-mode for editing CMake sources
+;; Package-Version: 20160317.641
 
 ;=============================================================================
 ; CMake - Cross Platform Makefile Generator
@@ -177,7 +178,7 @@ the indentation.  Otherwise it retains the same position on the line"
   (interactive)
   (save-excursion
     (goto-char (point-min))
-    (while (re-search-forward "^\\([ \t]*\\)\\(\\w+\\)\\([ \t]*(\\)" nil t)
+    (while (re-search-forward "^\\([ \t]*\\)\\_<\\(\\(?:\\w\\|\\s_\\)+\\)\\_>\\([ \t]*(\\)" nil t)
       (replace-match
        (concat
         (match-string 1)
@@ -304,7 +305,8 @@ and store the result as a list in LISTVAR."
           (save-window-excursion
             (cmake-command-run (concat "--help-" listname "-list") nil temp-buffer-name)
             (with-current-buffer temp-buffer-name
-              (set listvar (cdr (split-string (buffer-substring-no-properties (point-min) (point-max)) "\n" t))))))
+              ; FIXME: Ignore first line if it is "cmake version ..." from CMake < 3.0.
+              (set listvar (split-string (buffer-substring-no-properties (point-min) (point-max)) "\n" t)))))
       (symbol-value listvar)
       ))
   )

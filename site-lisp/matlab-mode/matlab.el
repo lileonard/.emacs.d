@@ -1,5 +1,5 @@
 ;;; matlab.el --- major mode for MATLAB(R) dot-m files
-;;
+
 ;; Author: Matt Wette <mwette@alumni.caltech.edu>,
 ;;         Eric M. Ludlam <eludlam@mathworks.com>
 ;; Maintainer: Eric M. Ludlam <eludlam@mathworks.com>
@@ -7,7 +7,7 @@
 ;; Keywords: MATLAB(R)
 ;; Version:
 
-(defconst matlab-mode-version "3.3.3"
+(defconst matlab-mode-version "3.3.5"
   "Current version of MATLAB(R) mode.")
 
 ;;
@@ -3739,8 +3739,8 @@ If ARG is nil, then highlighting is toggled."
 			  post-command-hook)
 		  -1 1)))
     (if (> arg 0)
-	(add-hook 'post-command-hook 'matlab-start-block-highlight-timer)
-      (remove-hook 'post-command-hook 'matlab-start-block-highlight-timer))))
+	(add-hook 'post-command-hook 'matlab-start-block-highlight-timer nil :local)
+      (remove-hook 'post-command-hook 'matlab-start-block-highlight-timer :local))))
 
 (defvar matlab-block-highlight-overlay nil
   "The last highlighted overlay.")
@@ -4495,9 +4495,9 @@ in a popup buffer.
   ;; Add a version scraping logo identification filter.
   (add-hook 'comint-output-filter-functions 'matlab-shell-version-scrape)
   ;; Add pseudo html-renderer
-  ;;(add-hook 'comint-output-filter-functions 'matlab-shell-render-html-anchor nil t)
-  ;;(add-hook 'comint-output-filter-functions 'matlab-shell-render-html-txt-format nil t)
-  ;;(add-hook 'comint-output-filter-functions 'matlab-shell-render-errors-as-anchor nil t)
+  (add-hook 'comint-output-filter-functions 'matlab-shell-render-html-anchor nil t)
+  ;(add-hook 'comint-output-filter-functions 'matlab-shell-render-html-txt-format nil t)
+  ;(add-hook 'comint-output-filter-functions 'matlab-shell-render-errors-as-anchor nil t)
   ;; Scroll to bottom after running cell/region
   (add-hook 'comint-output-filter-functions 'comint-postoutput-scroll-to-bottom)
 
@@ -4547,12 +4547,14 @@ in a popup buffer.
       (progn
 	(gud-def gud-break  "dbstop at %l in %f"  "\C-b" "Set breakpoint at current line.")
 	(gud-def gud-remove "dbclear at %l in %f" "\C-d" "Remove breakpoint at current line")
-	(gud-def gud-step   "dbstep in"           "\C-s" "Step one source line, possibly into a function.")
-	(gud-def gud-next   "dbstep %p"           "\C-n" "Step over one source line.")
-	(gud-def gud-cont   "dbcont"              "\C-r" "Continue with display.")
+	(gud-def gud-step   "dbstep in;\ndbhotlink(1)"           "\C-s" "Step one source line, possibly into a function.")
+	(gud-def gud-next   "dbstep %p;\ndbhotlink(1)"           "\C-n" "Step over one source line.")
+	(gud-def gud-cont   "dbcont;\ndbhotlink(1)"              "\C-r" "Continue with display.")
 	(gud-def gud-finish "dbquit"              "\C-f" "Finish executing current function.")
-	(gud-def gud-up     "dbup %p"             "<"    "Up N stack frames (numeric arg).")
-	(gud-def gud-down   "dbdown %p"           ">"    "Down N stack frames (numeric arg).")
+	;; (gud-def gud-up     "dbup %p;\ndbhotlink()"             "<"    "Up N stack frames (numeric arg).")
+	;; (gud-def gud-down   "dbdown %p;\ndbhotlink()"           ">"    "Down N stack frames (numeric arg).")
+	(gud-def gud-up     "dbup;\n[~,a___]=dbstack;\ndbhotlink(a___)"             "<"    "Up N stack frames (numeric arg).") 
+	(gud-def gud-down   "dbdown;\n[~,a___]=dbstack;\ndbhotlink(a___)"           ">"    "Down N stack frames (numeric arg).")
 	(gud-def gud-print  "%e"                  "\C-p" "Evaluate M expression at point.")
 	(if (fboundp 'gud-make-debug-menu)
 	    (gud-make-debug-menu))
