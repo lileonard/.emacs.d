@@ -210,7 +210,8 @@
              (cons "->" '(ac-source-semantic)))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; major mode for auto-complete
-(dolist (mode '(matlab-mode
+
+(dolist (mode '(matlab-mode gud-mode
                 cc-mode c++-mode cmake-mode
                 org-mode
                 latex-mode plain-tex-mode
