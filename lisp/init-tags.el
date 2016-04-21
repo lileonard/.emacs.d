@@ -36,7 +36,10 @@
                                      "gtags: top of source tree:" default-directory)))
 
 (defun gtags-ext-add-gtagslibpath (libdir &optional del)
-  "add external library directory to environment variable GTAGSLIBPATH.\ngtags will can that directory if needed.\nC-u M-x add-gtagslibpath will remove the directory from GTAGSLIBPATH."
+  "add external library directory to environment 
+variable GTAGSLIBPATH.\ngtags will can that directory
+ if needed.\nC-u M-x add-gtagslibpath will remove 
+the directory from GTAGSLIBPATH."
   (interactive "DDirectory containing GTAGS:\nP")
   (let (sl)
     (if (not (file-exists-p (concat (file-name-as-directory libdir) "GTAGS")))
@@ -62,7 +65,6 @@
 (global-set-key (kbd "<S-f8>") 'ggtags-find-tag-dwim)
 (global-set-key (kbd "<s-f8>") 'ggtags-find-other-symbol)
 (define-key ggtags-mode-map (kbd "M-,") 'pop-tag-mark)
-
 
 ;; Before using the ggtags
 ;; remember to create a GTAGS database

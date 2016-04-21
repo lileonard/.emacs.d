@@ -226,4 +226,8 @@
                 js-mode clojure-mode))
   (add-to-list 'ac-modes mode))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; (defun my-gud-ac-not-use-enter()
+;;    (define-key ac-completing-map "\r" nil))
+;; (add-hook 'gud-mode-hook 'my-gud-ac-not-use-enter)
+
 (provide 'init-autocomplete)

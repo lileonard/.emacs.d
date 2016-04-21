@@ -9,7 +9,6 @@
 (global-set-key (kbd "<S-f3>") 'upcase-region)
 (global-set-key (kbd "<s-f3>") 'downcase-region)
 (global-set-key (kbd "<C-SPC>") nil)
-(global-set-key (kbd "<C-f6>")  'auto-insert)
 (global-set-key (kbd "<escape>") 'keyboard-escape-quit)
 (global-set-key (kbd "s-f") 'grep-find)
 ;; my mouse

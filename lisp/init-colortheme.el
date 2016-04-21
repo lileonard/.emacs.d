@@ -34,7 +34,7 @@
 (cond ((eq (frame-parameter nil 'background-mode) 'light)
        (set-face-attribute
         'font-lock-comment-face nil
-        :foreground "#606060")
+        :foreground "#707070")
        (set-face-attribute
         'font-lock-preprocessor-face nil
         :foreground "#27408B")

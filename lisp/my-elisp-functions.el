@@ -310,24 +310,32 @@ The result is like this:
 (font-lock-add-keywords 'c++-mode (font-lock-width-keyword 96))
 (font-lock-add-keywords 'c-mode   (font-lock-width-keyword 96))
 (font-lock-add-keywords 'emacs-lisp-mode   (font-lock-width-keyword 96))
-
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defun my-c-auto-blank ()
-  (global-set-key (kbd ",") #'(lambda () (interactive) (insert ", ")))
-  (global-set-key (kbd "+") #'(lambda () (interactive) (insert " + ")))
-  (global-set-key (kbd "-") #'(lambda () (interactive) (insert " - ")))
-  (global-set-key (kbd "=") #'(lambda () (interactive) (insert " = ")))
-  (global-set-key (kbd "C-=") #'(lambda () (interactive) (insert " == ")))
-  (global-set-key (kbd "C-+") #'(lambda () (interactive) (insert "++")))
-  (global-set-key (kbd "C--") #'(lambda () (interactive) (insert "--"))))
-(add-hook 'c++-mode-hook 'my-c-auto-blank)
-(add-hook 'c-mode-hook 'my-c-auto-blank)
+;; http://www.cppblog.com/tangxinfa/archive/2008/05/23/50705.html
+;; c/c++ header include guard
+(defun insert-include-guard ()
+  "insert include guard for c and c++ header file.
+for file filename.ext will generate:
+#ifndef FILENAME_EXT_
+#define FILENAME_EXT_
 
-(defun my-text-auto-blank ()
-  (global-set-key (kbd ",") #'(lambda () (interactive) (insert ", "))))
-(add-hook 'text-mode-hook  'my-text-auto-blank)
-(add-hook 'org-mode-hook   'my-text-auto-blank)
-(add-hook 'latex-mode-hook 'my-text-auto-blank)
+original buffer content
+
+#endif//FILENAME_EXT_
+"
+  (interactive)
+  (setq file-macro
+    (concat (replace-regexp-in-string "\\." "_" (upcase (file-name-nondirectory buffer-file-name))) "_"))
+  (setq guard-begin (concat "#ifndef " file-macro "\n"
+                "#define " file-macro "\n\n"))
+  (setq guard-end
+    (concat "\n\n#endif//" file-macro "\n"))
+  (setq position (point))
+  (goto-char (point-min))
+  (insert guard-begin)
+  (goto-char (point-max))
+  (insert guard-end)
+  (goto-char (+ position (length guard-begin))))
+(global-set-key (kbd "<C-f6>")  'insert-include-guard)
 
 (provide 'my-elisp-functions)
