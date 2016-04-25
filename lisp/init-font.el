@@ -51,13 +51,13 @@ If set/leave chinese-font-size to nil, it will follow english-font-size"
    "Monospace"
    "Monaco"
    "Courier New")
- ":pixelsize=23"
+ ":pixelsize=21"
  '("XTXINWEI"
    "STXinwei"
    "Microsoft Yahei"
    "AR PL KaitiM GB"
    "SIMSONG"
    "ZYSong18030")
- ":pixelsize=26")
+ ":pixelsize=24")
 
 (provide 'init-font)
