@@ -1,4 +1,3 @@
-
 ;; my deep blue theme
 ;; (add-to-list 'custom-theme-load-path
 ;;              (file-name-as-directory

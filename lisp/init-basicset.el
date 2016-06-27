@@ -104,19 +104,21 @@
 ;; and do NOT forget CUDA & MPI &FFTW
 (defconst my-sys-c-include
   (list
-   "/usr/lib/gcc/x86_64-redhat-linux/4.8.5/../../../../include/c++/4.8.5"
-   "/usr/lib/gcc/x86_64-redhat-linux/4.8.5/../../../../include/c++/4.8.5/x86_64-redhat-linux"
-   "/usr/lib/gcc/x86_64-redhat-linux/4.8.5/../../../../include/c++/4.8.5/backward"
-   "/usr/lib/gcc/x86_64-redhat-linux/4.8.5/include"
+   "/usr/local/lib/gcc/x86_64-unknown-linux-gnu/5.3.0/../../../../include/c++/5.3.0"
+   "/usr/local/lib/gcc/x86_64-unknown-linux-gnu/5.3.0/../../../../include/c++/5.3.0/x86_64-unknown-linux-gnu"
+   "/usr/local/lib/gcc/x86_64-unknown-linux-gnu/5.3.0/../../../../include/c++/5.3.0/backward"
+   "/usr/local/lib/gcc/x86_64-unknown-linux-gnu/5.3.0/include"
    "/usr/local/include"
+   "/usr/local/lib/gcc/x86_64-unknown-linux-gnu/5.3.0/include-fixed"
    "/usr/include"
-   "/home/lyh/Soft/CUDA/cuda-7.5/include"
-   "/home/lyh/Soft/CUDA/cuda-7.5/include/CL"
-   "/home/lyh/Soft/CUDA/cuda-7.5/include/crt"
-   "/home/lyh/Soft/CUDA/cuda-7.5/include/thrust"
-   "/home/lyh/Soft/fftw3/include"
-   "/home/lyh/Soft/MPICH3/include"
-   "/home/lyh/Soft/MPICH3/include/primitives"))
+   "/home/lyh/Soft/CUDA/include"
+   "/home/lyh/Soft/CUDA/include/CL"
+   "/home/lyh/Soft/CUDA/include/crt"
+   "/home/lyh/Soft/CUDA/include/thrust"
+   "/home/lyh/Soft/fftw/include"
+   "/home/lyh/Soft/MPICH/include"
+   "/home/lyh/Soft/MPICH/include/primitives"
+))
 
 (defconst my-custom-include-dirs
   (list
