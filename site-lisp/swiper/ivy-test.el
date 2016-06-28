@@ -20,6 +20,10 @@
 ;; see <http://www.gnu.org/licenses/>.
 
 (require 'ert)
+
+;; useful for #'ivy-read-remap. It must arrive before (require 'ivy)
+(define-key global-map (kbd "<S-right>") #'end-of-buffer)
+
 (require 'ivy)
 (require 'counsel)
 
@@ -75,9 +79,33 @@
                      "a C-n <tab> C-m")
            "aaac"))
   (should (equal
+           (ivy-with '(ivy-read "test" '(("foo" . "bar")))
+                     "asdf C-m")
+           "asdf"))
+  (should (equal
+           (ivy-with
+            '(with-output-to-string
+              (ivy-read "test" '(("foo" . "bar"))
+               :action (lambda (x) (prin1 x))))
+            "f C-m")
+           "\"bar\""))
+  (should (equal
+           (ivy-with
+            '(with-output-to-string
+              (ivy-read "test" '(("foo" . "bar"))
+               :action (lambda (x) (prin1 x))))
+            "asdf C-m")
+           "\"asdf\""))
+  (should (equal
            (ivy-with '(ivy-read "pattern: " '("can do" "can" "can't do"))
                      "can C-m")
            "can")))
+
+(ert-deftest ivy-read-remap ()
+  (should (equal
+           (ivy-with '(ivy-read "pattern: " '("blue" "yellow" "red"))
+                  "<S-right> C-m")
+           "red")))
 
 (ert-deftest swiper--re-builder ()
   (setq swiper--width 4)
@@ -97,8 +125,10 @@
                  '("Who are" "the Brittons?")))
   (should (equal (ivy--split "We're  all  Britons and   I   am your   king.")
                  '("We're all Britons"
-                  "and  I  am"
-                   "your  king."))))
+                   "and  I  am"
+                   "your  king.")))
+  (should (equal (ivy--split "^[^ ]") '("^[^ ]")))
+  (should (equal (ivy--split "^[^ ] bar") '("^[^ ]" "bar"))))
 
 (ert-deftest ivy--regex ()
   (should (equal (ivy--regex

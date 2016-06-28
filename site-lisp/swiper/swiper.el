@@ -4,8 +4,8 @@
 
 ;; Author: Oleh Krehel <ohwoeowho@gmail.com>
 ;; URL: https://github.com/abo-abo/swiper
-;; Version: 0.7.0
-;; Package-Requires: ((emacs "24.1"))
+;; Version: 0.8.0
+;; Package-Requires: ((emacs "24.1") (ivy "0.8.0"))
 ;; Keywords: matching
 
 ;; This file is part of GNU Emacs.
@@ -173,11 +173,13 @@
 (declare-function mc/create-fake-cursor-at-point "ext:multiple-cursors-core")
 (declare-function multiple-cursors-mode "ext:multiple-cursors-core")
 
-;;;###autoload
 (defun swiper-mc ()
+  "Create a fake cursor for each `swiper' candidate."
   (interactive)
   (unless (require 'multiple-cursors nil t)
     (error "multiple-cursors isn't installed"))
+  (unless (window-minibuffer-p)
+    (error "Call me only from `swiper'"))
   (let ((cands (nreverse ivy--old-cands)))
     (unless (string= ivy-text "")
       (ivy-exit-with-action
@@ -675,7 +677,8 @@ Run `swiper' for those buffers."
                      (1- len) len 'display
                      (concat
                       (make-string
-                       (- ww (string-width s) (length (buffer-name)) 3)
+                       (max 0
+                            (- ww (string-width s) (length (buffer-name)) 3))
                        ?\ )
                       (buffer-name))
                      s)

@@ -185,6 +185,7 @@ Italic     => A non--file buffer.
 \\[helm-buffers-run-multi-occur]\t\tMulti Occur buffer or marked buffers. (C-u toggle force searching current-buffer).
 \\[helm-buffer-switch-other-window]\t\tSwitch other window.
 \\[helm-buffer-switch-other-frame]\t\tSwitch other frame.
+\\[helm-buffers-run-browse-project]\t\tBrowse Project from buffer.
 \\[helm-buffer-run-query-replace-regexp]\t\tQuery replace regexp in marked buffers.
 \\[helm-buffer-run-query-replace]\t\tQuery replace in marked buffers.
 \\[helm-buffer-run-ediff]\t\tEdiff current buffer with candidate.  If two marked buffers ediff those buffers.
@@ -266,6 +267,9 @@ If you are already in `default-directory' this will move cursor on top.
 NOTE: This is different from using `C-l' in that `C-l' doesn't move cursor on top but stays on previous
 subdir name.
 
+**** Enter `..name/' at end of pattern start a recursive search of directories matching name under
+your current directory, see below the \"Recursive completion on subdirectories\" section for more infos.
+
 **** Enter any environment var (e.g. `$HOME') at end of pattern, it will be expanded
 
 **** You can yank any valid filename after pattern, it will be expanded
@@ -325,11 +329,31 @@ e.g. You can create \"~/new/newnew/newnewnew/my_newfile.txt\".
 - With two prefix args
   same but the cache will be refreshed.
 
-**** You can start a recursive search with Locate of Find (See commands below)
+**** You can start a recursive search with Locate or Find (See commands below)
 
 With Locate you can use a local db with a prefix arg. If the localdb doesn't already
 exists, you will be prompted for its creation, if it exists and you want to refresh it,
 give two prefix args.
+
+Note that when using locate the helm-buffer is empty until you type something,
+but helm use by default the basename of pattern entered in your helm-find-files session,
+hitting M-n should just kick in the locate search with this pattern.
+If you want to automatically do this add the `helm-source-locate'
+to `helm-sources-using-default-as-input'.
+
+**** Recursive completion on subdirectories
+
+Starting from the current directory you are browsing, it is possible
+to have completion of all directories under here.
+So if you are at \"/home/you/foo/\" and you want to go to \"/home/you/foo/bar/baz/somewhere/else\"
+just type \"/home/you/foo/..else\" and hit `C-j' or enter the final \"/\", helm will show you all
+possibles directories under \"foo\" matching \"else\".
+\(Note that entering two spaces before \"else\" instead of two dots works also).
+
+NOTE: Completion on subdirectories use locate as backend, you can configure
+the command with `helm-locate-recursive-dirs-command'.
+Because this completion use an index, you may not have all the recent additions
+of directories until you update your index (with `updatedb' for locate).
 
 *** Insert filename at point or complete filename at point
 
@@ -355,6 +379,15 @@ and then run your copy action.
 You can do the same but with \"**.el\" (note the two stars),
 this will select recursively all \".el\" files under current directory.
 
+Note that when copying recursively files, you may have files with same name
+dispatched in the different subdirectories, so when copying them in the same directory
+they would be overwrited. To avoid this helm have a special action called \"backup files\"
+that have the same behavior as the command line \"cp --backup=numbered\", it allows you
+copying for example many *.jpg files with the same name from different
+subdirectories in one directory.
+Files with same name are renamed like this: \"foo.txt.~1~\".
+NOTE: This command is available only when `dired-async-mode' is used.
+
 NOTE: When using an action that involve an external backend (e.g. grep), using \"**\"
 is not advised (even if it works fine) because it will be slower to select all your files,
 you have better time letting the backend doing it, it will be faster.
@@ -362,9 +395,12 @@ However, if you know you have not many files it is reasonable to use this,
 also using not recursive wilcard (e.g. \"*.el\") is perfectly fine for this.
 
 This feature (\"**\") is activated by default with the option `helm-file-globstar'.
-The directory selection with \"**foo/\" like bash shopt globstar option is not supported yet.
+It is different than the bash shopt globstar feature in that to list files with a named extension
+recursively you just have to specify e.g \"**.el\" whereas in bash you have to specify \"**/*.el\"
+which is not convenient as \"**.el\".
+The directory selection with \"**/\" like bash shopt globstar option is not supported yet.
 
-*** Query replace on filenames
+*** Query replace regexp on filenames
 
 You can rename your files by replacing only part of filenames matching
 a regexp.
@@ -373,6 +409,36 @@ e.g Rename recursively all files with \".JPG\" extension to \".jpg\":
 Use the helm-file-globstar feature described in previous section by
 entering at end of helm-find-files pattern \"**.JPG\", then hit `M-%`,
 at first prompt enter \"JPG\", at second \"jpg\" and hit `RET`.
+
+Shortcut for basename without extension, only extension or all are available:
+
+- Basename without extension => \"%.\"
+- Only extension             => \".%\"
+- All                        => \"%\"
+
+So in the example above you could do instead:
+At first prompt enter \".%\", at second \"jpg\" and hit `RET`.
+Note that when using this instead of using \"JPG\" at first prompt, all extensions
+will be renamed to \"jpg\" even if the extension of one of the files is e.g \"png\".
+
+If you want to rename a serie of files from number 001 to 00x use \\# inside the replacement
+string when you will be prompted for it.
+
+e.g To rename the files \"foo.jpg\" \"bar.jpg\" and \"baz.jpg\"
+    to \"foo-001.jpg\" \"foo-002.jpg\" \"foo-003.jpg\"
+
+Use as replace regexp \"%.\" and as replacement string \"foo-\\#\".
+Where \"%.\" is same as regexp \".*\\.jpg\".
+
+Note: You can do this with the serial renames actions you will find in the action menu
+      for more sophisticated renaming, but using query replace regexp on filenames
+      is a fast way for most common serial replacements.
+
+Note also that unlike the serial rename actions the renamed files stay in their initial directory
+and are not renamed to current directory, IOW use this (\\#) to rename files inside current directory.
+
+In the second prompt (replace regexp with) shortcut for `upcase', `downcase' and `capitalize'
+are available, respectively `%u', `%d' and `%c'.
 
 *** Copying renaming asynchronously
 
@@ -943,11 +1009,12 @@ This feature is only available with emacs-25.
 
 *** Prefix Args
 
-All the prefix args passed BEFORE running `helm-M-x' are ignored,
-you should get an error message if you do so.
-When you want to pass prefix args, pass them AFTER starting `helm-M-x',
+When you want pass prefix args, you should pass prefix args AFTER starting `helm-M-x',
 you will see a prefix arg counter appearing in mode-line notifying you
-the number of prefix args entered.")
+the number of prefix args entered.
+
+If you pass prefix args before running `helm-M-x', it will be displayed in prompt,
+then the first C-u after `helm-M-x' will be used to clear that prefix args.")
 
 ;;; helm-imenu
 ;;
