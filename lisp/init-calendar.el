@@ -132,4 +132,4 @@
 
 (global-set-key (kbd "C-`") 'calendar)
 
-(provide 'my-calendar-config)
+(provide 'init-calendar)

@@ -4,8 +4,7 @@
 We increase this to 16MB by `(my-optimize-gc 16 0.5)` "
   (setq-default gc-cons-threshold (* 1024 1024 NUM)
                 gc-cons-percentage PER))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;auto formalize when copying
 (dolist (command '(yank yank-pop))
   (eval
@@ -32,17 +31,17 @@ We increase this to 16MB by `(my-optimize-gc 16 0.5)` "
 (define-auto-insert '("\\.\\([Cc]\\|cc\\|cpp\\)\\'" . "C / C++ program") "sample.cpp")
 (define-auto-insert '("\\.sh\\'" . "Shell-Script") "sample.sh")
 
-(defun lyh-insert-time ()
+(defun my-insert-time ()
   "Insert the current time"
   (interactive)
   (insert (format-time-string "Time: %X")))
 
-(defun lyh-insert-date ()
+(defun my-insert-date ()
   "Insert the current time"
   (interactive)
   (insert (format-time-string "%h %d, %G")))
 
-(defun lyh-insert-text%letter ()
+(defun my-insert-text%letter ()
   "text the use of letters after %"
   (interactive)
   (insert (format-time-string
@@ -58,7 +57,7 @@ We increase this to 16MB by `(my-optimize-gc 16 0.5)` "
 ")))
 
 ;;auto insert main
-(defun lyh-insert-main ()
+(defun my-insert-main ()
   (interactive)
   (insert "
 /*
@@ -84,16 +83,16 @@ int main(int argc, char *argv[])
     return 0;
 }\n"
 ))
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;auto insert cout
-(defun lyh-insert-cout ()
+(defun my-insert-cout ()
     "Insert the cout"
     (interactive)
     (insert (format-time-string "std::cout << <<std::endl;")))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defun lyh-insert-fftmain ()
+(defun my-insert-fftmain ()
   (interactive)
   (insert 
    "
@@ -170,7 +169,7 @@ int main(int argc, char *argv[])
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; auto insert a MPI Init introduction
-(defun lyh-insert-MPI_Init ()
+(defun my-insert-MPI_Init ()
   (interactive)
   (insert 
    "
@@ -189,7 +188,7 @@ int main(int argc, char *argv[])
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; auto insert a MPI Init introduction
-(defun lyh-insert-notes ()
+(defun my-insert-notes ()
   (interactive)
   (insert 
 "** paper title
@@ -204,7 +203,7 @@ int main(int argc, char *argv[])
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; auto insert a for Cpp introduction
-(defun lyh-insert-function-intrduction ()
+(defun my-insert-function-intrduction ()
   (interactive)
   (insert 
    "/*
@@ -313,7 +312,7 @@ The result is like this:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; http://www.cppblog.com/tangxinfa/archive/2008/05/23/50705.html
 ;; c/c++ header include guard
-(defun insert-include-guard ()
+(defun my-insert-include-guard ()
   "insert include guard for c and c++ header file.
 for file filename.ext will generate:
 #ifndef FILENAME_EXT_
