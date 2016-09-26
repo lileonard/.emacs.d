@@ -55,8 +55,9 @@
               default-tab-width 4)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;c-c:copy c-x:cut c-v:paste 
-(cua-mode t)
+(cua-mode t);; nil (cua-base))
 (setq cua-keep-region-after-copy t) ;; Standard Windows behaviour
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (global-whitespace-mode 1)
 ;;(setq whitespace-tabpace-style (quote (spaces tabs newline space-mark tab-mark newline-mark)))

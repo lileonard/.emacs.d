@@ -260,6 +260,14 @@ see `helm-ff-guess-ffap-filenames' for this."
   :group 'helm-files
   :type 'boolean)
 
+(defcustom helm-find-file-ignore-thing-at-point nil
+  "Use only `default-directory' as default input in `helm-find-files'.
+I.e text under cursor in `current-buffer' is ignored.
+Note that when non-nil you will be unable to complete filename at point
+in `current-buffer'."
+  :group 'helm-files
+  :type 'boolean)
+
 (defcustom helm-substitute-in-filename-stay-on-remote nil
   "Don't switch back to local filesystem when expanding pattern with / or ~/."
   :group 'helm-files
@@ -1426,30 +1434,31 @@ The checksum is copied to kill-ring."
 If prefix numeric arg is given go ARG level up."
   (interactive "p")
   (with-helm-alive-p
-    (when (and (helm-file-completion-source-p)
-               (not (helm-ff-invalid-tramp-name-p)))
-      (with-helm-window
-        (when helm-follow-mode
-          (helm-follow-mode -1) (message nil)))
-      ;; When going up one level we want to be at the line
-      ;; corresponding to actual directory, so store this info
-      ;; in `helm-ff-last-expanded'.
-      (let ((cur-cand (helm-get-selection))
-            (new-pattern (helm-reduce-file-name helm-pattern arg)))
-        (cond ((file-directory-p helm-pattern)
-               (setq helm-ff-last-expanded helm-ff-default-directory))
-              ((file-exists-p helm-pattern)
-               (setq helm-ff-last-expanded helm-pattern))
-              ((and cur-cand (file-exists-p cur-cand))
-               (setq helm-ff-last-expanded cur-cand)))
-        (unless helm-find-files--level-tree
-          (setq helm-find-files--level-tree
-                (cons helm-ff-default-directory
-                      helm-find-files--level-tree)))
-        (setq helm-find-files--level-tree-iterator nil)
-        (push new-pattern helm-find-files--level-tree)
-        (helm-set-pattern new-pattern helm-suspend-update-flag)
-        (with-helm-after-update-hook (helm-ff-retrieve-last-expanded))))))
+    (let ((src (helm-get-current-source)))
+      (when (and (helm-file-completion-source-p src)
+                 (not (helm-ff-invalid-tramp-name-p)))
+        (with-helm-window
+          (when (helm-follow-mode-p)
+            (helm-follow-mode -1) (message nil)))
+        ;; When going up one level we want to be at the line
+        ;; corresponding to actual directory, so store this info
+        ;; in `helm-ff-last-expanded'.
+        (let ((cur-cand (helm-get-selection nil nil src))
+              (new-pattern (helm-reduce-file-name helm-pattern arg)))
+          (cond ((file-directory-p helm-pattern)
+                 (setq helm-ff-last-expanded helm-ff-default-directory))
+                ((file-exists-p helm-pattern)
+                 (setq helm-ff-last-expanded helm-pattern))
+                ((and cur-cand (file-exists-p cur-cand))
+                 (setq helm-ff-last-expanded cur-cand)))
+          (unless helm-find-files--level-tree
+            (setq helm-find-files--level-tree
+                  (cons helm-ff-default-directory
+                        helm-find-files--level-tree)))
+          (setq helm-find-files--level-tree-iterator nil)
+          (push new-pattern helm-find-files--level-tree)
+          (helm-set-pattern new-pattern helm-suspend-update-flag)
+          (with-helm-after-update-hook (helm-ff-retrieve-last-expanded)))))))
 (put 'helm-find-files-up-one-level 'helm-only t)
 
 (defun helm-find-files-down-last-level ()
@@ -1492,18 +1501,19 @@ or hitting C-j on \"..\"."
 
 (defun helm-ff-move-to-first-real-candidate ()
   "When candidate is an incomplete file name move to first real candidate."
-  (helm-aif (and (helm-file-completion-source-p)
-                 (not (helm-empty-source-p))
-                 (not (string-match
-                       "\\`[Dd]ired-"
-                       (assoc-default 'name (helm-get-current-source))))
-                 helm-ff--move-to-first-real-candidate
-                 (helm-get-selection))
-      (unless (or (not (stringp it))
-                  (and (string-match helm-tramp-file-name-regexp it)
-                       (not (file-remote-p it nil t)))
-                  (file-exists-p it))
-        (helm-next-line))))
+  (let ((src (helm-get-current-source)))
+    (helm-aif (and (helm-file-completion-source-p src)
+                   (not (helm-empty-source-p))
+                   (not (string-match
+                         "\\`[Dd]ired-"
+                         (assoc-default 'name (helm-get-current-source))))
+                   helm-ff--move-to-first-real-candidate
+                   (helm-get-selection nil nil src))
+        (unless (or (not (stringp it))
+                    (and (string-match helm-tramp-file-name-regexp it)
+                         (not (file-remote-p it nil t)))
+                    (file-exists-p it))
+          (helm-next-line)))))
 
 ;;; Auto-update - helm-find-files auto expansion of directories.
 ;;
@@ -1514,81 +1524,81 @@ When only one candidate is remaining and it is a directory,
 expand to this directory.
 This happen only when `helm-ff-auto-update-flag' is non--nil
 or when `helm-pattern' is equal to \"~/\"."
-  (when (and (helm-file-completion-source-p)
-             (not (helm-ff-invalid-tramp-name-p)))
-    (with-helm-window
-      (let* ((history-p   (string= (assoc-default
-                                    'name (helm-get-current-source))
-                                   "Read File Name History"))
-             (pat         (if (string-match helm-tramp-file-name-regexp
-                                            helm-pattern)
-                              (helm-create-tramp-name helm-pattern)
-                              helm-pattern))
-             (completed-p (string= (file-name-as-directory
-                                    (expand-file-name
-                                     (substitute-in-file-name pat)))
-                                   helm-ff-default-directory))
-             (candnum (helm-get-candidate-number))
-             (lt2-p   (and (<= candnum 2)
-                           (>= (string-width (helm-basename helm-pattern)) 2)))
-             (cur-cand (prog2
-                           (unless (or completed-p
-                                       (file-exists-p pat)
-                                       history-p (null lt2-p))
-                             ;; Only one non--existing candidate
-                             ;; and one directory candidate, move to it,
-                             ;; but not when renaming, copying etc...,
-                             ;; so for this use
-                             ;; `helm-ff-move-to-first-real-candidate'
-                             ;; instead of `helm-next-line' (Issue #910).
-                             (helm-ff-move-to-first-real-candidate))
-                           (helm-get-selection))))
-        (when (and (or (and helm-ff-auto-update-flag
-                            (null helm-ff--deleting-char-backward)
-                            (not (get-buffer-window helm-action-buffer 'visible))
-                            ;; Issue #295
-                            ;; File predicates are returning t
-                            ;; with paths like //home/foo.
-                            ;; So check it is not the case by regexp
-                            ;; to allow user to do C-a / to start e.g
-                            ;; entering a tramp method e.g /sudo::.
-                            (not (string-match "\\`//" helm-pattern))
-                            (not (eq last-command 'helm-yank-text-at-point)))
-                       ;; Fix issue #542.
-                       (string= helm-pattern "~/")
-                       ;; Only one remaining directory, expand it.
-                       (and (= candnum 1)
-                            helm-ff--auto-update-state
-                            (file-accessible-directory-p pat)
-                            (null helm-ff--deleting-char-backward)))
-                   (or
-                    ;; Only one candidate remaining
-                    ;; and at least 2 char in basename.
-                    lt2-p
-                    ;; Already completed.
-                    completed-p)
-                   (not history-p) ; Don't try to auto complete in history.
-                   (stringp cur-cand)
-                   (file-accessible-directory-p cur-cand))
-          (if (and (not (helm-dir-is-dot cur-cand)) ; [1]
-                   ;; Maybe we are here because completed-p is true
-                   ;; but check this again to be sure. (Windows fix)
-                   (<= candnum 2))      ; [2]
-              ;; If after going to next line the candidate
-              ;; is not one of "." or ".." [1]
-              ;; and only one candidate is remaining [2],
-              ;; assume candidate is a new directory to expand, and do it.
-              (helm-set-pattern (file-name-as-directory cur-cand))
-              ;; The candidate is one of "." or ".."
-              ;; that mean we have entered the last letter of the directory name
-              ;; in prompt, so expansion is already done, just add the "/" at end
-              ;; of name unless helm-pattern ends with "."
-              ;; (i.e we are writing something starting with ".")
-              (unless (string-match "\\`.*[.]\\{1\\}\\'" helm-pattern)
-                (helm-set-pattern
-                 ;; Need to expand-file-name to avoid e.g /ssh:host:./ in prompt.
-                 (expand-file-name (file-name-as-directory helm-pattern)))))
-          (helm-check-minibuffer-input))))))
+  (let ((src (helm-get-current-source)))
+    (when (and (helm-file-completion-source-p src)
+               (not (helm-ff-invalid-tramp-name-p)))
+      (with-helm-window
+        (let* ((history-p   (string= (assoc-default 'name src)
+                                     "Read File Name History"))
+               (pat         (if (string-match helm-tramp-file-name-regexp
+                                              helm-pattern)
+                                (helm-create-tramp-name helm-pattern)
+                                helm-pattern))
+               (completed-p (string= (file-name-as-directory
+                                      (expand-file-name
+                                       (substitute-in-file-name pat)))
+                                     helm-ff-default-directory))
+               (candnum (helm-get-candidate-number))
+               (lt2-p   (and (<= candnum 2)
+                             (>= (string-width (helm-basename helm-pattern)) 2)))
+               (cur-cand (prog2
+                             (unless (or completed-p
+                                         (file-exists-p pat)
+                                         history-p (null lt2-p))
+                               ;; Only one non--existing candidate
+                               ;; and one directory candidate, move to it,
+                               ;; but not when renaming, copying etc...,
+                               ;; so for this use
+                               ;; `helm-ff-move-to-first-real-candidate'
+                               ;; instead of `helm-next-line' (Issue #910).
+                               (helm-ff-move-to-first-real-candidate))
+                             (helm-get-selection nil nil src))))
+          (when (and (or (and helm-ff-auto-update-flag
+                              (null helm-ff--deleting-char-backward)
+                              (not (get-buffer-window helm-action-buffer 'visible))
+                              ;; Issue #295
+                              ;; File predicates are returning t
+                              ;; with paths like //home/foo.
+                              ;; So check it is not the case by regexp
+                              ;; to allow user to do C-a / to start e.g
+                              ;; entering a tramp method e.g /sudo::.
+                              (not (string-match "\\`//" helm-pattern))
+                              (not (eq last-command 'helm-yank-text-at-point)))
+                         ;; Fix issue #542.
+                         (string= helm-pattern "~/")
+                         ;; Only one remaining directory, expand it.
+                         (and (= candnum 1)
+                              helm-ff--auto-update-state
+                              (file-accessible-directory-p pat)
+                              (null helm-ff--deleting-char-backward)))
+                     (or
+                      ;; Only one candidate remaining
+                      ;; and at least 2 char in basename.
+                      lt2-p
+                      ;; Already completed.
+                      completed-p)
+                     (not history-p) ; Don't try to auto complete in history.
+                     (stringp cur-cand)
+                     (file-accessible-directory-p cur-cand))
+            (if (and (not (helm-dir-is-dot cur-cand)) ; [1]
+                     ;; Maybe we are here because completed-p is true
+                     ;; but check this again to be sure. (Windows fix)
+                     (<= candnum 2))    ; [2]
+                ;; If after going to next line the candidate
+                ;; is not one of "." or ".." [1]
+                ;; and only one candidate is remaining [2],
+                ;; assume candidate is a new directory to expand, and do it.
+                (helm-set-pattern (file-name-as-directory cur-cand))
+                ;; The candidate is one of "." or ".."
+                ;; that mean we have entered the last letter of the directory name
+                ;; in prompt, so expansion is already done, just add the "/" at end
+                ;; of name unless helm-pattern ends with "."
+                ;; (i.e we are writing something starting with ".")
+                (unless (string-match "\\`.*[.]\\{1\\}\\'" helm-pattern)
+                  (helm-set-pattern
+                   ;; Need to expand-file-name to avoid e.g /ssh:host:./ in prompt.
+                   (expand-file-name (file-name-as-directory helm-pattern)))))
+            (helm-check-minibuffer-input)))))))
 
 (defun helm-ff-auto-expand-to-home-or-root ()
   "Allow expanding to home/user directory or root or text yanked after pattern."
@@ -1690,8 +1700,9 @@ purpose."
 
 (defun helm-ff-before-action-hook-fn ()
   "Exit helm when user try to execute action on an invalid tramp fname."
-  (let ((cand (helm-get-selection)))
-    (when (and (helm-file-completion-source-p)
+  (let* ((src (helm-get-current-source))
+         (cand (helm-get-selection nil nil src)))
+    (when (and (helm-file-completion-source-p src)
                (stringp cand)
                (helm-ff-invalid-tramp-name-p cand) ; Check candidate.
                (helm-ff-invalid-tramp-name-p)) ; check helm-pattern.
@@ -1952,8 +1963,9 @@ Note that only existing directories are saved here."
 
 (defun helm-files-save-file-name-history (&optional force)
   "Save selected file to `file-name-history'."
-  (let ((src-name (assoc-default 'name (helm-get-current-source))))
-    (when (or force (helm-file-completion-source-p)
+  (let* ((src (helm-get-current-source))
+         (src-name (assoc-default 'name src)))
+    (when (or force (helm-file-completion-source-p src)
               (member src-name helm-files-save-history-extra-sources))
       (let ((mkd (helm-marked-candidates))
             (history-delete-duplicates t))
@@ -2061,7 +2073,8 @@ Note that only existing directories are saved here."
                              (helm-delete-file
                               c helm-ff-signal-error-on-dot-files 'synchro)
                              (helm-delete-current-selection)
-                             (message nil)))))
+                             (message nil)
+                             (helm--remove-marked-and-update-mode-line c)))))
       (with-helm-buffer
         (setq helm-marked-candidates nil
               helm-visible-mark-overlays nil))
@@ -2354,9 +2367,7 @@ If CANDIDATE is alone, open file CANDIDATE filename.
 That's mean:
 First hit on C-j expand CANDIDATE second hit open file.
 If a prefix arg is given or `helm-follow-mode' is on open file."
-  (let* ((follow        (or (buffer-local-value
-                             'helm-follow-mode
-                             (get-buffer-create helm-buffer))
+  (let* ((follow        (or (helm-follow-mode-p)
                             helm--temp-follow-flag))
          (new-pattern   (helm-get-selection))
          (num-lines-buf (with-current-buffer helm-buffer
@@ -2547,7 +2558,8 @@ Use it for non--interactive calls of `helm-find-files'."
                (not (minibuffer-window-active-p (minibuffer-window)))))
          (tap (thing-at-point 'filename))
          (def (and tap (or (file-remote-p tap)
-                           (expand-file-name tap)))))
+                           (expand-file-name tap))))
+         helm-follow-mode-persistent)
     (unless helm-source-find-files
       (setq helm-source-find-files (helm-make-source
                                     "Find Files" 'helm-source-ffiles)))
@@ -2566,11 +2578,11 @@ Use it for non--interactive calls of `helm-find-files'."
                :default def
                :prompt "Find files or url: "
                :buffer "*helm find files*")
-      (helm-attrset 'resume `(lambda ()
-                               (setq helm-ff-default-directory
-                                     ,helm-ff-default-directory
-                                     helm-ff-last-expanded
-                                     ,helm-ff-last-expanded))
+      (helm-attrset 'resume (lambda ()
+                              (setq helm-ff-default-directory
+                                    helm-ff-default-directory
+                                    helm-ff-last-expanded
+                                    helm-ff-last-expanded))
                     helm-source-find-files)
       (setq helm-ff-default-directory nil))))
 
@@ -3216,6 +3228,19 @@ Set `recentf-max-saved-items' to a bigger value if default is too small.")
         :ff-transformer-show-only-basename nil
         :buffer "*helm browse project*"))
 
+(defvar helm-browse-project-history nil)
+
+;;;###autoload
+(defun helm-projects-history ()
+  (interactive)
+  (helm :sources
+        (helm-build-sync-source "Project history"
+          :candidates helm-browse-project-history
+          :action (lambda (candidate)
+                    (with-helm-default-directory candidate
+                        (helm-browse-project nil))))
+        :buffer "*helm browse project history*"))
+
 ;;;###autoload
 (defun helm-browse-project (arg)
   "Preconfigured helm to browse projects.
@@ -3241,24 +3266,31 @@ and
                         helm-type-buffer-actions)
                  helm-type-buffer-actions))
         (helm-buffers-in-project-p t))
-    (cond ((and (require 'helm-ls-git nil t)
-                (fboundp 'helm-ls-git-root-dir)
-                (helm-ls-git-root-dir))
-           (helm-ls-git-ls))
-          ((and (require 'helm-ls-hg nil t)
-                (fboundp 'helm-hg-root)
-                (helm-hg-root))
-           (helm-hg-find-files-in-project))
-          ((and (require 'helm-ls-svn nil t)
-                (fboundp 'helm-ls-svn-root-dir)
-                (helm-ls-svn-root-dir))
-           (helm-ls-svn-ls))
-          (t (let ((cur-dir (helm-browse-project-get--root-dir
-                             (helm-current-directory))))
-               (if (or arg (gethash cur-dir helm--browse-project-cache))
-                   (helm-browse-project-find-files cur-dir (equal arg '(16)))
-                   (helm :sources (helm-browse-project-build-buffers-source cur-dir)
-                         :buffer "*helm browse project*")))))))
+    (cl-flet ((push-to-hist (root)
+                (setq helm-browse-project-history
+                      (cons root (delete root helm-browse-project-history)))))
+      (helm-acond ((and (require 'helm-ls-git nil t)
+                        (fboundp 'helm-ls-git-root-dir)
+                        (helm-ls-git-root-dir))
+                   (push-to-hist it)
+                   (helm-ls-git-ls))
+                  ((and (require 'helm-ls-hg nil t)
+                        (fboundp 'helm-hg-root)
+                        (helm-hg-root))
+                   (push-to-hist it)
+                   (helm-hg-find-files-in-project))
+                  ((and (require 'helm-ls-svn nil t)
+                        (fboundp 'helm-ls-svn-root-dir)
+                        (helm-ls-svn-root-dir))
+                   (push-to-hist it)
+                   (helm-ls-svn-ls))
+                  ((helm-browse-project-get--root-dir (helm-current-directory))
+                   (if (or arg (gethash it helm--browse-project-cache))
+                       (progn
+                         (push-to-hist it)
+                         (helm-browse-project-find-files it (equal arg '(16))))
+                       (helm :sources (helm-browse-project-build-buffers-source it)
+                             :buffer "*helm browse project*")))))))
 
 (defun helm-browse-project-get--root-dir (directory)
   (cl-loop with dname = (file-name-as-directory directory)
@@ -3576,22 +3608,25 @@ Don't call it from programs, use `helm-find-files-1' instead.
 This is the starting point for nearly all actions you can do on files."
   (interactive "P")
   (let* ((hist            (and arg helm-ff-history (helm-find-files-history)))
-         (default-input   (or hist (helm-find-files-initial-input)))
-         (input           (cond ((and (eq major-mode 'org-agenda-mode)
+         (smart-input     (or hist (helm-find-files-initial-input)))
+         (default-input   (expand-file-name (helm-current-directory)))
+         (input           (cond (helm-find-file-ignore-thing-at-point
+                                 default-input)
+                                ((and (eq major-mode 'org-agenda-mode)
                                       org-directory
-                                      (not default-input))
+                                      (not smart-input))
                                  (expand-file-name org-directory))
-                                ((and (eq major-mode 'dired-mode) default-input)
-                                 (file-name-directory default-input))
-                                ((and (not (string= default-input ""))
-                                      default-input))
-                                (t (expand-file-name (helm-current-directory)))))
+                                ((and (eq major-mode 'dired-mode) smart-input)
+                                 (file-name-directory smart-input))
+                                ((and (not (string= smart-input ""))
+                                      smart-input))
+                                (t default-input)))
          (input-as-presel (null (nth 0 (file-attributes input))))
          (presel          (helm-aif (or hist
                                         (and input-as-presel input)
                                         (buffer-file-name (current-buffer))
                                         (and (eq major-mode 'dired-mode)
-                                             default-input))
+                                             smart-input))
                               (if helm-ff-transformer-show-only-basename
                                   (helm-basename it) it))))
     (set-text-properties 0 (length input) nil input)
