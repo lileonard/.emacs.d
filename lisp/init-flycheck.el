@@ -6,7 +6,7 @@
   (require 'flycheck-tip)
   (flycheck-tip-use-timer 'verbose)
   ;; only auto-check when save
-  (setq flycheck-check-syntax-automatically '(save))
+  (setq flycheck-check-syntax-automatically '(mode-enabled save))
   ;; when mouse on the error show error information
   (setq flycheck-pos-tip t))
 
