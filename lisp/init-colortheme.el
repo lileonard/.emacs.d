@@ -43,12 +43,12 @@
         :foreground "#556B2F")
        (set-face-attribute
         'font-lock-variable-name-face nil
-        :foreground "#8600FF")
+        :foreground "#993399")
        (set-face-attribute
         'font-lock-keyword-face nil
         :bold t
         :foreground "DeepSkyBlue1")
-       (set-foreground-color "#363636")
+       (set-foreground-color "#232323")
        
        )
       ((eq (frame-parameter nil 'background-mode) 'dark)
