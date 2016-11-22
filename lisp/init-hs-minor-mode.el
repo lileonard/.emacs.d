@@ -1,4 +1,3 @@
-
 (add-hook 'c-mode-common-hook   'hs-minor-mode)
 (add-hook 'emacs-lisp-mode-hook 'hs-minor-mode)
 (add-hook 'java-mode-hook       'hs-minor-mode)
@@ -86,9 +85,9 @@
         (define-key map (kbd "M-1") 'hs-show-all)
         (define-key map (kbd "s-1") 'hs-hide-level)
         (define-key map (kbd "C-1") 'hs-toggle-hiding)
-        ;; (define-key map (kbd "C-c @ h") 'hs-hide-block)
-        ;; (define-key map (kbd "C-c @ H") 'hs-show-block)
-        ;; (define-key map (kbd "C-c @ s") 'hs-hide-all)
-        ;; (define-key map [(shift mouse-2)] 'hs-mouse-toggle-hiding)
+        (define-key map (kbd "C-c @ h") 'hs-hide-block)
+        (define-key map (kbd "C-c @ H") 'hs-show-block)
+        (define-key map (kbd "C-c @ s") 'hs-hide-all)
+        (define-key map [(shift mouse-2)] 'hs-mouse-toggle-hiding)
         map))
 (provide 'init-hs-minor-mode)

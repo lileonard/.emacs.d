@@ -105,12 +105,12 @@
 ;; and do NOT forget CUDA & MPI &FFTW
 (defconst my-sys-c-include
   (list
-   "/usr/local/lib/gcc/x86_64-unknown-linux-gnu/5.3.0/../../../../include/c++/5.3.0"
-   "/usr/local/lib/gcc/x86_64-unknown-linux-gnu/5.3.0/../../../../include/c++/5.3.0/x86_64-unknown-linux-gnu"
-   "/usr/local/lib/gcc/x86_64-unknown-linux-gnu/5.3.0/../../../../include/c++/5.3.0/backward"
-   "/usr/local/lib/gcc/x86_64-unknown-linux-gnu/5.3.0/include"
+   "/usr/local/lib/gcc/x86_64-pc-linux-gnu/6.1.0/../../../../include/c++/6.1.0"
+   "/usr/local/lib/gcc/x86_64-pc-linux-gnu/6.1.0/../../../../include/c++/6.1.0/x86_64-pc-linux-gnu"
+   "/usr/local/lib/gcc/x86_64-pc-linux-gnu/6.1.0/../../../../include/c++/6.1.0/backward"
+   "/usr/local/lib/gcc/x86_64-pc-linux-gnu/6.1.0/include"
    "/usr/local/include"
-   "/usr/local/lib/gcc/x86_64-unknown-linux-gnu/5.3.0/include-fixed"
+   "/usr/local/lib/gcc/x86_64-pc-linux-gnu/6.1.0/include-fixed"
    "/usr/include"
    "/home/lyh/Soft/CUDA/include"
    "/home/lyh/Soft/CUDA/include/CL"
