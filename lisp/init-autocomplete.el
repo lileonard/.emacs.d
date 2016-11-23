@@ -211,7 +211,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; major mode for auto-complete
 
-(dolist (mode '(matlab-mode gud-mode
+(dolist (mode '(matlab-mode
                 cc-mode c++-mode cmake-mode
                 org-mode
                 latex-mode plain-tex-mode

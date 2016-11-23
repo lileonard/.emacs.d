@@ -76,12 +76,12 @@
  | C-x k    | 关闭当前Buffer                                                       |
 
 * C语言编辑操作
- | F1                         | 代码折叠                                       |
+ | C-1                        | 代码折叠                                       |
  | F4                         | 跳转到光标所在的函数定义                       |
  | F5                         | Speed Bar(一个CEDET的很有用的小插件)           |
  | Shift-F4                   | 跳转到F4前                                     |
  | F6                         | 跳转到源程序对应的.h                           |
- | C-f6                       | auto-insert                                    |
+ | C-f6                       | insert include gurad                |
  | F7-F8                      | tag相关                                        |
  | F9                         | 编译（cmake based）                            |
  | S-f9                       | 清除编译（先make clean 后 make...cmake-based） |

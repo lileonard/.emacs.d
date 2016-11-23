@@ -335,6 +335,6 @@ original buffer content
   (goto-char (point-max))
   (insert guard-end)
   (goto-char (+ position (length guard-begin))))
-(global-set-key (kbd "<C-f6>")  'insert-include-guard)
+(global-set-key (kbd "<C-f6>")  'my-insert-include-guard)
 
 (provide 'my-elisp-functions)

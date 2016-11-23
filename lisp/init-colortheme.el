@@ -22,7 +22,7 @@
            (progn (moe-dark)))))
 (defun switch-at-fixed-time ()
   (let ((now (string-to-number (format-time-string "%H"))))
-    (if (and (>= now 10) (<= now 18))
+    (if (and (>= now 9) (<= now 18))
         (moe-load-theme 'light)
       (moe-load-theme 'dark))
     nil))
@@ -43,11 +43,15 @@
         :foreground "#556B2F")
        (set-face-attribute
         'font-lock-variable-name-face nil
-        :foreground "#993399")
+        :foreground "#9933AA")
+       (set-face-attribute
+        'font-lock-function-name-face nil
+        :bold t
+        :foreground "#D2691E")
        (set-face-attribute
         'font-lock-keyword-face nil
         :bold t
-        :foreground "DeepSkyBlue1")
+        :foreground "#008B8B")
        (set-foreground-color "#232323")
        
        )
