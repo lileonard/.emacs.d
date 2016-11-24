@@ -97,7 +97,7 @@ directories of this list with `helm-projects-find-files'."
   :group 'helm-locate
   :type '(repeat string))
 
-(defcustom helm-locate-recursive-dirs-command "locate -i -e -A --regex ^%s %s.*$"
+(defcustom helm-locate-recursive-dirs-command "locate -i -e -A --regex '^%s' '%s.*$'"
   "Command used in recursive directories completion in `helm-find-files'.
 For Windows and `es' use something like \"es -r ^%s.*%s.*$\"."
   :type 'string
@@ -128,7 +128,6 @@ For Windows and `es' use something like \"es -r ^%s.*%s.*$\"."
     (define-key map (kbd "C-c C-x") 'helm-ff-run-open-file-externally)
     (define-key map (kbd "C-c X")   'helm-ff-run-open-file-with-default-tool)
     (define-key map (kbd "M-.")     'helm-ff-run-etags)
-    (define-key map (kbd "C-w")     'helm-yank-text-at-point)
     (define-key map (kbd "C-c @")   'helm-ff-run-insert-org-link)
     map)
   "Generic Keymap for files.")

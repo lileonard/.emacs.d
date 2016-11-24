@@ -41,7 +41,7 @@
 ;;;###autoload
 (defun helm-define-multi-key (keymap key functions &optional delay)
   "In KEYMAP, define key sequence KEY for function list FUNCTIONS.
-Each function runs sequentially for each KEY press. 
+Each function runs sequentially for each KEY press.
 If DELAY is specified, switch back to initial function of FUNCTIONS list
 after DELAY seconds.
 The functions in FUNCTIONS list take no args.
@@ -55,8 +55,8 @@ e.g
 
 \(helm-define-multi-key global-map \"<f5> q\" '(foo bar baz) 2)
 
-Each time \"<f5> q\" is pressed, the next function is executed. Waiting 
-more than 2 seconds between key presses switches back to executing the first 
+Each time \"<f5> q\" is pressed, the next function is executed. Waiting
+more than 2 seconds between key presses switches back to executing the first
 function on the next hit."
   (define-key keymap key (helm-make-multi-command functions delay)))
 
@@ -126,14 +126,14 @@ In this example, `C-x v n' will run `git-gutter:next-hunk'
 subsequent \"n\"'s run this command again
 and subsequent \"p\"'s run `git-gutter:previous-hunk'.
 
-Arg MENU is a string displayed in minibuffer that 
+Arg MENU is a string displayed in minibuffer that
 describes SUBKEY and OTHER-SUBKEYS.
 Arg EXIT-FN specifies a function to run on exit.
 
 For any other keys pressed, run their assigned command as defined
 in MAP and then exit the loop running EXIT-FN, if specified.
 
-NOTE: SUBKEY and OTHER-SUBKEYS bindings support char syntax only 
+NOTE: SUBKEY and OTHER-SUBKEYS bindings support char syntax only
 \(e.g ?n), so don't use strings or vectors to define them."
   (declare (indent 1))
   (define-key map key
@@ -208,10 +208,8 @@ NOTE: SUBKEY and OTHER-SUBKEYS bindings support char syntax only
     (define-key map (kbd "M-m")        'helm-toggle-all-marks)
     (define-key map (kbd "M-a")        'helm-mark-all)
     (define-key map (kbd "M-U")        'helm-unmark-all)
-    (define-key map (kbd "C-w")        'helm-yank-text-at-point)
     (define-key map (kbd "C-M-a")      'helm-show-all-in-this-source-only)
     (define-key map (kbd "C-M-e")      'helm-display-all-sources)
-    (define-key map (kbd "C-r")        'undefined)
     (define-key map (kbd "C-s")        'undefined)
     (define-key map (kbd "M-s")        'undefined)
     (define-key map (kbd "C-}")        'helm-narrow-window)
@@ -239,6 +237,9 @@ NOTE: SUBKEY and OTHER-SUBKEYS bindings support char syntax only
     (define-key map [f1] nil)
     (define-key map (kbd "C-h C-h")    'undefined)
     (define-key map (kbd "C-h h")      'undefined)
+    (helm-define-key-with-subkeys map
+      (kbd "C-w") ?\C-w 'helm-yank-text-at-point
+      '((?\C-_ . helm-undo-yank-text-at-point)))
     ;; Use `describe-mode' key in `global-map'.
     (cl-dolist (k (where-is-internal 'describe-mode global-map))
       (define-key map k 'helm-help))
@@ -350,7 +351,7 @@ By default, it is `helm-default-display-buffer', which affects
 (defcustom helm-case-fold-search 'smart
   "Adds 'smart' option to `case-fold-search'.
 Smart option ignores case for searches as long as there are no
-upper case characters in the pattern. 
+upper case characters in the pattern.
 
 Use nil or t to turn off smart behavior and use
 `case-fold-search' behavior.
@@ -510,7 +511,7 @@ source name in this variable."
   :type 'boolean)
 
 (defcustom helm-move-to-line-cycle-in-source nil
-  "Cycle to the beginning or end of the list after reaching the bottom or top. 
+  "Cycle to the beginning or end of the list after reaching the bottom or top.
 This applies when using `helm-next/previous-line'."
   :group 'helm
   :type 'boolean)
@@ -527,7 +528,7 @@ This applies when using `helm-next/previous-line'."
 
 (defcustom helm-fuzzy-sort-fn 'helm-fuzzy-matching-default-sort-fn
   "The sort transformer function used in fuzzy matching.
-When nil, sorting is not done." 
+When nil, sorting is not done."
   :group 'helm
   :type 'function)
 
@@ -555,7 +556,7 @@ See `fit-window-to-buffer' for details."
 (defcustom helm-input-method-verbose-flag nil
   "The default value for `input-method-verbose-flag' used in helm minibuffer.
 It is nil by default, which does not turn off input method. Helm
-updates and exits without interruption -- necessary for complex methods. 
+updates and exits without interruption -- necessary for complex methods.
 
 If set to any other value as per `input-method-verbose-flag',
 then use `C-\\' to disable the `current-input-method' to exit or update helm"
@@ -605,6 +606,21 @@ See `helm-log-save-maybe' for more info."
   :type 'string
   :group 'helm)
 
+(defcustom helm-show-action-window-other-window nil
+  "Show action buffer beside `helm-buffer' when non-nil.
+
+If nil don't split and replace helm-buffer by the action buffer
+in same window.
+If left display the action buffer at the left of helm-buffer.
+If right or any other value, split at right.
+
+Note that this may not fit well with some helm window configurations,
+so it have only effect when `helm-always-two-windows' is non-nil."
+  :group 'helm
+  :type '(choice
+          (const :tag "Split at left" left)
+          (const :tag "Don't split" nil)
+          (other :tag "Split at right" right)))
 
 ;;; Faces
 ;;
@@ -647,7 +663,13 @@ See `helm-log-save-maybe' for more info."
 (defface helm-candidate-number
   '((((background dark)) :background "Yellow" :foreground "black")
     (((background light)) :background "#faffb5" :foreground "black"))
-  "Face for candidate number in mode-line." :group 'helm-faces)
+  "Face for candidate number in mode-line."
+  :group 'helm-faces)
+
+(defface helm-candidate-number-suspended
+  '((t (:inherit helm-candidate-number :inverse-video t)))
+  "Face for candidate number in mode-line when helm is suspended."
+  :group 'helm-faces)
 
 (defface helm-selection
   '((((background dark)) :background "ForestGreen"
@@ -974,7 +996,7 @@ It also accepts function or variable symbol.")
   "Flag to inform if helm did exit or quit.
 0 means helm did exit when executing an action.
 1 means helm did quit with \\[keyboard-quit]
-Knowing this exit-status could help restore a window config when helm aborts 
+Knowing this exit-status could help restore a window config when helm aborts
 in some special circumstances.
 See `helm-exit-minibuffer' and `helm-keyboard-quit'.")
 (defvar helm-minibuffer-confirm-state nil)
@@ -1014,7 +1036,7 @@ precedence on :default.")
   '("Find Files" "Read File Name" "Read File Name History")
   "Sources that use the *find-files mechanism can be added here.
 Sources generated by `helm-mode' don't need to be added here
-because they are automatically added. 
+because they are automatically added.
 
 You should not modify this yourself unless you know what you are doing.")
 ;; Same as `ffap-url-regexp' but keep it here to ensure `ffap-url-regexp' is not nil.
@@ -1023,6 +1045,7 @@ You should not modify this yourself unless you know what you are doing.")
   "Flag to prevent helm popping up errors in candidates functions.
 Should be set in candidates functions if needed, will be restored
 at end of session.")
+(defvar helm--action-prompt "Select action: ")
 
 ;; Utility: logging
 (defun helm-log (format-string &rest args)
@@ -1529,7 +1552,7 @@ IOW Don't use VALUE of previous VAR to set the VALUE of next VAR.
                     helm--local-variables))))
 
 
-;; Core: API helper
+;; API helper
 (cl-defun helm-empty-buffer-p (&optional (buffer helm-buffer))
   "Check if BUFFER have candidates.
 Default value for BUFFER is `helm-buffer'."
@@ -1551,7 +1574,7 @@ was deleted and the candidates list not updated."
                 (bobp)))))))
 
 
-;; Core: tools
+;; Tools
 ;;
 (defun helm-funcall-with-source (source functions &rest args)
   "Call from SOURCE FUNCTIONS list or single function FUNCTIONS with ARGS.
@@ -1637,7 +1660,7 @@ only."
            ;; See comment about this in `with-local-quit'.
            (eval '(ignore nil)))))
 
-;; Core: entry point
+;; Entry point
 ;; `:allow-nest' is not in this list because it is treated before.
 (defconst helm-argument-keys
   '(:sources :input :prompt :resume
@@ -1807,7 +1830,7 @@ example, :candidate-number-limit is bound to
            unless (memq key helm-argument-keys)
            collect (cons sym value)))
 
-;;; Core: entry point helper
+;;; Entry point helper
 (defun helm-internal (&optional
                         any-sources any-input
                         any-prompt any-resume
@@ -1816,9 +1839,14 @@ example, :candidate-number-limit is bound to
   "The internal helm function called by `helm'.
 For ANY-SOURCES ANY-INPUT ANY-PROMPT ANY-RESUME ANY-PRESELECT ANY-BUFFER and
 ANY-KEYMAP ANY-DEFAULT ANY-HISTORY See `helm'."
-  ;; Activate the advice for `tramp-read-passwd'.
-  (advice-add 'tramp-read-passwd :around #'helm--advice-tramp-read-passwd)
-  (advice-add 'ange-ftp-get-passwd :around #'helm--advice-ange-ftp-get-passwd)
+  ;; Activate the advice for `tramp-read-passwd' and cua.
+  ;; Advices will be available only in >=emacs-24.4, but
+  ;; allow compiling without errors on lower emacs.
+  (when (fboundp 'advice-add)
+    (advice-add 'tramp-read-passwd :around #'helm--advice-tramp-read-passwd)
+    (advice-add 'ange-ftp-get-passwd :around #'helm--advice-ange-ftp-get-passwd)
+    (advice-add 'cua-delete-region :around #'cua-delete-region--advice)
+    (advice-add 'copy-region-as-kill :around #'copy-region-as-kill--advice))
   (helm-log (concat "[Start session] " (make-string 41 ?+)))
   (helm-log "any-prompt = %S" any-prompt)
   (helm-log "any-preselect = %S" any-preselect)
@@ -1831,8 +1859,8 @@ ANY-KEYMAP ANY-DEFAULT ANY-HISTORY See `helm'."
         ;; Prevent mouse jumping to the upper-right
         ;; hand corner of the frame (#1538).
         mouse-autoselect-window
-        mode-line-in-non-selected-windows
         focus-follows-mouse
+        mode-line-in-non-selected-windows
         (input-method-verbose-flag helm-input-method-verbose-flag)
         (old--cua cua-mode)
         (helm--maybe-use-default-as-input
@@ -1875,8 +1903,11 @@ ANY-KEYMAP ANY-DEFAULT ANY-HISTORY See `helm'."
             (helm-restore-position-on-quit)
             (helm-log (concat "[End session (quit)] " (make-string 34 ?-)))
             nil))
-      (advice-remove 'tramp-read-passwd #'helm--advice-tramp-read-passwd)
-      (advice-remove 'ange-ftp-get-passwd #'helm--advice-ange-ftp-get-passwd)
+      (when (fboundp 'advice-remove)
+        (advice-remove 'tramp-read-passwd #'helm--advice-tramp-read-passwd)
+        (advice-remove 'ange-ftp-get-passwd #'helm--advice-ange-ftp-get-passwd)
+        (advice-remove 'cua-delete-region #'cua-delete-region--advice)
+        (advice-remove 'copy-region-as-kill #'copy-region-as-kill--advice))
       (helm-log "helm-alive-p = %S" (setq helm-alive-p nil))
       (helm--remap-mouse-mode -1)       ; Reenable mouse bindings.
       (setq helm-alive-p nil)
@@ -2024,7 +2055,7 @@ Arguments SAME-AS-HELM are the same as `helm'"
           (helm-display-mode-line (helm-get-current-source)))))))
 
 
-;;; Core: Accessors
+;;; Accessors
 ;;
 (defun helm-current-position (save-or-restore)
   "Save or restore current position in `helm-current-buffer'.
@@ -2165,7 +2196,7 @@ value of `helm-full-frame' or `helm-split-window-default-side'."
     (helm-log-run-hook 'helm-window-configuration-hook)))
 
 
-;;; Core: initialize
+;;; Initialize
 ;;
 (defun helm-initialize (any-resume any-input any-default any-sources)
   "Start initialization of `helm' session.
@@ -2273,6 +2304,7 @@ See :after-init-hook and :before-init-hook in `helm-source'."
         helm-saved-action nil
         helm-saved-selection nil
         helm-suspend-update-flag nil
+        ;; Ensure this is called BEFORE selecting helm-window.
         helm-current-buffer (helm--current-buffer)
         helm-buffer-file-name buffer-file-name
         helm-issued-errors nil
@@ -2375,7 +2407,7 @@ For ANY-PRESELECT ANY-RESUME ANY-KEYMAP ANY-DEFAULT ANY-HISTORY, See `helm'."
            (helm-get-current-source))
       (helm-mark-current-line t)
     (helm-update any-preselect))
-  (with-current-buffer (helm-buffer-get)
+  (with-helm-buffer
     (let* ((src        (helm-get-current-source))
            (src-keymap (assoc-default 'keymap src))
            (hist       (or (and any-history (symbolp any-history) any-history)
@@ -2482,7 +2514,9 @@ This can be useful for example for quietly writing a complex regexp."
       (setq helm-pattern ""))
     (message (if helm-suspend-update-flag
                  "Helm update suspended!"
-               "Helm update re-enabled!"))))
+               "Helm update re-enabled!"))
+    (helm-aif (helm-get-current-source)
+        (with-helm-buffer (helm-display-mode-line it t)))))
 (put 'helm-toggle-suspend-update 'helm-only t)
 
 (defun helm--advice-tramp-read-passwd (old--fn &rest args)
@@ -2506,6 +2540,16 @@ This can be useful for example for quietly writing a complex regexp."
        (apply old--fn args)
     (setq helm--reading-passwd-or-string nil)
     (setq helm-suspend-update-flag nil)))
+
+;; CUA workaround
+(defun cua-delete-region--advice (old--fn &rest args)
+  (ignore-errors
+    (apply old--fn args)))
+
+(defun copy-region-as-kill--advice (old--fn &rest args)
+  (if cua-mode
+      (ignore-errors (apply old--fn args))
+      (apply old--fn args)))
 
 (defun helm--maybe-update-keymap (&optional map)
   "Handle different keymaps in multiples sources.
@@ -2551,7 +2595,7 @@ WARNING: Do not use this mode yourself, it is internal to helm."
     (setq helm--remap-mouse-mode-map nil)))
 (put 'helm--remap-mouse-mode 'helm-only t)
 
-;; Core: clean up
+;; Clean up
 
 (defun helm-cleanup ()
   "Clean up the mess when helm exit or quit."
@@ -2597,7 +2641,7 @@ WARNING: Do not use this mode yourself, it is internal to helm."
         (delete-minibuffer-contents)))))
 
 
-;;; Core: input handling
+;;; Input handling
 ;;
 ;;
 (defun helm-check-minibuffer-input ()
@@ -2626,7 +2670,7 @@ WARNING: Do not use this mode yourself, it is internal to helm."
 (add-hook 'helm-after-update-hook #'helm--reset-update-flag)
 
 
-;; Core: all candidates
+;; All candidates
 
 (defun helm-get-candidates (source)
   "Retrieve and return the list of candidates from SOURCE."
@@ -2707,7 +2751,7 @@ Cache the candidates if there is no cached value yet."
         candidates))))
 
 
-;;; Core: candidate transformers
+;;; Candidate transformers
 
 (defun helm-process-candidate-transformer (candidates source)
   "Execute `candidate-transformer' function(s) on CANDIDATES in SOURCE."
@@ -2722,14 +2766,17 @@ Cache the candidates if there is no cached value yet."
     candidates))
 
 (defmacro helm--maybe-process-filter-one-by-one-candidate (candidate source)
-  "Execute `filter-one-by-one' function(s) on CANDIDATE in SOURCE."
+  "Execute `filter-one-by-one' function(s) on real value of CANDIDATE in SOURCE."
   `(helm-aif (assoc-default 'filter-one-by-one ,source)
-       (if (and (listp it)
-                (not (functionp it))) ;; Don't treat lambda's as list.
-           (cl-loop for f in it
-                 do (setq ,candidate (funcall f ,candidate))
-                 finally return ,candidate)
-         (setq ,candidate (funcall it ,candidate)))
+       (let ((real (if (consp ,candidate)
+                       (cdr ,candidate)
+                       ,candidate)))
+         (if (and (listp it)
+                  (not (functionp it))) ;; Don't treat lambda's as list.
+             (cl-loop for f in it
+                      do (setq ,candidate (funcall f real))
+                      finally return ,candidate)
+             (setq ,candidate (funcall it real))))
      ,candidate))
 
 (defun helm--initialize-one-by-one-candidates (candidates source)
@@ -2779,7 +2826,7 @@ CANDIDATES."
    source))
 
 
-;; Core: narrowing candidates
+;; Narrowing candidates
 (defun helm-candidate-number-limit (source)
   "Apply candidate-number-limit attribute value.
 This overrides `helm-candidate-number-limit' variable.
@@ -2873,7 +2920,7 @@ This function is used with sources built with `helm-source-sync'."
         ;; We could use here directly `re-search-forward'
         ;; on the regexp produced by `helm--mapconcat-pattern',
         ;; but it is very slow because emacs have to do an incredible
-        ;; amount of loops to match e.g "[^f]*o[^o]..." in the whole buffer,
+        ;; amount of loops to match e.g "[^f]*f[^o]*o..." in the whole buffer,
         ;; more the regexp is long more the amount of loops grow.
         ;; (Probably leading to a max-lisp-eval-depth error if both
         ;; regexp and buffer are too big)
@@ -3027,6 +3074,10 @@ See `helm-fuzzy-default-highlight-match'."
   (cl-loop for c in candidates
            collect (funcall helm-fuzzy-matching-highlight-fn c)))
 
+
+;;; Matching candidates
+;;
+;;
 (defun helm-match-functions (source)
   (let ((matchfns (or (assoc-default 'match source)
                       (assoc-default 'match-strict source)
@@ -3044,29 +3095,6 @@ See `helm-fuzzy-default-highlight-match'."
 It is used for narrowing list of candidates to the
 `helm-candidate-number-limit'."
   (if (> (length seq) n) (cl-subseq seq 0 n) seq))
-
-(cl-defun helm-set-case-fold-search (&optional (pattern helm-pattern))
-  "Used to set the value of `case-fold-search' in helm.
-Return t or nil depending on the value of `helm-case-fold-search'
-and `helm-pattern'."
-  (let ((helm-case-fold-search
-         (helm-aif (assq 'case-fold-search (helm-get-current-source))
-             (cdr it)
-           helm-case-fold-search))
-        ;; Only parse basename for filenames
-        ;; to avoid setting case sensitivity
-        ;; when expanded directories contains upcase
-        ;; characters.
-        (bn-or-pattern (if (string-match "[~/]*" pattern)
-                           (helm-basename pattern)
-                         pattern)))
-    (helm-set-case-fold-search-1 bn-or-pattern)))
-
-(defun helm-set-case-fold-search-1 (pattern)
-  (cl-case helm-case-fold-search
-    (smart (let ((case-fold-search nil))
-             (if (string-match "[[:upper:]]" pattern) nil t)))
-    (t helm-case-fold-search)))
 
 (defun helm-match-from-candidates (cands matchfns match-part-fn limit source)
   (condition-case-unless-debug err
@@ -3181,7 +3209,34 @@ and `helm-pattern'."
     (unless (eq matches t) matches)))
 
 
-;;; Core: helm-update
+;;; Case fold search
+;;
+;;
+(cl-defun helm-set-case-fold-search (&optional (pattern helm-pattern))
+  "Used to set the value of `case-fold-search' in helm.
+Return t or nil depending on the value of `helm-case-fold-search'
+and `helm-pattern'."
+  (let ((helm-case-fold-search
+         (helm-aif (assq 'case-fold-search (helm-get-current-source))
+             (cdr it)
+           helm-case-fold-search))
+        ;; Only parse basename for filenames
+        ;; to avoid setting case sensitivity
+        ;; when expanded directories contains upcase
+        ;; characters.
+        (bn-or-pattern (if (string-match "[~/]*" pattern)
+                           (helm-basename pattern)
+                         pattern)))
+    (helm-set-case-fold-search-1 bn-or-pattern)))
+
+(defun helm-set-case-fold-search-1 (pattern)
+  (cl-case helm-case-fold-search
+    (smart (let ((case-fold-search nil))
+             (if (string-match "[[:upper:]]" pattern) nil t)))
+    (t helm-case-fold-search)))
+
+
+;;; Helm update
 ;;
 (defun helm-update (&optional preselect source)
   "Update candidates list in `helm-buffer' based on `helm-pattern'.
@@ -3194,7 +3249,9 @@ to a particular place after finishing update."
   ;; So go back to one window when updating if `helm-full-frame'
   ;; is non-`nil'.
   (with-helm-window
-    (when helm-onewindow-p (delete-other-windows)))
+    (when (and helm-onewindow-p
+               (not (helm-action-window)))
+      (delete-other-windows)))
   (with-current-buffer (helm-buffer-get)
     (set (make-local-variable 'helm-input-local) helm-pattern)
     (unwind-protect
@@ -3266,16 +3323,17 @@ pattern has changed.
 
 Selection is preserved to current candidate or moved to
 PRESELECT, if specified."
-  (let* ((source    (helm-get-current-source))
-         (selection (helm-aif (helm-get-selection nil t source)
-                        (regexp-quote it)
-                      it)))
-    (setq helm--force-updating-p t)
-    (when source
-      (mapc 'helm-force-update--reinit
-            (helm-get-sources)))
-    (helm-update (or preselect selection) source)
-    (with-helm-window (recenter))))
+  (with-helm-window
+    (let* ((source    (helm-get-current-source))
+           (selection (helm-aif (helm-get-selection nil t source)
+                          (regexp-quote it)
+                        it)))
+      (setq helm--force-updating-p t)
+      (when source
+        (mapc 'helm-force-update--reinit
+              (helm-get-sources)))
+      (helm-update (or preselect selection) source)
+      (recenter))))
 
 (defun helm-refresh ()
   "Force recalculation and update of candidates."
@@ -3354,7 +3412,7 @@ this additional info after the source name by overlay."
   (insert "\n"))
 
 
-;;; Core: async process
+;;; Async process
 ;;
 (defun helm-output-filter (process output-string)
   "The `process-filter' function for helm async sources."
@@ -3475,7 +3533,7 @@ function."
   (delete-process process))
 
 
-;;; Core: action
+;;; Actions
 ;;
 (defun helm-execute-selection-action ()
   "Execute current action."
@@ -3498,7 +3556,8 @@ If PRESERVE-SAVED-ACTION is non-`nil', then save the action."
                     (if (get-buffer helm-action-buffer)
                         (helm-get-selection helm-action-buffer)
                       (helm-get-actions-from-current-source)))))
-  (helm-aif (get-buffer helm-action-buffer)
+  (helm-aif (and (not helm-in-persistent-action)
+                 (get-buffer helm-action-buffer))
       (kill-buffer it))
   (let ((source (or helm-saved-current-source
                     (helm-get-current-source)))
@@ -3535,44 +3594,68 @@ If action buffer is selected, back to the helm buffer."
       (setq helm-saved-selection (helm-get-selection nil nil src))
       (with-selected-frame (with-helm-window (selected-frame))
         (prog1
-            (cond ((get-buffer-window helm-action-buffer 'visible)
-                   (set-window-buffer (get-buffer-window helm-action-buffer)
-                                      helm-buffer)
-                   (kill-buffer helm-action-buffer)
-                   (setq helm-saved-selection nil)
-                   (helm-set-pattern helm-input 'noupdate))
-                  (helm-saved-selection
-                   (setq helm-saved-current-source src)
-                   (let ((actions (helm-get-actions-from-current-source src)))
-                     (if (functionp actions)
-                         (message "Sole action: %s"
-                                  (if (or (consp actions)
-                                          (byte-code-function-p actions))
-                                      "Anonymous" actions))
-                         (helm-show-action-buffer actions)
-                         ;; Be sure the minibuffer is entirely deleted (#907).
-                         (helm--delete-minibuffer-contents-from "")
-                         ;; Make `helm-pattern' differs from the previous value.
-                         (setq helm-pattern 'dummy)
-                         (helm-check-minibuffer-input))))
-                  (t (message "No Actions available")))
-          (helm-display-mode-line src)
+            (helm-acond ((get-buffer-window helm-action-buffer 'visible)
+                         (set-window-buffer it helm-buffer)
+                         (helm--set-action-prompt 'restore)
+                         (when (and helm-show-action-window-other-window
+                                    helm-always-two-windows
+                                    (eq helm-split-window-state 'vertical))
+                           (delete-window it))
+                         (kill-buffer helm-action-buffer)
+                         (setq helm-saved-selection nil)
+                         (helm-set-pattern helm-input 'noupdate))
+                        (helm-saved-selection
+                         (setq helm-saved-current-source src)
+                         (let ((actions (helm-get-actions-from-current-source src))
+                               helm-onewindow-p)
+                           (if (functionp actions)
+                               (message "Sole action: %s"
+                                        (if (or (consp actions)
+                                                (byte-code-function-p actions))
+                                            "Anonymous" actions))
+                               (helm-show-action-buffer actions)
+                               ;; Be sure the minibuffer is entirely deleted (#907).
+                               (helm--delete-minibuffer-contents-from "")
+                               (helm--set-action-prompt)
+                               (helm-check-minibuffer-input))))
+                        (t (message "No Actions available")))
+          (helm-display-mode-line (helm-get-current-source))
           (run-hooks 'helm-window-configuration-hook))))))
 (put 'helm-select-action 'helm-only t)
+
+(defun helm--set-action-prompt (&optional restore)
+  (with-selected-window (minibuffer-window)
+    (let ((inhibit-read-only t)
+          (props '(face minibuffer-prompt
+                   field t
+                   read-only t
+                   rear-nonsticky t
+                   front-sticky t))
+          (prt (if restore helm--prompt helm--action-prompt)))
+      (erase-buffer)
+      (insert (apply #'propertize prt props)))))
 
 (defun helm-show-action-buffer (actions)
   (with-current-buffer (get-buffer-create helm-action-buffer)
     (erase-buffer)
     (buffer-disable-undo)
-    (set-window-buffer (get-buffer-window helm-buffer) helm-action-buffer)
+    (set-window-buffer (if (and helm-show-action-window-other-window
+                                helm-always-two-windows
+                                (eq helm-split-window-state 'vertical))
+                           (split-window (get-buffer-window helm-buffer)
+                                         nil helm-show-action-window-other-window)
+                           (get-buffer-window helm-buffer))
+                       helm-action-buffer)
     (set (make-local-variable 'helm-sources)
          (list
           (helm-build-sync-source "Actions"
             :volatile t
             :nomark t
+            :persistent-action #'ignore
+            :persistent-help "DoNothing"
             :keymap 'helm-map
             :candidates actions
-            :mode-line '("Action(s)" "TAB:BackToCands RET/f1/f2/fn:NthAct")
+            :mode-line '("Action(s)" "\\<helm-map>\\[helm-select-action]:BackToCands RET/f1/f2/fn:NthAct")
             :candidate-transformer
              (lambda (candidates)
                (cl-loop for (i . j) in candidates
@@ -3591,7 +3674,7 @@ If action buffer is selected, back to the helm buffer."
     (helm-initialize-overlays helm-action-buffer)))
 
 
-;; Core: selection
+;; Selection of candidates
 
 (defun helm-display-source-at-screen-top-maybe (unit)
   "Display source at the top of screen when UNIT value is 'source.
@@ -3623,7 +3706,12 @@ DIRECTION is either 'next or 'previous."
                         -1 1)))))
 
 (defun helm-display-mode-line (source &optional force)
-  "Setup mode-line and header-line for `helm-buffer'."
+  "Set up mode line and header line for `helm-buffer'.
+
+SOURCE is a Helm source object.
+
+Optional argument FORCE forces redisplay of the Helm buffer's
+mode and header lines."
   (set (make-local-variable 'helm-mode-line-string)
        (helm-interpret-value (or (and (listp source) ; Check if source is empty.
                                       (assoc-default 'mode-line source))
@@ -3659,8 +3747,9 @@ DIRECTION is either 'next or 'previous."
                                   (propertize (format " [prefarg:%s]" arg)
                                               'face 'helm-prefarg)))))
                      " "
-                     (:eval (helm-show-candidate-number
-                             (car-safe helm-mode-line-string)))
+                     (:eval (with-helm-buffer
+                              (helm-show-candidate-number
+                               (car-safe helm-mode-line-string))))
                      " " helm--mode-line-string-real " "
                      (:eval (make-string (window-width) ? )))
                 keymap (keymap (mode-line keymap
@@ -3684,9 +3773,9 @@ DIRECTION is either 'next or 'previous."
            (helm--set-header-line))
           (helm-display-header-line
            (let ((hlstr (helm-interpret-value
-                          (and (listp source)
-                               (assoc-default 'header-line source))
-                          source))
+                         (and (listp source)
+                              (assoc-default 'header-line source))
+                         source))
                  (endstr (make-string (window-width) ? )))
              (setq header-line-format
                    (propertize (concat " " hlstr endstr)
@@ -3701,7 +3790,9 @@ DIRECTION is either 'next or 'previous."
            (cont (buffer-substring beg end))
            (pref (propertize
                   " "
-                  'display (if (string-match-p (regexp-quote helm--prompt) cont)
+                  'display (if (string-match-p (regexp-opt `(,helm--prompt
+                                                             ,helm--action-prompt))
+                                               cont)
                                '(space :width left-fringe)
                                (propertize
                                 "->"
@@ -3750,7 +3841,9 @@ it is \"Candidate\(s\)\" by default."
                  (format "[%s %s]"
                          (helm-get-candidate-number 'in-current-source)
                          cand-name))
-         'face 'helm-candidate-number)))))
+         'face (if helm-suspend-update-flag
+                   'helm-candidate-number-suspended
+                   'helm-candidate-number))))))
 
 (cl-defun helm-move-selection-common (&key where direction (follow t))
   "Move the selection marker to a new position.
@@ -4215,7 +4308,7 @@ to a list of forms.\n\n")
 (put 'helm-enable-or-switch-to-debug 'helm-only t)
 
 
-;; Core: misc
+;; Misc
 (defun helm-kill-buffer-hook ()
   "Remove tick entry from `helm-tick-hash' and remove buffer from
 `helm-buffers' when killing a buffer."
@@ -4226,15 +4319,19 @@ to a list of forms.\n\n")
 (add-hook 'kill-buffer-hook 'helm-kill-buffer-hook)
 
 (defun helm-preselect (candidate-or-regexp &optional source)
-  "Move `helm-selection-overlay' to CANDIDATE-OR-REGEXP on startup.
-Arg CANDIDATE-OR-REGEXP can be a string, a cons cell of two
-strings or a function called with no arg which will be in charge
-of moving to a specific candidate.
-When a cons cell, helm tries jumping to first element of
-cons cell and then to the second, and so on. This allows finer
-preselection if there are duplicates before the candidate we
-want to preselect.
-Argument SOURCE is a valid source name or a source alist."
+  "Move selection to CANDIDATE-OR-REGEXP on Helm start.
+
+CANDIDATE-OR-REGEXP can be a:
+
+- String
+- Cons cell of two strings
+- Nullary function, which moves to a candidate
+
+When CANDIDATE-OR-REGEXP is a cons cell, tries moving to first
+element of the cons cell, then the second, and so on. This allows
+selection of duplicate candidates after the first.
+
+Optional argument SOURCE is a Helm source object."
   (with-helm-window
     (when candidate-or-regexp
       (if source
@@ -4628,13 +4725,13 @@ Returns the resulting buffer."
                 buffer)))) ; a symbol.
     (with-current-buffer buf
       (erase-buffer)
-      (if (listp data)
-          (insert (mapconcat (lambda (i)
-                               (cond ((symbolp i) (symbol-name i))
-                                     ((numberp i) (number-to-string i))
-                                     (t i)))
-                             data "\n"))
-        (and (stringp data) (insert data))))
+      (cond ((listp data)
+             (insert (mapconcat (lambda (i)
+                                  (cond ((symbolp i) (symbol-name i))
+                                        ((numberp i) (number-to-string i))
+                                        (t i)))
+                                data "\n")))
+            ((stringp data) (insert data))))
     buf))
 
 
@@ -4645,37 +4742,43 @@ Returns the resulting buffer."
   "Toggle resplit helm window, vertically or horizontally."
   (interactive)
   (with-helm-alive-p
-    (when helm-prevent-escaping-from-minibuffer
-      (helm-prevent-switching-other-window :enabled nil))
-    (unwind-protect
-         (with-helm-window
-           (if (or helm-full-frame (one-window-p t))
-               (message "Error: Attempt to resplit a single window")
-               (let ((before-height (window-height)))
-                 (delete-window)
-                 (set-window-buffer
-                  (select-window
-                   (if (= (window-height) before-height) ; initial split was horizontal.
-                       ;; Split window vertically with `helm-buffer' placed
-                       ;; on the good side according to actual value of
-                       ;; `helm-split-window-default-side'.
-                       (prog1
-                           (cond ((or (eq helm-split-window-default-side 'above)
-                                      (eq helm-split-window-default-side 'left))
-                                  (split-window
-                                   (selected-window) nil 'above))
-                                 (t (split-window-vertically)))
-                         (setq helm-split-window-state 'vertical))
-                       ;; Split window vertically, same comment as above.
-                       (setq helm-split-window-state 'horizontal)
-                       (cond ((or (eq helm-split-window-default-side 'left)
-                                  (eq helm-split-window-default-side 'above))
-                              (split-window (selected-window) nil 'left))
-                             (t (split-window-horizontally)))))
-                  helm-buffer)))
-           (setq helm--window-side-state (helm--get-window-side-state)))
-      (when helm-prevent-escaping-from-minibuffer
-        (helm-prevent-switching-other-window :enabled t)))))
+    (if (= (length (window-list nil 1)) 2)
+        (progn
+          (when helm-prevent-escaping-from-minibuffer
+            (helm-prevent-switching-other-window :enabled nil))
+          (unwind-protect
+               (with-helm-window
+                 (cond ((or helm-full-frame (one-window-p t))
+                        (user-error "Attempt to resplit a single window"))
+                       ((helm-action-window)
+                        (user-error "Can't resplit while selecting actions"))
+                       (t
+                        (let ((before-height (window-height)))
+                          (delete-window)
+                          (set-window-buffer
+                           (select-window
+                            (if (= (window-height) before-height) ; initial split was horizontal.
+                                ;; Split window vertically with `helm-buffer' placed
+                                ;; on the good side according to actual value of
+                                ;; `helm-split-window-default-side'.
+                                (prog1
+                                    (cond ((or (eq helm-split-window-default-side 'above)
+                                               (eq helm-split-window-default-side 'left))
+                                           (split-window
+                                            (selected-window) nil 'above))
+                                          (t (split-window-vertically)))
+                                  (setq helm-split-window-state 'vertical))
+                                ;; Split window vertically, same comment as above.
+                                (setq helm-split-window-state 'horizontal)
+                                (cond ((or (eq helm-split-window-default-side 'left)
+                                           (eq helm-split-window-default-side 'above))
+                                       (split-window (selected-window) nil 'left))
+                                      (t (split-window-horizontally)))))
+                           helm-buffer))))
+                 (setq helm--window-side-state (helm--get-window-side-state)))
+            (when helm-prevent-escaping-from-minibuffer
+              (helm-prevent-switching-other-window :enabled t))))
+        (error "current window configuration not suitable for splitting"))))
 (put 'helm-toggle-resplit-window 'helm-only t)
 
 ;; Utility: Resize helm window.
@@ -4705,43 +4808,48 @@ If N is positive enlarge, if negative narrow."
   "Swap window holding `helm-buffer' with other window."
   (interactive)
   (with-helm-alive-p
-    (if (and helm-full-frame (one-window-p t))
-        (error "Error: Can't swap windows in a single window")
-        (let* ((w1          (helm-window))
-               (split-state (eq helm-split-window-state 'horizontal))
-               (w1size      (window-total-size w1 split-state))
-               (b1          (window-buffer w1)) ; helm-buffer
-               (s1          (window-start w1))
-               (cur-frame   (window-frame w1))
-               (w2          (with-selected-window (helm-window)
-                              ;; Don't try to display helm-buffer
-                              ;; in a dedicated window.
-                              (get-window-with-predicate
-                               (lambda (w) (not (window-dedicated-p w)))
-                               1 cur-frame)))
-               (w2size      (window-total-size w2 split-state))
-               (b2          (window-buffer w2)) ; probably helm-current-buffer
-               (s2          (window-start w2))
-               resize)
-          (with-selected-frame (window-frame w1)
-            (helm-replace-buffer-in-window w1 b1 b2)
-            (helm-replace-buffer-in-window w2 b2 b1)
-            (setq resize
-                  (cond ( ;; helm-window is smaller than other window.
-                         (< w1size w2size)
-                         (- (- (max w2size w1size)
-                               (min w2size w1size))))
-                        ( ;; helm-window is larger than other window.
-                         (> w1size w2size)
-                         (- (max w2size w1size)
-                            (min w2size w1size)))
-                        ( ;; windows have probably same size.
-                         t nil)))
-            ;; Maybe resize the window holding helm-buffer.
-            (and resize (window-resize w2 resize split-state))
-            (set-window-start w1 s2 t)
-            (set-window-start w2 s1 t))
-          (setq helm--window-side-state (helm--get-window-side-state))))))
+    (if (= (length (window-list nil 1)) 2)
+        (cond ((and helm-full-frame (one-window-p t))
+               (user-error "Can't swap windows in a single window"))
+              ((helm-action-window)
+               (user-error "Can't resplit while selecting actions"))
+              (t
+               (let* ((w1          (helm-window))
+                      (split-state (eq helm-split-window-state 'horizontal))
+                      (w1size      (window-total-size w1 split-state))
+                      (b1          (window-buffer w1)) ; helm-buffer
+                      (s1          (window-start w1))
+                      (cur-frame   (window-frame w1))
+                      (w2          (with-selected-window (helm-window)
+                                     ;; Don't try to display helm-buffer
+                                     ;; in a dedicated window.
+                                     (get-window-with-predicate
+                                      (lambda (w) (not (window-dedicated-p w)))
+                                      1 cur-frame)))
+                      (w2size      (window-total-size w2 split-state))
+                      (b2          (window-buffer w2)) ; probably helm-current-buffer
+                      (s2          (window-start w2))
+                      resize)
+                 (with-selected-frame (window-frame w1)
+                   (helm-replace-buffer-in-window w1 b1 b2)
+                   (helm-replace-buffer-in-window w2 b2 b1)
+                   (setq resize
+                         (cond ( ;; helm-window is smaller than other window.
+                                (< w1size w2size)
+                                (- (- (max w2size w1size)
+                                      (min w2size w1size))))
+                               ( ;; helm-window is larger than other window.
+                                (> w1size w2size)
+                                (- (max w2size w1size)
+                                   (min w2size w1size)))
+                               ( ;; windows have probably same size.
+                                t nil)))
+                   ;; Maybe resize the window holding helm-buffer.
+                   (and resize (window-resize w2 resize split-state))
+                   (set-window-start w1 s2 t)
+                   (set-window-start w2 s1 t))
+                 (setq helm--window-side-state (helm--get-window-side-state)))))
+        (error "current window configuration not suitable for splitting"))))
 (put 'helm-swap-windows 'helm-only t)
 
 (defun helm--get-window-side-state ()
@@ -4828,6 +4936,8 @@ window to maintain visibility."
                           (cdr attr-val)))
            (cursor-in-echo-area t)
            mode-line-in-non-selected-windows)
+      (when (eq fn 'ignore)
+        (cl-return-from helm-execute-persistent-action nil))
       (when source
         (with-helm-window
           (save-selected-window
@@ -4842,7 +4952,8 @@ window to maintain visibility."
                   special-display-regexps special-display-buffer-names)
               (helm-execute-selection-action-1
                selection (or fn (helm-get-actions-from-current-source source)) t)
-              (helm-log-run-hook 'helm-after-persistent-action-hook))
+              (unless (helm-action-window)
+                (helm-log-run-hook 'helm-after-persistent-action-hook)))
             ;; A typical case is when a persistent action delete
             ;; the buffer already displayed in
             ;; `helm-persistent-action-display-window' and `helm-full-frame'
@@ -4877,38 +4988,50 @@ See `helm-persistent-action-display-window' for how to use SPLIT-ONEWINDOW."
   (select-window
    (setq minibuffer-scroll-window
          (helm-persistent-action-display-window split-onewindow))))
+
+;;; Scrolling - recentering
+;;
+;;
+(defun helm-other-window-base (command &optional arg)
+  (let ((minibuffer-scroll-window
+         (helm-persistent-action-display-window)))
+    (funcall command (or arg helm-scroll-amount))))
 
-;; scroll-other-window(-down)? for persistent-action
-(defun helm-other-window-base (command &optional scroll-amount)
-  (setq scroll-amount (unless (eq scroll-amount 'noscroll)
-                        helm-scroll-amount))
-  (with-selected-window (helm-persistent-action-display-window)
-    (funcall command scroll-amount)))
-
-(defun helm-scroll-other-window ()
-  "Scroll other window (not *Helm* window) upward."
-  (interactive)
-  (with-helm-alive-p (helm-other-window-base 'scroll-up)))
+(defun helm-scroll-other-window (&optional arg)
+  "Scroll other window upward ARG many lines.
+When arg is not provided scroll `helm-scroll-amount' lines.
+See `scroll-other-window'."
+  (interactive "P")
+  (with-helm-alive-p (helm-other-window-base 'scroll-other-window arg)))
 (put 'helm-scroll-other-window 'helm-only t)
 
-(defun helm-scroll-other-window-down ()
-  "Scroll other window (not *Helm* window) downward."
-  (interactive)
-  (with-helm-alive-p (helm-other-window-base 'scroll-down)))
+(defun helm-scroll-other-window-down (&optional arg)
+  "Scroll other window downward ARG many lines.
+When arg is not provided scroll `helm-scroll-amount' lines.
+See `scroll-other-window-down'."
+  (interactive "P")
+  (with-helm-alive-p (helm-other-window-base 'scroll-other-window-down arg)))
 (put 'helm-scroll-other-window-down 'helm-only t)
 
-(defun helm-recenter-top-bottom-other-window ()
-  "`recenter-top-bottom' in other window (not *Helm* window)."
-  (interactive)
-  (with-helm-alive-p (helm-other-window-base 'recenter-top-bottom 'noscroll)))
+(defun helm-recenter-top-bottom-other-window (&optional arg)
+  "Run `recenter-top-bottom' in other window.
+Meaning of prefix ARG is the same as in `recenter-top-bottom'."
+  (interactive "P")
+  (with-helm-alive-p
+    (with-helm-window
+      (with-selected-window (helm-persistent-action-display-window)
+        (recenter-top-bottom arg)))))
 (put 'helm-recenter-top-bottom-other-window 'helm-only t)
 
-(defun helm-reposition-window-other-window ()
-  "`helm-reposition-window' in other window (not *Helm* window)."
-  (interactive)
-  (with-helm-alive-p (helm-other-window-base 'reposition-window 'noscroll)))
+(defun helm-reposition-window-other-window (&optional arg)
+  "Run `reposition-window' in other window.
+Meaning of prefix ARG is the same as in `reposition-window'."
+  (interactive "P")
+  (with-helm-alive-p
+    (with-helm-window
+      (with-selected-window (helm-persistent-action-display-window)
+        (reposition-window arg)))))
 (put 'helm-reposition-window-other-window 'helm-only t)
-
 
 
 ;; Utility: Visible Mark
@@ -5325,7 +5448,9 @@ or `helm-follow-input-idle-delay' or `helm-input-idle-delay' secs."
                (helm-window)
                (helm-get-selection nil nil src))
       (helm-follow-mode-set-source 1 src)
-      (run-with-idle-timer at nil #'helm-execute-persistent-action))))
+      (run-with-idle-timer at nil (lambda ()
+                                    (when helm-alive-p
+                                      (helm-execute-persistent-action)))))))
 
 (defun helm-follow-mode-p (&optional source)
   (with-helm-buffer

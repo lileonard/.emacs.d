@@ -255,11 +255,11 @@
     "  A transformer function that treat candidates one by one.
   It is called with one arg the candidate.
   It is faster than `filtered-candidate-transformer' or
-  `candidates-transformer', but should be used only in sources
+  `candidate-transformer', but should be used only in sources
   that recompute constantly their candidates, e.g `helm-source-find-files'.
   Filtering happen early and candidates are treated
   one by one instead of re-looping on the whole list.
-  If used with `filtered-candidate-transformer' or `candidates-transformer'
+  If used with `filtered-candidate-transformer' or `candidate-transformer'
   these functions should treat the candidates transformed by the
   `filter-one-by-one' function in consequence.")
 
@@ -419,7 +419,11 @@
     :custom symbol
     :documentation
     "  Allow passing history variable to helm from source.
-  It should be a quoted symbol.")
+  It should be a quoted symbol.
+  Passing the history variable here have no effect
+  so add it also in the `helm' call with the :history keyword.
+  The main point of adding the variable here
+  is to make it available when resuming.")
 
    (coerce
     :initarg :coerce
@@ -480,7 +484,7 @@ With a value of 1 enable, a value of -1 or nil disable the mode.
     "  `helm-follow-mode' will execute persistent-action after this delay.
   Otherwise value of `helm-follow-input-idle-delay' is used if non--nil,
   If none of these are found fallback to `helm-input-idle-delay'.")
-   
+
    (multimatch
     :initarg :multimatch
     :initform t
@@ -493,7 +497,7 @@ With a value of 1 enable, a value of -1 or nil disable the mode.
   It is the standard way of matching in helm and is enabled by default.
   It can be used with fuzzy-matching enabled, but as soon helm detect a space,
   each pattern will match by regexp and will not be fuzzy.")
-   
+
    (match-part
     :initarg :match-part
     :initform nil

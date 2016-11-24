@@ -441,6 +441,21 @@ ARGS is (cand1 cand2 ...) or ((disp1 . real1) (disp2 . real2) ...)
                if (listp elm) append elm
                else collect elm))))
 
+(defun helm-source-by-name (name &optional sources)
+  "Get a Helm source in SOURCES by NAME.
+
+Optional argument SOURCES is a list of Helm sources. The default
+value is computed with `helm-get-sources' which is faster
+than specifying SOURCES because sources are cached."
+  (cl-loop with src-list = (if sources
+                               (cl-loop for src in sources
+                                        collect (if (listp src)
+                                                    src
+                                                    (symbol-value src)))
+                               (helm-get-sources))
+           for source in src-list
+           thereis (and (string= name (assoc-default 'name source)) source)))
+
 
 ;;; Strings processing.
 ;;
@@ -534,8 +549,38 @@ Add spaces at end if needed to reach WIDTH when STR is shorter than WIDTH."
 
 (defun helm-describe-face (face)
   "FACE is symbol or string."
-  (cl-letf (((symbol-function 'message) #'ignore))
-    (describe-face (helm-symbolify face))))
+  (let ((faces (helm-marked-candidates)))
+    (cl-letf (((symbol-function 'message) #'ignore))
+      (describe-face (if (cdr faces)
+                         (mapcar 'helm-symbolify faces)
+                         (helm-symbolify face))))))
+
+(defun helm-elisp--persistent-help (candidate fun &optional name)
+  "Used to build persistent actions describing CANDIDATE with FUN.
+Argument NAME is used internally to know which command to use when
+symbol CANDIDATE refers at the same time to variable and a function.
+See `helm-elisp--show-help'."
+  (let ((hbuf (get-buffer (help-buffer))))
+    (cond  ((helm-follow-mode-p)
+            (if name
+                (funcall fun candidate name)
+                (funcall fun candidate)))
+           ((or (and (helm-attr 'help-running-p)
+                     (string= candidate (helm-attr 'help-current-symbol))))
+            (progn
+              ;; When started from a help buffer,
+              ;; Don't kill this buffer as it is helm-current-buffer.
+              (unless (equal hbuf helm-current-buffer)
+                (kill-buffer hbuf)
+                (set-window-buffer (get-buffer-window hbuf)
+                                   helm-current-buffer))
+              (helm-attrset 'help-running-p nil)))
+           (t
+            (if name
+                (funcall fun candidate name)
+                (funcall fun candidate))
+            (helm-attrset 'help-running-p t)))
+    (helm-attrset 'help-current-symbol candidate)))
 
 (defun helm-find-function (func)
   "FUNC is symbol or string."
@@ -785,23 +830,41 @@ That is what completion commands operate on."
 ;; Yank text at point.
 ;;
 ;;
-(defun helm-yank-text-at-point ()
+(defun helm-yank-text-at-point (arg)
   "Yank text at point in `helm-current-buffer' into minibuffer."
-  (interactive)
+  (interactive "p")
   (with-helm-current-buffer
-    (let ((fwd-fn (or helm-yank-text-at-point-function #'forward-word)))
+    (let ((fwd-fn (or helm-yank-text-at-point-function #'forward-word))
+          diff)
       ;; Start to initial point if C-w have never been hit.
-      (unless helm-yank-point (setq helm-yank-point (point)))
+      (unless helm-yank-point
+        (setq helm-yank-point (car helm-current-position)))
       (save-excursion
         (goto-char helm-yank-point)
-        (funcall fwd-fn 1)
         (helm-set-pattern
-         (concat
-          helm-pattern (replace-regexp-in-string
-                        "\\`\n" ""
-                        (buffer-substring-no-properties
-                         helm-yank-point (point)))))
-        (setq helm-yank-point (point))))))
+         (if (< arg 0)
+             (with-temp-buffer
+               (insert helm-pattern)
+               (let ((end (point-max)))
+                 (goto-char end)
+                 (funcall fwd-fn -1)
+                 (setq diff (- end (point)))
+                 (delete-region (point) end)
+                 (buffer-string)))
+             (funcall fwd-fn arg)
+             (concat
+              helm-pattern (replace-regexp-in-string
+                            "\\`\n" ""
+                            (buffer-substring-no-properties
+                             helm-yank-point (point))))))
+        (setq helm-yank-point (if diff (- (point) diff) (point)))))))
+(put 'helm-yank-text-at-point 'helm-only t)
+
+(defun helm-undo-yank-text-at-point ()
+  "Undo last entry added by `helm-yank-text-at-point'."
+  (interactive)
+  (helm-yank-text-at-point -1))
+(put 'helm-undo-yank-text-at-point 'helm-only t)
 
 (defun helm-reset-yank-point ()
   (setq helm-yank-point nil))

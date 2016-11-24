@@ -58,7 +58,7 @@
   (delete-other-windows)
   (let ((win0 (selected-window))
         (win1 (split-window nil ( / ( * (window-height) 4) 5)))
-        (win2 (split-window nil ( / (window-height) 4)))
+        (win2 (split-window nil ( / (window-height) 3)))
         (win3 (split-window-right)))
     (gdb-set-window-buffer (gdb-locals-buffer-name) nil win3)
     (select-window win2)

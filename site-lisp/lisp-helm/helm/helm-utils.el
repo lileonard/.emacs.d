@@ -212,16 +212,6 @@ In this case last position is added to the register
   :group 'helm-faces)
 
 
-;; CUA workaround
-(defadvice cua-delete-region (around helm-avoid-cua activate)
-  (ignore-errors ad-do-it))
-
-(defadvice copy-region-as-kill (around helm-avoid-cua activate)
-  (if cua-mode
-      (ignore-errors ad-do-it)
-    ad-do-it))
-
-
 ;;; Utils functions
 ;;
 ;;
@@ -276,10 +266,13 @@ Default is `helm-current-buffer'."
   "Goto LINENO opening only outline headline if needed.
 Animation is used unless NOANIM is non--nil."
   (helm-log-run-hook 'helm-goto-line-before-hook)
+  (helm-match-line-cleanup)
+  (with-helm-current-buffer
+    (unless helm-yank-point (setq helm-yank-point (point))))
   (goto-char (point-min))
   (helm-goto-char (point-at-bol lineno))
   (unless noanim
-    (helm-highlight-current-line nil nil nil nil 'pulse)))
+    (helm-highlight-current-line)))
 
 (defun helm-save-pos-to-register-before-jump ()
   "Save current buffer position to `helm-save-pos-before-jump-register'.
@@ -438,10 +431,10 @@ that is sorting is done against real value of candidate."
   "Extract hostname from an incomplete tramp file name.
 Return nil on valid file name remote or not."
   (let* ((str (helm-basename fname))
-         (split (split-string str ":"))
-         (meth (car (member (car split) (mapcar 'car tramp-methods))))) 
-    (when (and meth (<= (length split) 2))
-      (cadr split))))
+         (split (split-string str ":" t))
+         (meth (car (member (car split)
+                            (helm-ff-get-tramp-methods))))) 
+    (when meth (car (last split)))))
 
 (cl-defun helm-file-human-size (size &optional (kbsize helm-default-kbsize))
   "Return a string showing SIZE of a file in human readable form.
@@ -593,7 +586,7 @@ If STRING is non--nil return instead a space separated string."
 (defvar helm-match-line-overlay nil)
 (defvar helm--match-item-overlays nil)
 
-(defun helm-highlight-current-line (&optional start end buf face pulse)
+(defun helm-highlight-current-line (&optional start end buf face)
   "Highlight and underline current position"
   (let* ((start (or start (line-beginning-position)))
          (end (or end (1+ (line-end-position))))
@@ -620,7 +613,12 @@ If STRING is non--nil return instead a space separated string."
     (catch 'empty-line
       (cl-loop with ov
                for r in (helm-remove-if-match
-                         "\\`!" (split-string helm-input))
+                         "\\`!" (split-string
+                                 ;; Needed for highlighting AG matches.
+                                 (if (with-helm-buffer
+                                       (assq 'pcre (helm-get-current-source)))
+                                     (helm--translate-pcre-to-elisp helm-input)
+                                     helm-input)))
                do (save-excursion
                     (goto-char start-match)
                     (while (condition-case _err
@@ -636,10 +634,27 @@ If STRING is non--nil return instead a space separated string."
                                 helm--match-item-overlays)
                           (overlay-put ov 'face 'helm-match-item)
                           (overlay-put ov 'priority 1)))))))
-    (recenter)
-    (when pulse
-      (sit-for 0.3)
-      (helm-match-line-cleanup))))
+    (recenter)))
+
+(defun helm--translate-pcre-to-elisp (regexp)
+  "Should translate pcre REGEXP to elisp regexp.
+Assume regexp is a pcre based regexp."
+  (with-temp-buffer
+    (insert " " regexp " ")
+    (goto-char (point-min))
+    (save-excursion
+      ;; match (){}| unquoted
+      (helm-awhile (and (re-search-forward "\\([(){}|]\\)" nil t)
+                        (match-string 1))
+        (let ((pos (match-beginning 1)))
+          (if (eql (char-before pos) ?\\)
+              (delete-region pos (1- pos))
+              (replace-match (concat "\\" it) t t nil 1)))))
+    ;; match \s or \S
+    (helm-awhile (and (re-search-forward "\\S\\?\\(\\s\\[sS]\\)[^-]" nil t)
+                      (match-string 1))
+      (replace-match (concat it "-") t t nil 1))
+    (buffer-substring (1+ (point-min)) (1- (point-max)))))
 
 (defun helm-match-line-cleanup ()
   (when helm-match-line-overlay
@@ -659,8 +674,12 @@ If STRING is non--nil return instead a space separated string."
              (eq helm-split-window-state 'vertical))
     (set-window-text-height (helm-window) helm-resize-on-pa-text-height)))
 
+(defun helm-match-line-cleanup-pulse ()
+  (run-with-timer 0.3 nil #'helm-match-line-cleanup))
+
 (add-hook 'helm-after-persistent-action-hook 'helm-persistent-autoresize-hook)
 (add-hook 'helm-cleanup-hook 'helm-match-line-cleanup)
+(add-hook 'helm-after-action-hook 'helm-match-line-cleanup-pulse)
 (add-hook 'helm-after-persistent-action-hook 'helm-match-line-update)
 
 ;;; Popup buffer-name or filename in grep/moccur/imenu-all.
@@ -774,8 +793,9 @@ If COUNT is non--nil add a number after each prompt."
         (when (re-search-forward url-regexp nil t)
           (setq url (match-string 0)))
         (when (re-search-forward bmk-regexp nil t)
-          (setq title (funcall helm-html-decode-entities-function
-                               (match-string 1))))
+          (setq title (url-unhex-string
+                       (funcall helm-html-decode-entities-function
+                               (match-string 1)))))
         (push (cons title url) bookmarks-alist)
         (forward-line)))
     (nreverse bookmarks-alist)))
