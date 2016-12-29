@@ -7,12 +7,12 @@
 ;; Copyright (C) 2008, 2009, Andy Stewart, all rights reserved.
 ;; Copyright (C) 2009, Peter Lunicks, all rights reversed.
 ;; Created: 2008
-;; Version: 20140914.2339
+;; Version: 20161025
 ;; X-Original-Version: 0.1.10
-;; Last-Updated: 2014-08-03 11:30:00
+;; Last-Updated: 2016-10-25
 ;; URL: http://www.emacswiki.org/emacs/download/sr-speedbar.el
 ;; Keywords: speedbar, sr-speedbar.el
-;; Compatibility: GNU Emacs 22 ~ GNU Emacs 24
+;; Compatibility: GNU Emacs 22 ~ GNU Emacs 25
 ;;
 ;; Features required by this library:
 ;;
@@ -78,6 +78,9 @@
 ;;      M-x customize-group RET sr-speedbar RET
 
 ;;; Change log:
+;; * 25 Oct 2016:
+;;   * Hong Xu <hong@topbug.net>
+;;      * Fix compilation warning when `helm-alive-p' is not defined.
 ;;
 ;; * 04 Aug 2015:
 ;;   * Tamas Levai <levait@tmit.bme.hu>:
@@ -306,7 +309,6 @@ Default is t."
 If nil, speedbar will not touch your window configuration.
 Otherwise `delete-other-windows' will be called before showing
 the speedbar.
-
 Default is nil."
   :type 'boolean
   :group 'sr-speedbar)
@@ -336,10 +338,8 @@ Default, can use `other-window' select window in cyclic
 ordering of windows.  But sometimes we don't want select
 `sr-speedbar' window use `other-window'.
 Just want make `sr-speedbar' window as a view sidebar.
-
 So please turn on this option if you want skip
 `sr-speedbar' window with `other-window'.
-
 Default is nil."
   :type 'boolean
   :set (lambda (symbol value)
@@ -615,22 +615,17 @@ Use `delete-window' delete `sr-speedbar' window have same effect as `sr-speedbar
   "This advice is to fix `pop-to-buffer' problem with dedicated window.
 Default, function `display-buffer' can't display buffer in select window
 if current window is `dedicated'.
-
 So function `display-buffer' conflict with `sr-speedbar' window, because
 `sr-speedbar' window is `dedicated' window.
-
 That is to say, when current frame just have one `non-dedicated' window,
 any functions that use `display-buffer' can't split windows
 to display buffer, even option `pop-up-windows' is enable.
-
 And the example function that can occur above problem is `pop-to-buffer'."
   (when (and pop-up-windows                            ;`pop-up-windows' is enable
              (sr-speedbar-window-dedicated-only-one-p) ;just have one `non-dedicated' window
              (sr-speedbar-window-exist-p sr-speedbar-window)
              (not (sr-speedbar-window-p)) ;not in `sr-speedbar' window
-             (if (featurep 'helm)
-		 (not helm-alive-p)
-	       t))
+             (not (bound-and-true-p helm-alive-p)))
     (split-window-vertically)
     (windmove-down)))
 
@@ -638,7 +633,6 @@ And the example function that can occur above problem is `pop-to-buffer'."
   "Default, can use `other-window' select window in cyclic ordering of windows.
 But sometimes we don't want select `sr-speedbar' window use `other-window'.
 Just want make `sr-speedbar' window as a view sidebar.
-
 This advice can make `other-window' skip `sr-speedbar' window."
   (let ((count (or (ad-get-arg 0) 1)))
     (when (and (sr-speedbar-window-exist-p sr-speedbar-window)

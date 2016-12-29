@@ -8,14 +8,13 @@
 (setq visible-bell t
       mouse-yank-at-point t
       kill-ring-max 366
-      default-fill-column 66
+      fill-column 66
       sentence-end "\\([¡££¡£¿]\\|¡­¡­\\|[.?!][]\"')}]*\\($\\|[ \t]\\)\\)[ \t\n]*"
       sentence-end-double-space nil
       column-number-mode t
       global-font-lock-mode t
       make-backup-files nil
-      auto-save-mode t
-      x-select-enable-clipboard t
+      select-enable-clipboard t
       suggest-key-bindings 1)
 (setq-default indent-tabs-mode nil)
 
@@ -33,8 +32,6 @@
 (setq user-full-name "Li Yuanheng"
       user-mail-address "liyuanheng.leo@gmail.com")
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(setq dired-recursive-copies  'top
-      dired-recursive-deletes 'top)
 (fset 'yes-or-no-p 'y-or-n-p)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; (setq-default cursor-type 'bar)
@@ -56,7 +53,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;c-c:copy c-x:cut c-v:paste 
 (cua-mode t);; nil (cua-base))
-(setq cua-keep-region-after-copy t) ;; Standard Windows behaviour
+;;(setq cua-keep-region-after-copy t) ;; Standard Windows behaviour
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (global-whitespace-mode 1)

@@ -12,6 +12,7 @@
 ;; moe theme
 (require 'moe-theme)
 ;; (require 'moe-theme-switcher)
+;; (setq moe-theme-switch-by-sunrise-and-sunset t)
 ;; original moe-switcher costs 0.5s to start up which seems unnecessray to me
 ;; so 2 core functions copied to zhe init-file
 (defun moe-load-theme (switch-to)
@@ -19,15 +20,17 @@
   (cond ((equal switch-to 'light)
            (progn (moe-light)))
         ((equal switch-to 'dark)
-           (progn (moe-dark)))))
+         (progn (moe-dark)))))
+
 (defun switch-at-fixed-time ()
   (let ((now (string-to-number (format-time-string "%H"))))
-    (if (and (>= now 7) (<= now 18))
+    (if (and (>= now 7) (<= now 17))
         (moe-load-theme 'light)
       (moe-load-theme 'dark))
     nil))
 (switch-at-fixed-time)
 
+;; my custom theme settings
 (setq moe-light-pure-white-background-in-terminal t)
 (setq moe-theme-resize-org-title '(2.2 1.8 1.6 1.4 1.2 1.0 1.0 1.0 1.0))
 (setq moe-theme-mode-line-color 'orange)
@@ -52,9 +55,7 @@
         'font-lock-keyword-face nil
         :bold t
         :foreground "#008B8B")
-       (set-foreground-color "#232323")
-       
-       )
+       (set-foreground-color "#232323"))
       ((eq (frame-parameter nil 'background-mode) 'dark)
        (set-face-attribute
         'font-lock-comment-face nil
