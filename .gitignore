@@ -14,8 +14,8 @@ recentf
 projectile.cache
 ido.last
 .session
-makefile
-Makefile
 srecode-map.el
 auto-save-list
 session.*
+*.o
+
