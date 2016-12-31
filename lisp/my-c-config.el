@@ -154,21 +154,8 @@ Suitable for inclusion in `c-offsets-alist'."
     )
   "My C Programming Style")
 ;; offset customizations not in my-c-style
-
 ;; c style settings ends here
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;Alt+-Note selested words(if selected) or current line(if unselected)
-(defun qiang-comment-dwim-line (&optional arg)
-  "Replacement for the comment-dwim command.
-If no region is selected and current line is not blank and we are not at the end of the line,
-then comment current line.
-Replaces default behaviour of comment-dwim, when it inserts comment at the end of the line."
-  (interactive "*P")
-  (comment-normalize-vars)
-  (if (and (not (region-active-p)) (not (looking-at "[ \t]*$")))
-      (comment-or-uncomment-region (line-beginning-position) (line-end-position))
-    (comment-dwim arg)))
-(global-set-key "\M-;" 'qiang-comment-dwim-line)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; When you have a long method name with long arguments, you would like to lay it out as follows:
 ;;   public void veryLongMethodNameHereWithArgs(
@@ -377,7 +364,5 @@ Replaces default behaviour of comment-dwim, when it inserts comment at the end o
       my-sys-c-include))))
   "|file|"
   (yc/update-inc-marks))
-
-
 
 (provide 'my-c-config)

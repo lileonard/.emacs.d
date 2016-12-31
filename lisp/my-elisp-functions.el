@@ -324,7 +324,11 @@ original buffer content
 "
   (interactive)
   (setq file-macro
-    (concat (replace-regexp-in-string "\\." "_" (upcase (file-name-nondirectory buffer-file-name))) "_"))
+        (concat
+         (replace-regexp-in-string
+          "\\." "_"
+          (upcase
+           (file-name-nondirectory buffer-file-name))) "_"))
   (setq guard-begin (concat "#ifndef " file-macro "\n"
                 "#define " file-macro "\n\n"))
   (setq guard-end
@@ -336,5 +340,18 @@ original buffer content
   (insert guard-end)
   (goto-char (+ position (length guard-begin))))
 (global-set-key (kbd "<C-f6>")  'my-insert-include-guard)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;Alt+-Note selested words(if selected) or current line(if unselected)
+(defun qiang-comment-dwim-line (&optional arg)
+  "Replacement for the comment-dwim command.
+If no region is selected and current line is not blank and we are not at the end of the line,
+then comment current line.
+Replaces default behaviour of comment-dwim, when it inserts comment at the end of the line."
+  (interactive "*P")
+  (comment-normalize-vars)
+  (if (and (not (region-active-p)) (not (looking-at "[ \t]*$")))
+      (comment-or-uncomment-region (line-beginning-position) (line-end-position))
+    (comment-dwim arg)))
+(global-set-key "\M-;" 'qiang-comment-dwim-line)
 
 (provide 'my-elisp-functions)
