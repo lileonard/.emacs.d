@@ -57,27 +57,6 @@
 ;; (set-face-background 'ac-candidate-face "#FAEBD7")
 ;; (set-face-underline  'ac-candidate-face "#BEBEBE")
 ;; (set-face-background 'ac-selection-face "#6495ED")
-;; hook AC into completion-at-point
-(defun sanityinc/auto-complete-at-point ()
-  (when (and (not (minibufferp))
-             (fboundp 'auto-complete-mode)
-             auto-complete-mode)
-    #'auto-complete))
-(defun sanityinc/never-indent ()
-  (set (make-local-variable 'indent-line-function) (lambda () 'noindent)))
-
-(defun set-auto-complete-as-completion-at-point-function ()
-  (setq completion-at-point-functions
-        (cons 'sanityinc/auto-complete-at-point
-              (remove 'sanityinc/auto-complete-at-point completion-at-point-functions))))
-
-(add-hook 'auto-complete-mode-hook 'set-auto-complete-as-completion-at-point-function)
-;; Exclude very large buffers from dabbrev
-(defun sanityinc/dabbrev-friend-buffer (other-buffer)
-  (< (buffer-size other-buffer) (* 1 1024 1024)))
-
-(setq dabbrev-friend-buffer-function 'sanityinc/dabbrev-friend-buffer)
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; settings for auto-complete with tags
 (require 'ac-etags)
 (ac-etags-setup)
@@ -109,21 +88,26 @@
 ;; (define-key ac-completing-map [down] nil)
 ;; (define-key ac-completing-map " " 'ac-complete)
 ;; Exclude very large buffers from dabbrev
-(defun sanityinc/dabbrev-friend-buffer (other-buffer)
-  (< (buffer-size other-buffer) (* 6 1024 1024)))
-(setq dabbrev-friend-buffer-function 'sanityinc/dabbrev-friend-buffer)
 
 ;; hook AC into completion-at-point
 (defun sanityinc/auto-complete-at-point ()
   (when (and (not (minibufferp))
              (fboundp 'auto-complete-mode)
              auto-complete-mode)
-    (auto-complete)))
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    #'auto-complete))
+(defun sanityinc/never-indent ()
+  (set (make-local-variable 'indent-line-function) (lambda () 'noindent)))
+
 (defun set-auto-complete-as-completion-at-point-function ()
   (setq completion-at-point-functions
         (cons 'sanityinc/auto-complete-at-point
               (remove 'sanityinc/auto-complete-at-point completion-at-point-functions))))
+(add-hook 'auto-complete-mode-hook 'set-auto-complete-as-completion-at-point-function)
+;; Exclude very large buffers from dabbrev
+(defun sanityinc/dabbrev-friend-buffer (other-buffer)
+  (< (buffer-size other-buffer) (* 1 1024 1024)))
+(setq dabbrev-friend-buffer-function 'sanityinc/dabbrev-friend-buffer)
+
 (add-hook 'auto-complete-mode-hook 'set-auto-complete-as-completion-at-point-function)
 (defun ac-semantic-construct-candidates (tags)
   "Construct candidates from the list inside of tags."

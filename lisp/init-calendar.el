@@ -1,3 +1,4 @@
+
 (setq diary-file "~/orgs/diary"
       diary-mail-address "liyuanheng.leo@gmail.com")
 ;;设置所在地的经纬度
