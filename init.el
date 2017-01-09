@@ -24,7 +24,6 @@
  'package-archives
  '("melpa" . "http://melpa.org/packages/") t)
 
-
 ;; add all path in .emacs.d to load path
 (let ((default-directory  "~/.emacs.d/"))
   (normal-top-level-add-subdirs-to-load-path))
