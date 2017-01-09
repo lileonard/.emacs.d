@@ -18,4 +18,11 @@ srecode-map.el
 auto-save-list
 session.*
 *.o
-
+*.out
+TAGS
+GTAGS
+CTAGS
+GRTAGS
+GPATH
+cscope*
+build

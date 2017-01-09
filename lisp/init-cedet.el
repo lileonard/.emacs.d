@@ -10,6 +10,7 @@
                 c-mode-common-hook  
                 java-mode-hook
                 python-mode-hook))
+
   (add-hook hook (lambda ()
                    (semantic-mode)
                    (global-ede-mode)
@@ -50,8 +51,7 @@
           include-custom-dirs)))
 (eval-after-load "cc-mode"
   '(my-semantic-include-setting))
-;; if the cursor on a function press f4 to jump to the of the function
-
+;; if the cursor on a function press f4 to jump to the function
 (global-set-key (kbd "<f4>") 'semantic-ia-fast-jump)
 (global-set-key (kbd "<s-f4>") 'semantic-ia-show-summary)
 (global-set-key (kbd "<s-f1>") 'semantic-ia-complete-symbol-menu)

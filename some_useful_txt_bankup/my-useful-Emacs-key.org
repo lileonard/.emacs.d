@@ -155,22 +155,20 @@
  | h   | 显示节假日名称 |
 * tags
 ** ggtags
-    | C-f7 | ggtags-create-tags                                             |
-    | M-f7 | ggtags-update-tags                                             |
-    | C-f8 | ggtags-find-definition                                         |
-    | M-f8 | ggtags-find-reference                                          |
-    | S-f8 | ggtags-find-tag-dwim                                           |
-    | s-f8 | ggtags-find-other-symbol                                       |
-    | M-,  | pop-tag-mark                                                   |
-    | M-n  | Move to the next match.                                        |
-    | M-p  | Move to the previous match.                                    |
-    | M-}  | Move to next file.                                             |
-    | M-{  | Move to previous file.                                         |
-    | M-=  | Move to the file where navigation session starts.              |
-    | M-<  | Move to the first match.                                       |
-    | M->  | Move to the last match.                                        |
-    | M-*  | bort and go back to the location where the search was started. |
-** ctags/etags--用于auto-complete
-    | f7 | 创建/更新TAGS    |
-    | f8 | visit-tags-table |
- 
+   | f7   | ggtags-find-tag-dwim                                           |
+   | M-f7 | ggtags-update-tags                                             |
+   | C-f7 | ggtags-find-definition                                         |
+   | S-f7 | ggtags-find-reference                                          |
+   | s-f7 | ggtags-find-other-symbol                                       |
+   | M-,  | pop-tag-mark                                                   |
+   | M-n  | Move to the next match.                                        |
+   | M-p  | Move to the previous match.                                    |
+   | M-}  | Move to next file.                                             |
+   | M-{  | Move to previous file.                                         |
+   | M-=  | Move to the file where navigation session starts.              |
+   | M-<  | Move to the first match.                                       |
+   | M->  | Move to the last match.                                        |
+   | M-*  | bort and go back to the location where the search was started. |
+
+
+

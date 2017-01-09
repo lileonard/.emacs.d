@@ -1,19 +1,20 @@
-(require 'ctags)
-(setq tags-revert-without-query t)
-;; Do case-sensitive tag searches
-(setq tags-case-fold-search nil) ;; t=case-insensitive, nil=case-sensitive
-;; Don't warn when TAGS files are large
-(setq large-file-warning-threshold nil)
-;; {{ etags-select
-(autoload 'etags-select-find-tag-at-point "etags-select" "" t nil)
-(autoload 'etags-select-find-tag "etags-select" "" t nil)
-;; }}
-(global-set-key (kbd "<f7>") 'ctags-create-or-update-tags-table)
-(global-set-key (kbd "<f8>") 'visit-tags-table)
-;; Then just press <f7> to update or create your TAGS file. That function look
-;; for a file TAGS in the current and its parent directories, if a TAG file is
-;; not found it ask you where create a new one.
-(global-set-key (kbd "M-s")  'ctags-search)
+(require 'gtags)
+(add-hook 'gtags-mode-hook
+  '(lambda ()
+        ; Local customization (overwrite key mapping)
+        (define-key gtags-mode-map "\C-f" 'scroll-up)
+        (define-key gtags-mode-map "\C-b" 'scroll-down)))
+(add-hook 'gtags-select-mode-hook
+  '(lambda ()
+        (setq hl-line-face 'underline)
+        (hl-line-mode 1)))
+(add-hook 'c-mode-hook
+  '(lambda ()
+        (gtags-mode 1)))
+; Customization
+(setq gtags-suggested-key-mapping t)
+(setq gtags-auto-update t)
+
 ;; https://github.com/leoliu/ggtags
 (require 'ggtags)
 (add-hook 'c-mode-common-hook
@@ -58,24 +59,10 @@ the directory from GTAGSLIBPATH."
   (interactive)
   (message "GTAGSLIBPATH=%s" (getenv "GTAGSLIBPATH")))
 
-(global-set-key (kbd "<C-f7>") 'ggtags-create-tags)
+(global-set-key (kbd "<f7>") 'ggtags-find-tag-dwim)
 (global-set-key (kbd "<M-f7>") 'ggtags-update-tags)
-(global-set-key (kbd "<C-f8>") 'ggtags-find-definition)
-(global-set-key (kbd "<M-f8>") 'ggtags-find-reference)
-(global-set-key (kbd "<S-f8>") 'ggtags-find-tag-dwim)
-(global-set-key (kbd "<s-f8>") 'ggtags-find-other-symbol)
-(define-key ggtags-mode-map (kbd "M-,") 'pop-tag-mark)
-
-;; Before using the ggtags
-;; remember to create a GTAGS database
-;; by running gtags at your project root in terminal:
-
-;; $ cd /path/to/project/root
-;; $ gtags
-
-;; After this, a few files are created:
-
-;; $ ls G*
-;; GPATH   GRTAGS  GTAGS
+(global-set-key (kbd "<C-f7>") 'ggtags-find-definition)
+(global-set-key (kbd "<S-f7>") 'ggtags-find-reference)
+(global-set-key (kbd "<s-f7>") 'ggtags-find-other-symbol)
 
 (provide 'init-tags)
