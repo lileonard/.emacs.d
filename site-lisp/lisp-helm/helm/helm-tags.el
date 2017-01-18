@@ -1,6 +1,6 @@
 ;;; helm-tags.el --- Helm for Etags. -*- lexical-binding: t -*-
 
-;; Copyright (C) 2012 ~ 2016 Thierry Volpiatto <thierry.volpiatto@gmail.com>
+;; Copyright (C) 2012 ~ 2017 Thierry Volpiatto <thierry.volpiatto@gmail.com>
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -250,16 +250,24 @@ If no entry in cache, create one."
 
 (defvar find-tag-marker-ring)
 
+(defsubst helm-etags--file-from-tag (fname)
+  (cl-loop for ext in
+           (cons "" (remove "" tags-compression-info-list))
+           for file = (concat fname ext)
+           when (file-exists-p file)
+           return file))
+
 (defun helm-etags-action-goto (switcher candidate)
   "Helm default action to jump to an etags entry in other window."
   (require 'etags)
   (helm-log-run-hook 'helm-goto-line-before-hook)
   (let* ((split (helm-grep-split-line candidate))
          (fname (cl-loop for tagf being the hash-keys of helm-etags-cache
-                      for f = (expand-file-name
-                               (car split) (file-name-directory tagf))
-                      when (file-exists-p f)
-                      return f))
+                         for f = (expand-file-name
+                                  (car split) (file-name-directory tagf))
+                         ;; Try to find an existing file, possibly compressed.
+                         when (helm-etags--file-from-tag f)
+                         return it))
          (elm   (cl-caddr split))
          (linum (string-to-number (cadr split))))
     (if (null fname)
@@ -333,7 +341,7 @@ Create with etags shell command, or visit with `find-tag' or `visit-tags-table'.
 (provide 'helm-tags)
 
 ;; Local Variables:
-;; byte-compile-warnings: (not cl-functions obsolete)
+;; byte-compile-warnings: (not obsolete)
 ;; coding: utf-8
 ;; indent-tabs-mode: nil
 ;; End:

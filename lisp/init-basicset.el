@@ -14,7 +14,7 @@
       column-number-mode t
       global-font-lock-mode t
       make-backup-files nil
-      select-enable-clipboard t
+      ;; select-enable-clipboard t
       suggest-key-bindings 1)
 (setq-default indent-tabs-mode nil)
 

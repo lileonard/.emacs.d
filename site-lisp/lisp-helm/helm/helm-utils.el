@@ -1,6 +1,6 @@
 ;;; helm-utils.el --- Utilities Functions for helm. -*- lexical-binding: t -*-
 
-;; Copyright (C) 2012 ~ 2016 Thierry Volpiatto <thierry.volpiatto@gmail.com>
+;; Copyright (C) 2012 ~ 2017 Thierry Volpiatto <thierry.volpiatto@gmail.com>
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -198,6 +198,9 @@ In this case last position is added to the register
     ("&shy;"    . 173)) ;; ­
 
   "Table of html character entities and values.")
+
+(defvar helm-find-many-files-after-hook nil
+  "Hook that run at end of `helm-find-many-files'.")
 
 ;;; Faces.
 ;;
@@ -663,6 +666,10 @@ Assume regexp is a pcre based regexp."
   (when helm--match-item-overlays
     (mapc 'delete-overlay helm--match-item-overlays)))
 
+(defun helm-match-line-cleanup-maybe ()
+  (when (helm-empty-buffer-p)
+    (helm-match-line-cleanup)))
+
 (defun helm-match-line-update ()
   (when helm-match-line-overlay
     (delete-overlay helm-match-line-overlay)
@@ -677,6 +684,7 @@ Assume regexp is a pcre based regexp."
 (defun helm-match-line-cleanup-pulse ()
   (run-with-timer 0.3 nil #'helm-match-line-cleanup))
 
+(add-hook 'helm-after-update-hook 'helm-match-line-cleanup-maybe)
 (add-hook 'helm-after-persistent-action-hook 'helm-persistent-autoresize-hook)
 (add-hook 'helm-cleanup-hook 'helm-match-line-cleanup)
 (add-hook 'helm-after-action-hook 'helm-match-line-cleanup-pulse)
@@ -768,8 +776,11 @@ directory, open this directory."
       (find-file remote-path))))
 
 (defun helm-find-many-files (_ignore)
+  "Simple action that run `find-file' on marked candidates.
+Run `helm-find-many-files-after-hook' at end"
   (let ((helm--reading-passwd-or-string t))
-    (mapc 'find-file (helm-marked-candidates))))
+    (mapc 'find-file (helm-marked-candidates))
+    (helm-log-run-hook 'helm-find-many-files-after-hook)))
 
 (defun helm-read-repeat-string (prompt &optional count)
   "Prompt as many time PROMPT is not empty.
@@ -823,7 +834,7 @@ When unable to decode ENTITY returns nil."
 (provide 'helm-utils)
 
 ;; Local Variables:
-;; byte-compile-warnings: (not cl-functions obsolete)
+;; byte-compile-warnings: (not obsolete)
 ;; coding: utf-8
 ;; indent-tabs-mode: nil
 ;; End:

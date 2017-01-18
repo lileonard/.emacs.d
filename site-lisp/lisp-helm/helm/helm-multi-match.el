@@ -3,7 +3,7 @@
 ;; Original Author: rubikitch
 
 ;; Copyright (C) 2008 ~ 2011 rubikitch
-;; Copyright (C) 2011 ~ 2016 Thierry Volpiatto <thierry.volpiatto@gmail.com>
+;; Copyright (C) 2011 ~ 2017 Thierry Volpiatto <thierry.volpiatto@gmail.com>
 
 ;; Author: Thierry Volpiatto <thierry.volpiatto@gmail.com>
 ;; URL: http://github.com/emacs-helm/helm
@@ -360,7 +360,7 @@ e.g \"bar foo\" will match \"barfoo\" but not \"foobar\" contrarily to
 
 
 ;; Local Variables:
-;; byte-compile-warnings: (not cl-functions obsolete)
+;; byte-compile-warnings: (not obsolete)
 ;; coding: utf-8
 ;; indent-tabs-mode: nil
 ;; End:

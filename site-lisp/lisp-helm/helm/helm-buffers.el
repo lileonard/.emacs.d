@@ -1,6 +1,6 @@
 ;;; helm-buffers.el --- helm support for buffers. -*- lexical-binding: t -*-
 
-;; Copyright (C) 2012 ~ 2016 Thierry Volpiatto <thierry.volpiatto@gmail.com>
+;; Copyright (C) 2012 ~ 2017 Thierry Volpiatto <thierry.volpiatto@gmail.com>
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -613,12 +613,13 @@ If REGEXP-FLAG is given use `query-replace-regexp'."
   (mapc 'helm-revert-buffer (helm-marked-candidates)))
 
 (defun helm-buffer-revert-and-update (_candidate)
-  (let ((marked (helm-marked-candidates))
-        (preselect (helm-buffers--quote-truncated-buffer
-                    (helm-get-selection))))
-    (cl-loop for buf in marked do (helm-revert-buffer buf))
-    (when (> (length marked) 1) (helm-unmark-all))
-    (helm-force-update preselect)))
+  (with-helm-buffer
+    (let ((marked (helm-marked-candidates))
+          (preselect (helm-buffers--quote-truncated-buffer
+                      (helm-get-selection))))
+      (cl-loop for buf in marked do (helm-revert-buffer buf))
+      (when helm-marked-candidates (helm-unmark-all))
+      (helm-update preselect))))
 
 (defun helm-buffer-revert-persistent ()
   "Revert buffer without quitting helm."
@@ -629,14 +630,15 @@ If REGEXP-FLAG is given use `query-replace-regexp'."
 (put 'helm-buffer-revert-persistent 'helm-only t)
 
 (defun helm-buffer-save-and-update (_candidate)
-  (let ((marked (helm-marked-candidates))
-        (preselect (helm-get-selection nil t))
-        (enable-recursive-minibuffers t))
-    (cl-loop for buf in marked do
-          (with-current-buffer (get-buffer buf)
-            (when (buffer-file-name) (save-buffer))))
-    (when (> (length marked) 1) (helm-unmark-all))
-    (helm-force-update (regexp-quote preselect))))
+  (with-helm-buffer
+    (let ((marked (helm-marked-candidates))
+          (preselect (helm-get-selection nil t))
+          (enable-recursive-minibuffers t))
+      (cl-loop for buf in marked do
+               (with-current-buffer (get-buffer buf)
+                 (when (buffer-file-name) (save-buffer))))
+      (when helm-marked-candidates (helm-unmark-all))
+      (helm-update (regexp-quote preselect)))))
 
 (defun helm-buffer-save-persistent ()
   "Save buffer without quitting helm."
@@ -913,7 +915,7 @@ displayed with the `file-name-shadow' face if available."
 (provide 'helm-buffers)
 
 ;; Local Variables:
-;; byte-compile-warnings: (not cl-functions obsolete)
+;; byte-compile-warnings: (not obsolete)
 ;; coding: utf-8
 ;; indent-tabs-mode: nil
 ;; End:

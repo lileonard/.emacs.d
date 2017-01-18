@@ -1,6 +1,6 @@
 ;;; helm-help.el --- Help messages for Helm. -*- lexical-binding: t -*-
 
-;; Copyright (C) 2012 ~ 2016 Thierry Volpiatto <thierry.volpiatto@gmail.com>
+;; Copyright (C) 2012 ~ 2017 Thierry Volpiatto <thierry.volpiatto@gmail.com>
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -608,6 +608,15 @@ See Man locate for more infos.
 Some other sources (at the moment recentf and file in current directory sources)
 support the -b flag for compatibility with locate when they are used with it.
 
+When you enable fuzzy matching on locate with
+`helm-locate-fuzzy-match', the search will be performed on basename
+only for efficiency (so don't add \"-b\" at prompt), as soon as you
+separate your patterns with spaces, fuzzy matching will be disabled
+and search will be done on the full filename.  Note that in multimatch
+fuzzy is completely disabled, which mean that each pattern should be a
+compliant regexp matching pattern (i.e \"helm\" will match \"helm\"
+but \"hlm\" will NOT match \"helm\").
+
 *** Browse project
 
 When your directory is not under version control,
@@ -1075,6 +1084,27 @@ you don't choose from there a command using helm completion.
 ** Commands
 \\<helm-kmacro-map>")
 
+(defvar helm-org-headings-help-message
+  "* Helm org headings
+
+** Tips
+
+*** Refiling
+
+The heading to refile will be the one you were at when starting helm
+session, and the place to refile this heading will be the selected
+candidate (i.e the candidate at point in helm buffer). If you want to
+refile another one, move to it in helm buffer, mark it, then move to
+the candidate of your choice to refile at this place.
+NOTE that of course if you have marked more than one candidate,
+all the subsequent candidates will be ignored.
+
+** Commands
+\\<helm-org-headings-map>
+\\[helm-org-run-open-heading-in-indirect-buffer]\t\tOpen heading in indirect buffer.
+\\[helm-org-run-heading-refile]\t\tRefile current heading to selection.
+\\[helm-org-run-insert-link-to-heading-at-marker]\t\tInsert link at point to selection."
+  )
 
 ;;; Mode line strings
 ;;
@@ -1116,7 +1146,7 @@ f1/f2/f-n:NthAct \
 (provide 'helm-help)
 
 ;; Local Variables:
-;; byte-compile-warnings: (not cl-functions obsolete)
+;; byte-compile-warnings: (not obsolete)
 ;; coding: utf-8
 ;; indent-tabs-mode: nil
 ;; End:

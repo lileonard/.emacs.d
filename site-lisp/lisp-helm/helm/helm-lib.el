@@ -1,6 +1,6 @@
 ;;; helm-lib.el --- Helm routines. -*- lexical-binding: t -*-
 
-;; Copyright (C) 2015 ~ 2016  Thierry Volpiatto <thierry.volpiatto@gmail.com>
+;; Copyright (C) 2015 ~ 2017  Thierry Volpiatto <thierry.volpiatto@gmail.com>
 
 ;; Author: Thierry Volpiatto <thierry.volpiatto@gmail.com>
 ;; URL: http://github.com/emacs-helm/helm
@@ -25,6 +25,13 @@
 
 (require 'cl-lib)
 (require 'dired)
+
+(declare-function helm-get-sources "helm.el")
+(declare-function helm-marked-candidates "helm.el")
+(declare-function helm-follow-mode-p "helm.el")
+(declare-function helm-attr "helm.el")
+(declare-function helm-attrset "helm.el")
+(defvar helm-current-position)
 
 
 ;;; User vars.
@@ -152,12 +159,11 @@ a function.
 If NAME returns nil the pair is skipped.
 
 \(fn NAME ACTION ...)"
-  (cl-loop for i on args by #'cddr
-           for name  = (car i)
+  (cl-loop for (name fn) on args by #'cddr
            when (functionp name)
            do (setq name (funcall name))
            when name
-           collect (cons name (cadr i))))
+           collect (cons name fn)))
 
 ;;; Anaphoric macros.
 ;;
@@ -357,17 +363,26 @@ Default is `eq'."
         unless (gethash elm cont)
         collect (puthash elm elm cont)))
 
+(defsubst helm--string-join (strings &optional separator)
+  "Join all STRINGS using SEPARATOR."
+  (mapconcat 'identity strings separator))
+
+(defun helm--concat-regexps (regexp-list)
+  "Return a regexp which matches any of the regexps in REGEXP-LIST."
+  (if regexp-list
+      (concat "\\(?:" (helm--string-join regexp-list "\\)\\|\\(?:") "\\)")
+    "\\<\\>"))                          ; Match nothing
+
 (defun helm-skip-entries (seq black-regexp-list &optional white-regexp-list)
   "Remove entries which matches one of REGEXP-LIST from SEQ."
-  (cl-loop for i in seq
-           unless (and (cl-loop for re in black-regexp-list
-                                thereis (and (stringp i)
-                                             (string-match-p re i)))
-                       (null
-                        (cl-loop for re in white-regexp-list
-                                thereis (and (stringp i)
-                                             (string-match-p re i)))))
-           collect i))
+  (let ((black-regexp (helm--concat-regexps black-regexp-list))
+        (white-regexp (helm--concat-regexps white-regexp-list)))
+    (cl-loop for i in seq
+             unless (and (stringp i)
+                         (string-match-p black-regexp i)
+                         (null
+                          (string-match-p white-regexp i)))
+             collect i)))
 
 (defun helm-boring-directory-p (directory black-list)
   "Check if one regexp in BLACK-LIST match DIRECTORY."
@@ -923,7 +938,7 @@ as emacs-25 version of `ansi-color-apply' is partially broken."
 (provide 'helm-lib)
 
 ;; Local Variables:
-;; byte-compile-warnings: (not cl-functions obsolete)
+;; byte-compile-warnings: (not obsolete)
 ;; coding: utf-8
 ;; indent-tabs-mode: nil
 ;; End:

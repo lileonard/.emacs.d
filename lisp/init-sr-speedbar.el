@@ -27,14 +27,6 @@
                                  (setq window-size-fixed 'width))))
 (global-set-key (kbd "<s-f5>")     'sr-speedbar-refresh-toggle)
 
-(define-key speedbar-mode-map (kbd "s")
-  #'(lambda ()
-      (interactive)
-      (beginning-of-buffer)
-      (isearch-forward)))
-(define-key speedbar-mode-map (kbd "u")
-  #'(lambda ()
-      (interactive)
-      (speedbar-up-directory)))
+
 
 (provide 'init-sr-speedbar)
