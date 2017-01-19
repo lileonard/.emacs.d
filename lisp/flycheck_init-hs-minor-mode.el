@@ -77,7 +77,8 @@
        (save-excursion (hs-show-block)))
 
      (defadvice find-tag (after expand-after-find-tag activate compile)
-       (save-excursion (hs-show-block)))))
+       (save-excursion (hs-show-block)))
+     ))
 
 (setq hs-minor-mode-map
       (let ((map (make-sparse-keymap)))

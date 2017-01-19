@@ -232,8 +232,8 @@
 (setq ivy-use-virtual-buffers t)
 (global-set-key "\C-s" 'swiper)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(require 'electric-spacing)
-(add-hook 'c-mode-common-hook #'electric-spacing-mode)
-(add-hook 'python-mode-hook   #'electric-spacing-mode)
+;; (require 'electric-spacing)
+;; (add-hook 'c-mode-common-hook #'electric-spacing-mode)
+;; (add-hook 'python-mode-hook   #'electric-spacing-mode)
 
 (provide 'init-small-packages)
