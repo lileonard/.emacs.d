@@ -17,7 +17,7 @@
 ;; You may delete these explanatory comments.
 ;; package source setting but I prefer to manually install plugins
 
-(setq gc-cons-threshold 100000000)
+(setq gc-cons-threshold 40000000)
 (require 'package)
 (package-initialize)
 (add-to-list
