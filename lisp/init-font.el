@@ -46,10 +46,10 @@ If set/leave chinese-font-size to nil, it will follow english-font-size"
 ;; this is on the cluster
 (qiang-set-font
  '("Consolas"
+   "Monaco"
    "DejaVu Sans Mono"
    "DejaVu LGC Sans Mono"
    "Monospace"
-   "Monaco"
    "Courier New")
  ":pixelsize=21"
  '("XTXINWEI"

@@ -31,6 +31,8 @@
 (declare-function helm-follow-mode-p "helm.el")
 (declare-function helm-attr "helm.el")
 (declare-function helm-attrset "helm.el")
+(declare-function org-open-at-point "org.el")
+(declare-function org-content "org.el")
 (defvar helm-current-position)
 
 
@@ -148,22 +150,18 @@ and not `exit-minibuffer' or other unwanted functions."
         (setq lis (cdr lis))
         elm))))
 
+(defun helm-iter-circular (seq)
+  "Infinite iteration on SEQ."
+  (let ((lis seq))
+     (lambda ()
+       (let ((elm (car lis)))
+         (setq lis (pcase lis (`(,_ . ,ll) (or ll seq))))
+         elm))))
+
 (defun helm-iter-next (iterator)
   "Return next elm of ITERATOR."
-  (funcall iterator))
+  (and iterator (funcall iterator)))
 
-(defun helm-make-actions (&rest args)
-  "Build an alist with (NAME . ACTION) elements with each pairs in ARGS.
-Where NAME is a string or a function returning a string or nil and ACTION
-a function.
-If NAME returns nil the pair is skipped.
-
-\(fn NAME ACTION ...)"
-  (cl-loop for (name fn) on args by #'cddr
-           when (functionp name)
-           do (setq name (funcall name))
-           when name
-           collect (cons name fn)))
 
 ;;; Anaphoric macros.
 ;;
@@ -191,13 +189,17 @@ of `cl-return' is possible to exit the loop."
              (setq ,flag nil)))))))
 
 (defmacro helm-acond (&rest clauses)
-  "Anaphoric version of `cond'."
+  "Anaphoric version of `cond'.
+In each clause of CLAUSES, the result of the car of clause
+is stored in a temporary variable called `it' and usable in the cdr
+of this same clause.  Each `it' variable is independent of its clause.
+The usage is the same as `cond'."
   (unless (null clauses)
     (helm-with-gensyms (sym)
       (let ((clause1 (car clauses)))
         `(let ((,sym ,(car clause1)))
            (helm-aif ,sym
-               (progn ,@(cdr clause1))
+               (or (progn ,@(cdr clause1)) it)
              (helm-acond ,@(cdr clauses))))))))
 
 
@@ -284,26 +286,34 @@ text to be displayed in BUFNAME."
 ;; commands for impaired people using a synthetizer (#1347).
 (defun helm-help-event-loop ()
   (let ((prompt (propertize
-                 "[SPC,C-v,down,next:NextPage  b,M-v,up,prior:PrevPage C-s/r:Isearch q:Quit]"
+                 "[SPC,C-v,next:ScrollUp  b,M-v,prior:ScrollDown TAB:Cycle M-TAB:All C-s/r:Isearch q:Quit]"
                  'face 'helm-helper))
-        scroll-error-top-bottom)
+        scroll-error-top-bottom
+        (iter-org-state (helm-iter-circular '(1 (16) (64)))))
     (helm-awhile (read-key prompt)
       (cl-case it
-        ((?\C-v ? down next) (helm-help-scroll-up helm-scroll-amount))
-        ((?\M-v ?b up prior) (helm-help-scroll-down helm-scroll-amount))
+        ((?\C-v ? next) (helm-help-scroll-up helm-scroll-amount))
+        ((?\M-v ?b prior) (helm-help-scroll-down helm-scroll-amount))
         (?\C-s (isearch-forward))
         (?\C-r (isearch-backward))
         (?\C-a (call-interactively #'move-beginning-of-line))
         (?\C-e (call-interactively #'move-end-of-line))
-        (?\C-f (call-interactively #'forward-char))
-        (?\C-b (call-interactively #'backward-char))
-        (?\C-n (helm-help-next-line))
-        (?\C-p (helm-help-previous-line))
+        ((?\C-f right) (call-interactively #'forward-char))
+        ((?\C-b left) (call-interactively #'backward-char))
+        ((?\C-n down) (helm-help-next-line))
+        ((?\C-p up) (helm-help-previous-line))
         (?\M-a (call-interactively #'backward-sentence))
         (?\M-e (call-interactively #'forward-sentence))
         (?\M-f (call-interactively #'forward-word))
         (?\M-b (call-interactively #'backward-word))
+        (?\M-> (call-interactively #'end-of-buffer))
+        (?\M-< (call-interactively #'beginning-of-buffer))
         (?\C-  (helm-help-toggle-mark))
+        (?\t   (org-cycle))
+        (?\C-m (ignore-errors (call-interactively #'org-open-at-point)))
+        (?\M-\t (pcase (helm-iter-next iter-org-state)
+                  ((pred numberp) (org-content))
+                  ((and state) (org-cycle state))))
         (?\M-w (copy-region-as-kill
                 (region-beginning) (region-end))
                (deactivate-mark))
@@ -471,6 +481,18 @@ than specifying SOURCES because sources are cached."
            for source in src-list
            thereis (and (string= name (assoc-default 'name source)) source)))
 
+(defun helm-make-actions (&rest args)
+  "Build an alist with (NAME . ACTION) elements with each pairs in ARGS.
+Where NAME is a string or a function returning a string or nil and ACTION
+a function.
+If NAME returns nil the pair is skipped.
+
+\(fn NAME ACTION ...)"
+  (cl-loop for (name fn) on args by #'cddr
+           when (functionp name)
+           do (setq name (funcall name))
+           when name
+           collect (cons name fn)))
 
 ;;; Strings processing.
 ;;

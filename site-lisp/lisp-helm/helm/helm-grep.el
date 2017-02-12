@@ -813,7 +813,8 @@ Special commands:
 (defun helm-grep-mode-jump ()
   (interactive)
   (helm-grep-action
-   (buffer-substring (point-at-bol) (point-at-eol))))
+   (buffer-substring (point-at-bol) (point-at-eol)))
+  (helm-match-line-cleanup-pulse))
 
 (defun helm-grep-mode-jump-other-window-1 (arg)
   (let ((candidate (buffer-substring (point-at-bol) (point-at-eol))))
@@ -821,6 +822,7 @@ Special commands:
         (progn
           (save-selected-window
             (helm-grep-action candidate 'other-window)
+            (helm-match-line-cleanup-pulse)
             (recenter))
           (forward-line arg))
       (error nil))))
@@ -837,7 +839,8 @@ Special commands:
   (interactive)
   (let ((candidate (buffer-substring (point-at-bol) (point-at-eol))))
     (condition-case nil
-        (helm-grep-action candidate 'other-window)
+        (progn (helm-grep-action candidate 'other-window)
+               (helm-match-line-cleanup-pulse))
       (error nil))))
 
 
@@ -1311,15 +1314,16 @@ If a prefix arg is given run grep on all buffers ignoring non--file-buffers."
 Takes three format specs, the first for type(s), the second for pattern
 and the third for directory.
 
-Here the command line to use with ripgrep:
+You can use safely \"--color\" (used by default) with AG RG and PT.
 
-    rg --smart-case --no-heading --line-number %s %s %s
-
-If you want native color output with ripgrep (--color=always)
-you have to use a workaround as ripgrep is not supporting emacs
-dumb terminal, here it is:
+For ripgrep you have to use a workaround as it is not supporting emacs dumb
+terminal to output colors properly here is the command line to use:
 
     TERM=eterm-color rg --color=always --smart-case --no-heading --line-number %s %s %s
+
+NOTE: With rg compiled from master you don't need anymore to set environment
+TERM=eterm-color in your command to output colors.
+See issue https://github.com/BurntSushi/ripgrep/issues/182.
 
 You must use an output format that fit with helm grep, that is:
 
@@ -1329,7 +1333,9 @@ The option \"--nogroup\" allow this.
 The option \"--line-numbers\" is also mandatory except with PT (not supported).
 For RG the options \"--no-heading\" and \"--line-number\" are the ones to use.
 
-You can use safely \"--color\" (used by default) with AG and PT."
+When modifying the default colors of matches with e.g \"--color-match\" option of AG
+you may want to modify as well `helm-grep-ag-pipe-cmd-switches' to have all matches
+colorized with same color in multi match."
   :group 'helm-grep
   :type 'string)
 
@@ -1364,7 +1370,7 @@ if available with current AG version."
          (pipe-cmd (pcase (helm-grep--ag-command)
                      ((and com (or "ag" "pt"))
                       (format "%s -S --color%s" com (concat " " pipe-switches)))
-                     (`"rg" (format "TERM=eterm-color rg -S --color=always%s"
+                     (`"rg" (format "TERM=eterm-color rg -N -S --color=always%s"
                                     (concat " " pipe-switches)))))
          (cmd (format helm-grep-ag-command
                       (mapconcat 'identity type " ")
