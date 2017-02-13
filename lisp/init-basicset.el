@@ -114,8 +114,7 @@
    "/home/lyh/Soft/CUDA/include/thrust"
    "/home/lyh/Soft/fftw/include"
    "/home/lyh/Soft/mpich/include"
-   "/home/lyh/Soft/mpich/include/primitives"
-))
+   "/home/lyh/Soft/mpich/include/primitives"))
 
 (defconst my-custom-include-dirs
   (list

@@ -1,15 +1,43 @@
 #+TITLE: My emacs settings
 
 * works on
-| OS            | Linux X-11                                        |
-| emacs version | 25+                                               |
-| Languages     | C/C++ with MPI OpenMp CUDA, python, elisp, matlab |
+| OS            | Linux X-11 (CentOS_7 Fedora_20+)    |
+| emacs version | 25+                                 |
+| Language      | C/C++, python, elisp, matlab, latex |
+| parallel tool | MPI OpenMP CUDA                     |
+* you should modify 
+ notice that different OS (or compiler/libruary) has virus pathes of c/c++ include, include lists should be changed
+ in lisp/init-basicset.el my-sys-c-include and my-custom-include-dirs was set to solve the problem
+
+ if OS (or compiler/libruary) is changed use    echo "" | g++ -v -x c++ -E -
+ find code like this
+
+ #include "..." search starts here:
+ #include <...> search starts here:
+ /usr/lib/gcc/x86_64-redhat-linux/4.4.7/../../../../include/c++/4.4.7
+ /usr/lib/gcc/x86_64-redhat-linux/4.4.7/../../../../include/c++/4.4.7/x86_64-redhat-linux
+ /usr/lib/gcc/x86_64-redhat-linux/4.4.7/../../../../include/c++/4.4.7/backward
+ /usr/local/include
+ /usr/lib/gcc/x86_64-redhat-linux/4.4.7/include
+ /usr/include
+
+ and do NOT forget CUDA & MPI &FFTW
 
 * 主要参考
-- [[http://www.emacser.com/emacs-resource.htm][Emacs中文网(好久不更新了)]]
+- [[http://www.emacser.com/emacs-resource.htm][Emacs中文网(long time no update)]]
 - [[http://www.emacswiki.org/][Emacs Wiki]]
 - [[http://xahlee.org/][李杀网]]
 - [[http://blog.csdn.net/redguardtoo/article/details/7222501/][一年成为Emacs高手]]
 - [[http://www.emacsist.com/][emacsist]]
 - [[https://github.com/bayandin/awesome-awesomeness/][awesome-awesomeness]]
 - [[https://emacs.zeef.com/ehartc/][zeef emacs]]
+* License
+  Copyright (C) Li Yuanheng
+  
+  Author: Li Yuanheng
+  
+  This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+  
+  This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+  
+You should have received a copy of the GNU General Public License along with this program. If not, see [[http://www.gnu.org/licenses/]].
