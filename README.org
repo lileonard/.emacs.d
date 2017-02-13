@@ -1,8 +1,10 @@
 #+TITLE: My emacs settings
+
 * works on
-** OS: Linux X-11
-** emacs version: 25+ 
-** Languages: C/C++ with MPI OpenMp CUDA, python, elisp, matlab 
+| OS            | Linux X-11                                        |
+| emacs version | 25+                                               |
+| Languages     | C/C++ with MPI OpenMp CUDA, python, elisp, matlab |
+
 * 主要参考
 - [[http://www.emacser.com/emacs-resource.htm][Emacs中文网(好久不更新了)]]
 - [[http://www.emacswiki.org/][Emacs Wiki]]
