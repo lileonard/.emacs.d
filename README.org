@@ -1,4 +1,4 @@
-* My emacs settings
+#+TITLE: My emacs settings
 * OS: Linux X-11
 * emacs version: 25+ 
 * Languages: C/C++ with MPI OpenMp CUDA, python, elisp, matlab 
