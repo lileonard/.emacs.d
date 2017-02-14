@@ -7,7 +7,7 @@
 | parallel tool | MPI OpenMP CUDA                     |
 * you should modify 
  notice that different OS (or compiler/libruary) has virus pathes of c/c++ include, include lists should be changed
- in lisp/init-basicset.el my-sys-c-include and my-custom-include-dirs was set to solve the problem
+ in the file ./lisp/init-basicset.el, my-sys-c-include & my-custom-include-dirs was set to solve the problem
 
  if OS (or compiler/libruary) is changed use    echo "" | g++ -v -x c++ -E -
  find code like this
@@ -21,7 +21,7 @@
  /usr/lib/gcc/x86_64-redhat-linux/4.4.7/include
  /usr/include
 
- and do NOT forget CUDA & MPI &FFTW
+ and do NOT forget CUDA & MPI &FFTW include
 
 * 主要参考
 - [[http://www.emacser.com/emacs-resource.htm][Emacs中文网(long time no update)]]
@@ -32,10 +32,7 @@
 - [[https://github.com/bayandin/awesome-awesomeness/][awesome-awesomeness]]
 - [[https://emacs.zeef.com/ehartc/][zeef emacs]]
 * License
-  Copyright (C) Li Yuanheng
-  
-  Author: Li Yuanheng
-  
+  Copyleft! <Li Yuanheng>
   This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
   
   This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
