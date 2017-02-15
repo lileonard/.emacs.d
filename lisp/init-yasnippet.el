@@ -1,30 +1,7 @@
 (require 'yasnippet)
-(setq my-snippets-dir (expand-file-name "~/.emacs.d/snippets"))
+(setq yas-snippet-dirs '("~/.emacs.d/snippets"))
 (yas-global-mode 1)
 ;;(yas-reload-all)
-(defun yasnippet-settings ()
-  "settings for `yasnippet'."
-  (defun yasnippet-unbind-trigger-key ()
-    "Unbind `yas/trigger-key'."
-    (let ((key yas/trigger-key))
-      (setq yas/trigger-key nil)
-      (yas/trigger-key-reload key)))
-  (yasnippet-unbind-trigger-key)
-;;;###autoload
-  (defun yasnippet-reload-after-save ()
-    (let* ((bfn (expand-file-name (buffer-file-name)))
-           (root (expand-file-name yas/root-directory)))
-      (when (string-match (concat "^" root) bfn)
-        (yas/load-snippet-buffer))))
-  (add-hook 'after-save-hook 'yasnippet-reload-after-save))
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(require 'popup)
-;; add some shotcuts in popup menu mode
-(define-key popup-menu-keymap (kbd "TAB") 'popup-next)
-(define-key popup-menu-keymap (kbd "<tab>") 'popup-next)
-(define-key popup-menu-keymap (kbd "<backtab>") 'popup-previous)
-(define-key popup-menu-keymap "\r" nil)
-
 (defun yas-popup-isearch-prompt (prompt choices &optional display-fn)
   (when (featurep 'popup)
     (popup-menu*
@@ -56,14 +33,16 @@
 ;;;; auto-complete
 (defun yas/set-ac-modes ()
   "Add modes in `yas-snippet-dirs' to `ac-modes'.
-
 Call (yas/set-ac-modes) BEFORE (global-auto-complete-mode 1) or (ac-config-default)."
   (eval-after-load "auto-complete"
     '(setq ac-modes
            (append
-            (apply 'append (mapcar (lambda (dir) (mapcar 'intern (directory-files dir nil "-mode$")))
-                                   (yas-snippet-dirs)))
+            (apply 'append (mapcar
+                            (lambda (dir) (mapcar 'intern
+                                             (directory-files dir nil "-mode$")))
+                            (yas-snippet-dirs)))
             ac-modes))))
+(add-hook 'auto-complete-mode-hook 'yas/set-ac-modes)
 
 ;;;; parentheses hack in `emacs-lisp-mode'
 (declare-function paredit-raise-sexp "ext:paredit")
@@ -110,7 +89,5 @@ Call (yas/set-ac-modes) BEFORE (global-auto-complete-mode 1) or (ac-config-defau
           'yas/after-exit-snippet-hook--recursive-edit)
 
 (autoload 'yasnippet "helm-c-yasnippet" "" t)
-(setq helm-yas-space-match-any-greedy t)
-
 
 (provide 'init-yasnippet)

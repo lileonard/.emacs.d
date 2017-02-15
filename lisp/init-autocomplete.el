@@ -1,5 +1,4 @@
 ;;; init-autocomplete.el --- 
-
 (require 'auto-complete)
 (require 'auto-complete-config)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -103,12 +102,7 @@
         (cons 'sanityinc/auto-complete-at-point
               (remove 'sanityinc/auto-complete-at-point completion-at-point-functions))))
 (add-hook 'auto-complete-mode-hook 'set-auto-complete-as-completion-at-point-function)
-;; Exclude very large buffers from dabbrev
-(defun sanityinc/dabbrev-friend-buffer (other-buffer)
-  (< (buffer-size other-buffer) (* 1 1024 1024)))
-(setq dabbrev-friend-buffer-function 'sanityinc/dabbrev-friend-buffer)
 
-(add-hook 'auto-complete-mode-hook 'set-auto-complete-as-completion-at-point-function)
 (defun ac-semantic-construct-candidates (tags)
   "Construct candidates from the list inside of tags."
   (apply 'append
@@ -139,7 +133,6 @@
                             (all-completions
                              ac-target
                              (mapcar 'car ac-source-semantic-analysis)))))))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defun ac-settings-4-cc ()
   "`auto-complete' settings for `cc-mode'."

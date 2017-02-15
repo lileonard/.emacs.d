@@ -21,6 +21,13 @@
 (set-face-attribute
  'rainbow-delimiters-depth-1-face nil
  :foreground "#CD661D")
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(require 'popup)
+;; add some shotcuts in popup menu mode
+(define-key popup-menu-keymap (kbd "TAB") 'popup-next)
+(define-key popup-menu-keymap (kbd "<tab>") 'popup-next)
+(define-key popup-menu-keymap (kbd "<backtab>") 'popup-previous)
+(define-key popup-menu-keymap "\r" nil)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;ource pair
 (autoload 'sourcepair-load "sourcepair.el" "source pair for c/c++ and h" t)
