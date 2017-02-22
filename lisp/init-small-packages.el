@@ -101,7 +101,7 @@
                        (lambda (x)
                          (let ((y (/ #XFFFF 4))
                                ;; delta is the color adjust parament
-                               (delta #X0630))
+                               (delta #X0660))
                            (cond ((< x (* y 1))
                                   (+ x delta))
                                  ((< x (* y 2))
@@ -117,14 +117,46 @@
                  (mapconcat
                   (lambda (c) (format "%04X" c))
                   my-color
-                  "")))))))
+                  "")))
+        ))))
 (adjust-highlight-indentation-mode-face)
-
-;;( "#061939")
-;;(set-face-background 'highlight-indentation-current-column-face "blue")
+(defun adjust-highlight-indentation-current-mode-face()
+  "interactive"
+  (let* ((color  (x-color-values (face-attribute 'default :background))))
+    (if (null color)
+        (error "not support.")
+      (let ((my-color (mapcar
+                       (lambda (x)
+                         (let ((y (/ #XFFFF 4))
+                               ;; delta is the color adjust parament
+                               (delta #X1230))
+                           (cond ((< x (* y 1))
+                                  (+ x delta))
+                                 ((< x (* y 2))
+                                  (+ x delta))
+                                 ((< x (* y 3))
+                                  (- x delta))
+                                 (t
+                                  (- x delta))))) color)))
+        (set-face-attribute
+         'highlight-indentation-current-column-face nil
+         :background
+         (concat "#"
+                 (mapconcat
+                  (lambda (c) (format "%04X" c))
+                  my-color
+                  "")))
+        ))))
+(adjust-highlight-indentation-current-mode-face)
 (add-hook 'c-mode-common-hook      'highlight-indentation-mode)
+(add-hook 'c-mode-common-hook      'highlight-indentation-current-column-mode)
 (add-hook 'emacs-lisp-mode-hook    'highlight-indentation-mode)
+(add-hook 'emacs-lisp-mode-hook    'highlight-indentation-current-column-mode)
 (add-hook 'python-mode-hook        'highlight-indentation-mode)
+(add-hook 'python-mode-hook        'highlight-indentation-current-column-mode)
+
+(require 'beacon)
+(beacon-mode 1)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'highlight-numbers)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
