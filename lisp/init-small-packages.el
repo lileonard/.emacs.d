@@ -91,74 +91,14 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'c-toggle-dot-pointer)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(require 'highlight-indentation)
-(defun adjust-highlight-indentation-mode-face()
-  "interactive"
-  (let* ((color  (x-color-values (face-attribute 'default :background))))
-    (if (null color)
-        (error "not support.")
-      (let ((my-color (mapcar
-                       (lambda (x)
-                         (let ((y (/ #XFFFF 4))
-                               ;; delta is the color adjust parament
-                               (delta #X0660))
-                           (cond ((< x (* y 1))
-                                  (+ x delta))
-                                 ((< x (* y 2))
-                                  (+ x delta))
-                                 ((< x (* y 3))
-                                  (- x delta))
-                                 (t
-                                  (- x delta))))) color)))
-        (set-face-attribute
-         'highlight-indentation-face nil
-         :background
-         (concat "#"
-                 (mapconcat
-                  (lambda (c) (format "%04X" c))
-                  my-color
-                  "")))
-        ))))
-(adjust-highlight-indentation-mode-face)
-(defun adjust-highlight-indentation-current-mode-face()
-  "interactive"
-  (let* ((color  (x-color-values (face-attribute 'default :background))))
-    (if (null color)
-        (error "not support.")
-      (let ((my-color (mapcar
-                       (lambda (x)
-                         (let ((y (/ #XFFFF 4))
-                               ;; delta is the color adjust parament
-                               (delta #X1230))
-                           (cond ((< x (* y 1))
-                                  (+ x delta))
-                                 ((< x (* y 2))
-                                  (+ x delta))
-                                 ((< x (* y 3))
-                                  (- x delta))
-                                 (t
-                                  (- x delta))))) color)))
-        (set-face-attribute
-         'highlight-indentation-current-column-face nil
-         :background
-         (concat "#"
-                 (mapconcat
-                  (lambda (c) (format "%04X" c))
-                  my-color
-                  "")))
-        ))))
-(adjust-highlight-indentation-current-mode-face)
-(add-hook 'c-mode-common-hook      'highlight-indentation-mode)
-(add-hook 'c-mode-common-hook      'highlight-indentation-current-column-mode)
-(add-hook 'emacs-lisp-mode-hook    'highlight-indentation-mode)
-(add-hook 'emacs-lisp-mode-hook    'highlight-indentation-current-column-mode)
-(add-hook 'python-mode-hook        'highlight-indentation-mode)
-(add-hook 'python-mode-hook        'highlight-indentation-current-column-mode)
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'beacon)
 (beacon-mode 1)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'highlight-numbers)
+(add-hook 'c-mode-common-hook 'highlight-numbers-mode)
+(add-hook 'emacs-lisp-mode-hook 'highlight-numbers-mode)
+(add-hook 'python-mode-hook 'highlight-numbers-mode)
+(add-hook 'matlab-mode-hook 'highlight-numbers-mode)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; belong to cedet 1.1 but deleted in new version of cedet
 (require 'linemark)
@@ -198,33 +138,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'hungry-delete)
 (add-hook 'emacs-lisp-mode-hook  #'(lambda () (hungry-keyboard emacs-lisp-mode-map)))
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(require 'golden-ratio)
-(add-to-list 'golden-ratio-exclude-modes "ediff-mode")
-(add-to-list 'golden-ratio-exclude-modes "helm-mode")
-(add-to-list 'golden-ratio-exclude-modes "dired-mode")
-(add-to-list 'golden-ratio-inhibit-functions 'pl/helm-alive-p)
-(defun pl/helm-alive-p ()
-  (if (boundp 'helm-alive-p)
-      (symbol-value 'helm-alive-p)))
-;; do not enable golden-raio in thses modes
-(setq golden-ratio-exclude-modes '("ediff-mode"
-                                   "gud-mode"
-                                   "gdb-locals-mode"
-                                   "gdb-registers-mode"
-                                   "gdb-breakpoints-mode"
-                                   "gdb-threads-mode"
-                                   "gdb-frames-mode"
-                                   "gdb-inferior-io-mode"
-                                   "gud-mode"
-                                   "gdb-inferior-io-mode"
-                                   "gdb-disassembly-mode"
-                                   "gdb-memory-mode"
-                                   "magit-log-mode"
-                                   "magit-reflog-mode"
-                                   "magit-status-mode"
-                                   "IELM"
-                                   "eshell-mode" "dired-mode"))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'diff)
 ;; show whitespace in diff-mode
@@ -278,4 +191,4 @@
 (require 'pager)
 (global-set-key [next]  'pager-page-down)
 (global-set-key [prior] 'pager-page-up)
-(provide 'init-small-packages)
+ (provide 'init-small-packages)

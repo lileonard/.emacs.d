@@ -1,14 +1,7 @@
-(setq gc-cons-threshold 40000000)
-(require 'package)
-(package-initialize)
-(add-to-list
- 'package-archives
- '("melpa" . "http://melpa.org/packages/") t)
-
+(setq gc-cons-threshold (* 33 1024 1024))
 ;; add all path in .emacs.d to load path
 (let ((default-directory  "~/.emacs.d/"))
   (normal-top-level-add-subdirs-to-load-path))
-
 ;; basic settings
 (require 'init-basicset)
 ;; face settings
@@ -26,7 +19,7 @@
 (require 'init-lisp)
 (require 'init-latex)
 (require 'init-python)
-;; minor mode and plugin settings
+;; ;; minor mode and plugin settings
 (require 'init-helm)
 (require 'init-ido)
 (require 'init-cedet)
@@ -47,7 +40,7 @@
 ;; settings that from others
 (require 'coding-settings)
 ;; my settings
-(require 'my-c-config)
+;;(require 'my-c-config)
 (require 'my-compilation-settings)
 (require 'my-bracket-pair)
 (require 'my-elisp-functions)
