@@ -1,9 +1,9 @@
 ;;; pager.el --- windows-scroll commands
-;; Version: 20100330.2031
+;; Package-Version: 20151201.1720
 ;;; Version 2.0 - 97-10-06
-;;; Copyright (C) 1992-1997 Mikael Sjödin (mic@docs.uu.se)
+;;; Copyright (C) 1992-1997 Mikael Sjï¿½din (mic@docs.uu.se)
 ;;;
-;;; Author: Mikael Sjödin  --  mic@docs.uu.se
+;;; Author: Mikael Sjï¿½din  --  mic@docs.uu.se
 ;;;
 ;;; This file is NOT part of GNU Emacs.
 ;;; You may however redistribute it and/or modify it under the terms of the GNU
@@ -63,11 +63,11 @@
 
 (defvar pager-temporary-goal-column 0
   "Similat to temporary-goal-column byt used by the pager.el functions")
-;(make-variable-buffer-local 'pager-temporary-goal-column)
+                                        ;(make-variable-buffer-local 'pager-temporary-goal-column)
 
 (defconst pager-keep-column-commands
   '(pager-row-down pager-row-up row-dn row-up
-		   pager-page-down pager-page-up pg-dn pg-up)
+                   pager-page-down pager-page-up pg-dn pg-up)
   "Commands which when called without any other intervening command should
 keep the `pager-temporary-goal-column'")
 
@@ -82,21 +82,23 @@ keep the `pager-temporary-goal-column'")
 
 ;; ----------------------------------------------------------------------
 
+;;;###autoload
 (defun pager-page-down ()
   "Like scroll-up, but moves a fixed amount of lines (fixed relative the
 `window-height') so that pager-page-up moves back to the same line."
   (interactive)
   (if (not (pos-visible-in-window-p (point-max)))
       (pager-scroll-screen (- (1- (window-height))
-			      next-screen-context-lines))))
-    
+                              next-screen-context-lines))))
+
+;;;###autoload
 (defun pager-page-up ()
   "Like scroll-down, but moves a fixed amount of lines (fixed relative the
 `window-height') so that pager-page-down moves back to the same line."
   (interactive)
   (if (not (pos-visible-in-window-p (point-min)))
       (pager-scroll-screen (- next-screen-context-lines 
-			      (1- (window-height))))))
+                              (1- (window-height))))))
 
 ;; ------------------------------
 
@@ -113,7 +115,7 @@ keep the `pager-temporary-goal-column'")
 
 
 ;; ----------------------------------------------------------------------
-
+;;;###autoload
 (defun pager-row-up ()
   "Move point to previous line while scrolling screen down one line.
 The effect is that the cursor stays in the same position on the screen."
@@ -126,6 +128,7 @@ The effect is that the cursor stays in the same position on the screen."
   (move-to-column pager-temporary-goal-column)
   )
 
+;;;###autoload
 (defun pager-row-down ()
   "Move point to next line while scrolling screen up one line.
 The effect is that the cursor stays in the same position on the screen."
@@ -142,7 +145,4 @@ The effect is that the cursor stays in the same position on the screen."
 ;; ----------------------------------------------------------------------
 
 (provide 'pager)
-
-
-
 ;;; pager.el ends here

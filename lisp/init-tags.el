@@ -1,9 +1,5 @@
 (require 'gtags)
-(add-hook 'gtags-mode-hook
-  '(lambda ()
-        ; Local customization (overwrite key mapping)
-        (define-key gtags-mode-map "\C-f" 'scroll-up)
-        (define-key gtags-mode-map "\C-b" 'scroll-down)))
+
 (add-hook 'gtags-select-mode-hook
   '(lambda ()
         (setq hl-line-face 'underline)

@@ -154,7 +154,7 @@
 (add-hook 'emacs-lisp-mode-hook    'highlight-indentation-current-column-mode)
 (add-hook 'python-mode-hook        'highlight-indentation-mode)
 (add-hook 'python-mode-hook        'highlight-indentation-current-column-mode)
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'beacon)
 (beacon-mode 1)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -274,5 +274,8 @@
 (require 'electric-spacing)
 (add-hook 'c-mode-common-hook #'electric-spacing-mode)
 (add-hook 'python-mode-hook   #'electric-spacing-mode)
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(require 'pager)
+(global-set-key [next]  'pager-page-down)
+(global-set-key [prior] 'pager-page-up)
 (provide 'init-small-packages)
