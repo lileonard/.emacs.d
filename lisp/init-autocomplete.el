@@ -38,9 +38,7 @@
         ;; Start auto-completion after 2 characters of a word
         ac-auto-start 0.1 
         ac-ignore-case t
-        help-xref-following nil
-        c-tab-always-indent nil
-        c-insert-tab-function 'indent-for-tab-command
+        help-xref-following nil 
         ac-quick-help-prefer-pos-tip t
         )
   (setq-default ac-expand-on-auto-complete nil)

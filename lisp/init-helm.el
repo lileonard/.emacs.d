@@ -7,10 +7,7 @@
 (autoload 'helm-semantic-or-imenu "helm-semantic.el" nil t)
 (setq helm-recentf-fuzzy-match t
       helm-buffers-fuzzy-matching t
-      helm-locate-fuzzy-match t
-      helm-semantic-fuzzy-match t
-      helm-imenu-fuzzy-match t
-      helm-lisp-fuzzy-completion t)
+      helm-locate-fuzzy-match t)
 
 ;; ;; defface helm-source-header
 ;; (set-face-attribute

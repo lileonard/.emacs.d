@@ -1,7 +1,16 @@
 (require 'yasnippet)
 (setq yas-snippet-dirs '("~/.emacs.d/snippets"))
-(yas-global-mode 1)
-;;(yas-reload-all)
+
+
+(yas-reload-all)
+(add-hook 'c-mode-common-hook #'yas-minor-mode)
+(add-hook 'emacs-lisp-mode-hook #'yas-minor-mode)
+(add-hook 'cmake-mode-hook #'yas-minor-mode)
+(add-hook 'latex-mode-hook #'yas-minor-mode)
+(add-hook 'lisp-mode-hook #'yas-minor-mode)
+(add-hook 'python-mode-hook #'yas-minor-mode)
+(add-hook 'org-mode-hook #'yas-minor-mode)
+
 (defun yas-popup-isearch-prompt (prompt choices &optional display-fn)
   (when (featurep 'popup)
     (popup-menu*
@@ -46,7 +55,6 @@ Call (yas/set-ac-modes) BEFORE (global-auto-complete-mode 1) or (ac-config-defau
 
 ;;;; parentheses hack in `emacs-lisp-mode'
 (declare-function paredit-raise-sexp "ext:paredit")
-(declare-function yas-reload-all "yasnippet")
 (defun yas/before-expand-snippet-hook--emacs-lisp-remove-parenthsis (content)
   (when (and (boundp 'paredit-mode) paredit-mode
              (memq major-mode '(emacs-lisp-mode lisp-interaction-mode ielm-mode))
