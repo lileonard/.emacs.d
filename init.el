@@ -1,4 +1,4 @@
-(setq gc-cons-threshold (* 33 1024 1024))
+(setq gc-cons-threshold (* 66 1024 1024))
 ;; add all path in .emacs.d to load path
 (let ((default-directory  "~/.emacs.d/"))
   (normal-top-level-add-subdirs-to-load-path))
@@ -40,7 +40,7 @@
 ;; settings that from others
 (require 'coding-settings)
 ;; my settings
-;;(require 'my-c-config)
+(require 'my-c-config)
 (require 'my-compilation-settings)
 (require 'my-bracket-pair)
 (require 'my-elisp-functions)
