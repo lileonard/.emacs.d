@@ -1,12 +1,9 @@
 (add-hook 'c-mode-common-hook   'hs-minor-mode)
 (add-hook 'emacs-lisp-mode-hook 'hs-minor-mode)
-(add-hook 'java-mode-hook       'hs-minor-mode)
 (add-hook 'lisp-mode-hook       'hs-minor-mode)
-(add-hook 'perl-mode-hook       'hs-minor-mode)
-(add-hook 'sh-mode-hook         'hs-minor-mode)
 (add-hook 'python-mode-hook     'hs-minor-mode)
-(add-hook 'fortran-mode-hook    'hs-minor-mode)
 (add-hook 'latex-mode-hook      'hs-minor-mode)
+(add-hook 'matlab-mode-hook     'hs-minor-mode)
 
 (defvar hs-headline-max-len 30 "*Maximum length of `hs-headline' to display.")
 (defvar hs-overlay-map (make-sparse-keymap) "Keymap for hs minor mode overlay.")

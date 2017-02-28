@@ -72,5 +72,4 @@
       (c-indent-line))))
 (add-hook 'c-mode-common-hook 'my-c-brace-hook)
 
-
 (provide 'my-bracket-pair)
