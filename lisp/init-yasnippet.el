@@ -3,13 +3,13 @@
 
 
 (yas-reload-all)
-(add-hook 'c-mode-common-hook #'yas-minor-mode)
+(add-hook 'c-mode-common-hook   #'yas-minor-mode)
 (add-hook 'emacs-lisp-mode-hook #'yas-minor-mode)
-(add-hook 'cmake-mode-hook #'yas-minor-mode)
-(add-hook 'latex-mode-hook #'yas-minor-mode)
-(add-hook 'lisp-mode-hook #'yas-minor-mode)
-(add-hook 'python-mode-hook #'yas-minor-mode)
-(add-hook 'org-mode-hook #'yas-minor-mode)
+(add-hook 'cmake-mode-hook      #'yas-minor-mode)
+(add-hook 'latex-mode-hook      #'yas-minor-mode)
+(add-hook 'lisp-mode-hook       #'yas-minor-mode)
+(add-hook 'python-mode-hook     #'yas-minor-mode)
+(add-hook 'org-mode-hook        #'yas-minor-mode)
 
 (defun yas-popup-isearch-prompt (prompt choices &optional display-fn)
   (when (featurep 'popup)

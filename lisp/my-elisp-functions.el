@@ -70,7 +70,6 @@ We increase this to 16MB by `(my-optimize-gc 16 0.5)` "
 | Creation time          | ")
 (insert (format-time-string "%F "))
  (insert "              |
-| Last modification time |               | 
 `--------------------------------------------
 */
 
@@ -106,7 +105,6 @@ int main(int argc, char *argv[])
 | Creation time          | ")
   (insert (format-time-string "%F "))
   (insert "              |
-| Last modification time |               | 
 `-------------------------------------------
 */
 
@@ -217,7 +215,6 @@ int main(int argc, char *argv[])
 | Creation time          | ")
   (insert (format-time-string "%F "))
   (insert "              |
-| Last modification time |               | 
 --------------------------------------------------
 */
 \n\n\n\n\n\n"
@@ -302,13 +299,14 @@ The result is like this:
     (insert "  | Email : liyuanheng.leo@gmail.com\n")
     (insert (format-time-string "  | Date  : %B %d. %Y\n"))
     (insert "  `-------------------------------------------\n*/\n")))
+
 ;;Turn on warn highlighting for characters outside of the 'width' char limit
 (defun font-lock-width-keyword (width)
   `((,(format "^%s\\(.+\\)" (make-string width ?.))
      (1 font-lock-warning-face t))))
-(font-lock-add-keywords 'c++-mode (font-lock-width-keyword 96))
-(font-lock-add-keywords 'c-mode   (font-lock-width-keyword 96))
-(font-lock-add-keywords 'emacs-lisp-mode   (font-lock-width-keyword 96))
+(font-lock-add-keywords 'c++-mode (font-lock-width-keyword 115))
+(font-lock-add-keywords 'c-mode   (font-lock-width-keyword 115))
+(font-lock-add-keywords 'emacs-lisp-mode   (font-lock-width-keyword 115))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; http://www.cppblog.com/tangxinfa/archive/2008/05/23/50705.html
 ;; c/c++ header include guard

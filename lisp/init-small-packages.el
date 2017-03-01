@@ -186,7 +186,7 @@
 (global-set-key "\C-s" 'swiper)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'electric-spacing)
-(add-hook 'c-mode-common-hook    #'electric-spacing-mode)
+;;(add-hook 'c-mode-common-hook    #'electric-spacing-mode)
 (add-hook 'python-mode-hook      #'electric-spacing-mode)
 (add-hook 'emacs-lisp-mode-hook  #'electric-spacing-mode)
 (add-hook 'matlab-mode-hook      #'electric-spacing-mode)
