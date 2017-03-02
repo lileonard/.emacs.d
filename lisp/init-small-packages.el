@@ -185,16 +185,33 @@
 (setq ivy-use-virtual-buffers t)
 (global-set-key "\C-s" 'swiper)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(require 'electric-spacing)
-;;(add-hook 'c-mode-common-hook    #'electric-spacing-mode)
-(add-hook 'python-mode-hook      #'electric-spacing-mode)
-(add-hook 'emacs-lisp-mode-hook  #'electric-spacing-mode)
-(add-hook 'matlab-mode-hook      #'electric-spacing-mode)
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'pager)
 (global-set-key [next]  'pager-page-down)
 (global-set-key [prior] 'pager-page-up)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(require 'electric-operator)
+(add-hook 'c-mode-common-hook      #'electric-operator-mode)
+(add-hook 'emacs-lisp-mode-hook    #'electric-operator-mode)
+(add-hook 'python-mode-hook        #'electric-operator-mode)
+(add-hook 'matlab-mode-hook        #'electric-operator-mode)
+
+(electric-operator-add-rules-for-mode 'c++-mode
+                                      (cons "*" nil))
+(electric-operator-add-rules-for-mode 'c++-mode
+                                      (cons "/" nil))
+(electric-operator-add-rules-for-mode 'c++-mode
+                                      (cons "+" nil))
+(electric-operator-add-rules-for-mode 'c++-mode
+                                      (cons "-" nil))
+
+(electric-operator-add-rules-for-mode 'c-mode
+                                      (cons "*" nil))
+(electric-operator-add-rules-for-mode 'c-mode
+                                      (cons "/" nil))
+(electric-operator-add-rules-for-mode 'c-mode
+                                      (cons "+" nil))
+(electric-operator-add-rules-for-mode 'c-mode
+                                      (cons "/" nil))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; end provide
 (provide 'init-small-packages)
