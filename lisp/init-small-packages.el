@@ -194,24 +194,30 @@
 (add-hook 'emacs-lisp-mode-hook    #'electric-operator-mode)
 (add-hook 'python-mode-hook        #'electric-operator-mode)
 (add-hook 'matlab-mode-hook        #'electric-operator-mode)
+(electric-operator-add-rules-for-mode 'c++-mode
+                                      (cons "*" nil)
+                                      (cons "**" nil)
+                                      (cons "/" nil)
+                                      (cons "+1" "+1")
+                                      (cons "-1" "-1")
+                                      (cons "+2" "+2")
+                                      (cons "-2" "-2")
+                                      (cons "+i" "+i")
+                                      (cons "-i" "-i")
+                                      (cons "<<" "<< ")
+                                      (cons ">>" " >>"))
+(electric-operator-add-rules-for-mode 'c-mode
+                                      (cons "*" nil)
+                                      (cons "**" nil)
+                                      (cons "+1" "+1")
+                                      (cons "-1" "-1")
+                                      (cons "+2" "+2")
+                                      (cons "-2" "-2")
+                                      (cons "+i" "+i")
+                                      (cons "-i" "-i"))
 
-(electric-operator-add-rules-for-mode 'c++-mode
-                                      (cons "*" nil))
-(electric-operator-add-rules-for-mode 'c++-mode
-                                      (cons "/" nil))
-(electric-operator-add-rules-for-mode 'c++-mode
-                                      (cons "+" nil))
-(electric-operator-add-rules-for-mode 'c++-mode
+(electric-operator-add-rules-for-mode 'emacs-lisp-mode
                                       (cons "-" nil))
-
-(electric-operator-add-rules-for-mode 'c-mode
-                                      (cons "*" nil))
-(electric-operator-add-rules-for-mode 'c-mode
-                                      (cons "/" nil))
-(electric-operator-add-rules-for-mode 'c-mode
-                                      (cons "+" nil))
-(electric-operator-add-rules-for-mode 'c-mode
-                                      (cons "/" nil))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; end provide
 (provide 'init-small-packages)
