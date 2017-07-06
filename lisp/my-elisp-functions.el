@@ -352,18 +352,14 @@ Replaces default behaviour of comment-dwim, when it inserts comment at the end o
     (comment-dwim arg)))
 (global-set-key "\M-;" 'qiang-comment-dwim-line)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; from internet
 (defun smooth-scroll (increment)
   (scroll-up increment) (sit-for 0.01)
   (scroll-up increment) (sit-for 0.01)
   (scroll-up increment) (sit-for 0.01)
-  ;; (scroll-up increment) (sit-for 0.05)
-  ;; (scroll-up increment) (sit-for 0.06)
+  (scroll-up increment) (sit-for 0.01)
   (scroll-up increment))
-
 (global-set-key [(mouse-5)] '(lambda () (interactive) (smooth-scroll 1)))
 (global-set-key [(mouse-4)] '(lambda () (interactive) (smooth-scroll -1)))
-
-
-
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (provide 'my-elisp-functions)

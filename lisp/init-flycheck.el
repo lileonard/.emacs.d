@@ -18,7 +18,6 @@
   (setq flycheck-gcc-openmp t))
 (add-hook 'c-mode-hook   'my-flycheck-c-setup)
 (add-hook 'c++-mode-hook 'my-flycheck-c-setup)
-
 ;; ######## elisp
 (defun my-flycheck-elisp-setup ()
   (my-flycheck-setup)
