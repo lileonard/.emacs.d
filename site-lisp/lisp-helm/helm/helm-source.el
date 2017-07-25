@@ -181,9 +181,14 @@
    (multiline
     :initarg :multiline
     :initform nil
-    :custom boolean
+    :custom (choice boolean integer)
     :documentation
-    "  Enable to selection multiline candidates.")
+    "  Allow multiline candidates.
+  When non-nil candidates will be separated by `helm-candidate-separator'.
+  You can customize the color of this separator with `helm-separator' face.
+  Value of multiline can be an integer which specify the maximum size of the
+  multiline string to display, if multiline string is longer than this value
+  it will be truncated.")
 
    (requires-pattern
     :initarg :requires-pattern
@@ -553,7 +558,14 @@ With a value of 1 enable, a value of -1 or nil disable the mode.
     :custom (choice null integer)
     :documentation
     "  This slot have no more effect and is just kept for backward compatibility.
-  Please don't use it."))
+  Please don't use it.")
+
+   (group
+    :initarg :group
+    :initform helm
+    :custom symbol
+    :documentation
+    "  The current source group, default to `helm' when not specified."))
 
   "Main interface to define helm sources."
   :abstract t)
@@ -725,16 +737,28 @@ See `helm-candidates-in-buffer' for more infos.")
 
 (defclass helm-source-in-file (helm-source-in-buffer)
   ((init :initform (lambda ()
-                     (let ((file (helm-attr 'candidates-file)))
+                     (let ((file (helm-attr 'candidates-file))
+                           (count 1))
                        (with-current-buffer (helm-candidate-buffer 'global)
-                         (insert-file-contents file)))))
+                         (insert-file-contents file)
+                         (goto-char (point-min))
+                         (while (not (eobp))
+                           (add-text-properties
+                            (point-at-bol) (point-at-eol)
+                            `(helm-linum ,count))
+                           (cl-incf count)
+                           (forward-line 1))))))
+   (get-line :initform #'buffer-substring)
    (candidates-file
     :initarg :candidates-file
     :initform nil
     :custom string
-    :documentation "A filename."))
+    :documentation
+    "  A filename.
+  Each line number of FILE is accessible with helm-linum property
+  from candidate display part."))
 
-  "The contents of the file will be used as candidates in buffer.")
+  "The contents of the FILE will be used as candidates in buffer.")
 
 
 ;;; Error functions
@@ -898,7 +922,13 @@ an eieio class."
           (helm-aif (slot-value source 'filtered-candidate-transformer)
               (append (helm-mklist it)
                       (list #'helm-fuzzy-highlight-matches))
-            (list #'helm-fuzzy-highlight-matches)))))
+            (list #'helm-fuzzy-highlight-matches))))
+  (when (numberp (helm-interpret-value (slot-value source 'multiline)))
+    (setf (slot-value source 'filtered-candidate-transformer)
+          (helm-aif (slot-value source 'filtered-candidate-transformer)
+              (append (helm-mklist it)
+                      (list #'helm-multiline-transformer))
+            (list #'helm-multiline-transformer)))))
 
 (defmethod helm-setup-user-source ((_source helm-source)))
 

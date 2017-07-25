@@ -673,9 +673,10 @@ Filename completion happen if string start after or between a double quote."
           :input c)))
 
 (defun helm-info-lookup-symbol (candidate)
-  ;; Running an idle-timer allow not catching RET
-  ;; when exiting with the fallback source.
-  (run-with-idle-timer 0.01 nil #'helm-info-lookup-symbol-1 candidate))
+  ;; ???:Running an idle-timer allows not catching RET when exiting
+  ;; with the fallback source.
+  ;; (run-with-idle-timer 0.01 nil #'helm-info-lookup-symbol-1 candidate)
+  (helm-info-lookup-symbol-1 candidate))
 
 ;;;###autoload
 (defun helm-apropos (default)
@@ -785,6 +786,7 @@ i.e the `symbol-name' of any existing symbol."
                                         (if helm-ff-transformer-show-only-basename
                                             (cons (helm-basename c) c) c))
                    :action (helm-actions-from-type-file))
+        :ff-transformer-show-only-basename nil
         :buffer "*helm locate library*"))
 
 (defun helm-set-variable (var)

@@ -44,6 +44,7 @@
     "Find file other window"                'helm-find-files-other-window
     "Find file other frame"                 'find-file-other-frame
     "Open dired in file's directory"        'helm-open-dired
+    "Marked files in dired"                 'helm-marked-files-in-dired
     "Grep File(s) `C-u recurse'"            'helm-find-files-grep
     "Zgrep File(s) `C-u Recurse'"           'helm-ff-zgrep
     "Pdfgrep File(s)"                       'helm-ff-pdfgrep
@@ -79,11 +80,13 @@
           helm-transform-file-cache))
   (setf (slot-value source 'candidate-transformer)
         '(helm-skip-boring-files
-          helm-highlight-files
           helm-w32-pathname-transformer))
+  (setf (slot-value source 'filtered-candidate-transformer)
+        'helm-highlight-files)
   (setf (slot-value source 'help-message) 'helm-generic-file-help-message)
   (setf (slot-value source 'mode-line) (list "File(s)" helm-mode-line-string))
-  (setf (slot-value source 'keymap) helm-generic-files-map))
+  (setf (slot-value source 'keymap) helm-generic-files-map)
+  (setf (slot-value source 'group) 'helm-files))
 
 
 ;; Bookmarks
@@ -116,7 +119,8 @@
   (setf (slot-value source 'mode-line) (list "Bookmark(s)" helm-mode-line-string))
   (setf (slot-value source 'help-message) 'helm-bookmark-help-message)
   (setf (slot-value source 'migemo) t)
-  (setf (slot-value source 'follow) 'never))
+  (setf (slot-value source 'follow) 'never)
+  (setf (slot-value source 'group) 'helm-bookmark))
 
 
 ;; Buffers
@@ -133,9 +137,6 @@
    'helm-switch-to-buffers-other-window
    "Switch to buffer other frame `C-c C-o'"
    'switch-to-buffer-other-frame
-   (lambda () (and (locate-library "elscreen")
-                   "Display buffer in Elscreen"))
-   'helm-find-buffer-on-elscreen
    "Browse project from buffer"
    'helm-buffers-browse-project
    "Query replace regexp `C-M-%'"
@@ -170,7 +171,8 @@
   (setf (slot-value source 'filtered-candidate-transformer)
         '(helm-skip-boring-buffers
           helm-buffers-sort-transformer
-          helm-highlight-buffers)))
+          helm-highlight-buffers))
+  (setf (slot-value source 'group) 'helm-buffers))
 
 ;; Functions
 (defclass helm-type-function (helm-source) ()
@@ -231,7 +233,8 @@
 (defmethod helm--setup-source :before ((source helm-type-command))
   (setf (slot-value source 'action) 'helm-type-command-actions)
   (setf (slot-value source 'coerce) 'helm-symbolify)
-  (setf (slot-value source 'persistent-action) 'describe-function))
+  (setf (slot-value source 'persistent-action) 'describe-function)
+  (setf (slot-value source 'group) 'helm-command))
 
 ;; Timers
 (defclass helm-type-timers (helm-source) ()
@@ -260,7 +263,8 @@
   (setf (slot-value source 'persistent-action)
         (lambda (tm)
           (describe-function (timer--function tm))))
-  (setf (slot-value source 'persistent-help) "Describe Function"))
+  (setf (slot-value source 'persistent-help) "Describe Function")
+  (setf (slot-value source 'group) 'helm-elisp))
 
 ;; Builders.
 (defun helm-build-type-file ()

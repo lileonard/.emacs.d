@@ -39,7 +39,7 @@ MacPorts to install id-utils, it should be `gid32'."
   :type 'string)
 
 (defun helm-gid-candidates-process ()
-  (let* ((patterns (split-string helm-pattern))
+  (let* ((patterns (helm-mm-split-pattern helm-pattern))
          (default-com (format "%s -r %s" helm-gid-program
                               (shell-quote-argument (car patterns))))
          (cmd (helm-aif (cdr patterns)
@@ -90,9 +90,6 @@ MacPorts to install id-utils, it should be `gid32'."
    (action :initform (helm-make-actions
                       "Find File" 'helm-grep-action
                       "Find file other frame" 'helm-grep-other-frame
-                      (lambda () (and (locate-library "elscreen")
-                                      "Find file in Elscreen"))
-                      'helm-grep-jump-elscreen
                       "Save results in grep buffer" 'helm-grep-save-results
                       "Find file other window" 'helm-grep-other-window))
    (persistent-action :initform 'helm-grep-persistent-action)

@@ -49,6 +49,14 @@ Show all candidates on startup when 0 (default)."
   :group 'helm-command
   :type 'boolean)
 
+(defcustom helm-M-x-default-sort-fn #'helm-M-x-fuzzy-sort-candidates
+  "Default sort function for `helm-M-x'.
+
+It should sort against REAL value of candidates.
+
+It is used only when `helm-M-x-fuzzy-match' is enabled."
+  :group 'helm-command
+  :type 'function)
 
 ;;; Faces
 ;;
@@ -182,6 +190,9 @@ fuzzy matching is running its own sort function with a different algorithm."
     (universal-argument--mode)))
 (put 'helm-M-x-universal-argument 'helm-only t)
 
+(defun helm-M-x-fuzzy-sort-candidates (candidates _source)
+  (helm-fuzzy-matching-default-sort-fn-1 candidates t))
+
 (defun helm-M-x-read-extended-command (&optional collection history)
   "Read command name to invoke in `helm-M-x'.
 Helm completion is not provided when executing or defining
@@ -196,10 +207,7 @@ than the default which is OBARRAY."
                  (read-extended-command))
             (helm-mode 1))
           (read-extended-command))
-      (let* ((orig-fuzzy-sort-fn helm-fuzzy-sort-fn)
-             (helm-fuzzy-sort-fn (lambda (candidates source)
-                                   (funcall orig-fuzzy-sort-fn
-                                            candidates source 'real)))
+      (let* ((helm-fuzzy-sort-fn helm-M-x-default-sort-fn)
              (helm--mode-line-display-prefarg t)
              (tm (run-at-time 1 0.1 'helm-M-x--notify-prefix-arg))
              (helm-move-selection-after-hook
@@ -264,23 +272,27 @@ You can get help on each command by persistent action."
    (progn
      (setq helm-M-x-prefix-argument current-prefix-arg)
      (list current-prefix-arg (helm-M-x-read-extended-command))))
-  (let ((sym-com (and (stringp command-name) (intern-soft command-name))))
-    (when sym-com
-      ;; Avoid having `this-command' set to *exit-minibuffer.
-      (setq this-command sym-com
-            ;; Handle C-x z (repeat) Issue #322
-            real-this-command sym-com)
-      ;; If helm-M-x is called with regular emacs completion (kmacro)
-      ;; use the value of arg otherwise use helm-current-prefix-arg.
-      (let ((prefix-arg (or helm-current-prefix-arg helm-M-x-prefix-argument)))
-        ;; This ugly construct is to save history even on error.
-        (unless helm-M-x-always-save-history
-          (command-execute sym-com 'record))
-        (setq extended-command-history
-              (cons command-name
-                    (delete command-name extended-command-history)))
-        (when helm-M-x-always-save-history
-          (command-execute sym-com 'record))))))
+  (unless (string= command-name "")
+    (let ((sym-com (and (stringp command-name) (intern-soft command-name))))
+      (when sym-com
+        ;; Avoid having `this-command' set to *exit-minibuffer.
+        (setq this-command sym-com
+              ;; Handle C-x z (repeat) Issue #322
+              real-this-command sym-com)
+        ;; If helm-M-x is called with regular emacs completion (kmacro)
+        ;; use the value of arg otherwise use helm-current-prefix-arg.
+        (let ((prefix-arg (or helm-current-prefix-arg helm-M-x-prefix-argument)))
+          (cl-flet ((save-hist (command)
+                      (setq extended-command-history
+                            (cons command (delete command extended-command-history)))))
+            (condition-case-unless-debug err
+                (progn
+                  (command-execute sym-com 'record)
+                  (save-hist command-name))
+              (error
+               (when helm-M-x-always-save-history
+                 (save-hist command-name))
+               (signal (car err) (cdr err))))))))))
 (put 'helm-M-x 'interactive-only 'command-execute)
 
 (provide 'helm-command)

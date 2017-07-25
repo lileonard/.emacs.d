@@ -113,8 +113,16 @@ directories of this list with `helm-projects-find-files'."
   :type '(repeat string))
 
 (defcustom helm-locate-recursive-dirs-command "locate -i -e -A --regex '^%s' '%s.*$'"
-  "Command used in recursive directories completion in `helm-find-files'.
-For Windows and `es' use something like \"es -r ^%s.*%s.*$\"."
+  "Command used for recursive directories completion in `helm-find-files'.
+
+For Windows and `es' use something like \"es -r ^%s.*%s.*$\"
+
+The two format specs are mandatory.
+
+If for some reasons you can't use locate because your filesystem
+doesn't have a data base, you can use find command from findutils but
+be aware that it will be much slower, see `helm-find-files' embebded
+help for more infos."
   :type 'string
   :group 'helm-files)
 
@@ -144,6 +152,7 @@ For Windows and `es' use something like \"es -r ^%s.*%s.*$\"."
     (define-key map (kbd "C-c X")   'helm-ff-run-open-file-with-default-tool)
     (define-key map (kbd "M-.")     'helm-ff-run-etags)
     (define-key map (kbd "C-c @")   'helm-ff-run-insert-org-link)
+    (define-key map (kbd "C-x C-q") 'helm-ff-run-marked-files-in-dired)
     map)
   "Generic Keymap for files.")
 
@@ -274,7 +283,7 @@ See also `helm-locate'."
          (case-sensitive-flag (if locate-is-es "-i" ""))
          (ignore-case-flag (if (or locate-is-es
                                    (not real-locate)) "" "-i"))
-         (args (split-string helm-pattern " "))
+         (args (helm-mm-split-pattern helm-pattern))
          (cmd (format helm-locate-command
                       (cl-case helm-locate-case-fold-search
                         (smart (let ((case-fold-search nil))
@@ -341,7 +350,8 @@ Sort is done on basename of CANDIDATES."
    (history :initform 'helm-file-name-history)
    (persistent-action :initform 'helm-ff-kill-or-find-buffer-fname)
    (candidate-number-limit :initform 9999)
-   (redisplay :initform (progn helm-locate-fuzzy-sort-fn))))
+   (redisplay :initform (progn helm-locate-fuzzy-sort-fn))
+   (group :initform 'helm-locate)))
 
 (defvar helm-source-locate
   (helm-make-source "Locate" 'helm-locate-source
@@ -397,7 +407,8 @@ Sort is done on basename of CANDIDATES."
    (subdir :initarg :subdir
            :initform nil
            :custom 'string)
-   (data :initform #'helm-locate-init-subdirs)))
+   (data :initform #'helm-locate-init-subdirs)
+   (group :initform 'helm-locate)))
 
 (defun helm-locate-init-subdirs ()
   (with-temp-buffer

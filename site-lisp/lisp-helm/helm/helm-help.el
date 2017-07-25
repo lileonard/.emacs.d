@@ -226,6 +226,24 @@ On a symlinked directory a prefix arg will allow expanding to its true name.
 Note: The tree is reinitialized each time you enter a new tree with `C-j'
 or by entering some pattern in prompt.
 
+**** RET behavior
+
+Behave differently depending of `helm-selection' (current candidate in helm-buffer):
+
+- candidate basename is \".\"   => open it in dired.
+- candidate is a directory    => expand it.
+- candidate is a file         => open it.
+- marked candidates (1+)      => open them with default action.
+
+Note that when copying, renaming etc... from `helm-find-files' you
+will have a file completion with `helm-read-file-name' to select the
+destination file; To not confuse users of `read-file-name' or
+`read-directory-name' RET behave normally, it exit the minibuffer as
+soon as you press RET, if you want the same behavior as in
+`helm-find-files', bind `helm-ff-RET' to the `helm-read-file-map':
+
+    (define-key helm-read-file-map (kbd \"RET\") 'helm-ff-RET)
+
 *** Find file at point
 
 Helm is using `ffap' partially or completely to find file at point
@@ -355,6 +373,12 @@ the command with `helm-locate-recursive-dirs-command'.
 Because this completion use an index, you may not have all the recent additions
 of directories until you update your index (with `updatedb' for locate).
 
+If for some reason you cannot use an index the find command from findutils can be
+used for this, it will be slower of course, you will have to pass the basedir as
+first argument of find and the subdir as the value for '-(i)regex' or '-(i)name'
+with the two format specs that are mandatory in `helm-locate-recursive-dirs-command',
+e.g \"find %s -type d -name '*%s*'\" or \"find %s -type d -regex .*%s.*$\".
+
 *** Insert filename at point or complete filename at point
 
 On insertion (no completion, i.e nothing at point):
@@ -440,6 +464,11 @@ and are not renamed to current directory, IOW use this (\\#) to rename files ins
 In the second prompt (replace regexp with) shortcut for `upcase', `downcase' and `capitalize'
 are available, respectively `%u', `%d' and `%c'.
 
+*** Edit marked files in a dired buffer
+
+You can open a dired buffer with only marked files with `\\<helm-find-files-map>\\[helm-ff-run-marked-files-in-dired]'
+With a prefix arg you can open this same dired buffer in wdired mode for editing files.
+
 *** Copying renaming asynchronously
 
 If you use async library (if you have installed helm from MELPA you do) you can enable
@@ -511,6 +540,69 @@ However with a prefix arg it will apply `example' on each file:
     example foo bar baz
 
 Of course the alias command should support this.
+
+*** Using Tramp with `helm-find-files' to read remote directories
+
+`helm-find-files' is working fine with tramp with however some limitations.
+
+- By default filenames are not highlighted when working on remote directories,
+this is controled by `helm-ff-tramp-not-fancy' variable, if you change this,
+expect helm becoming very slow unless your connection is super fast.
+
+- Grepping files is not very well supported when used incrementally, see above
+grep section.
+
+- Locate is not working on remote directories.
+
+**** Some reminders about Tramp syntax
+
+Not exhaustive, please read Tramp documentation.
+
+- Connect to host 192.168.0.4 as foo user:
+
+    /scp:192.168.0.4@foo:
+
+- Connect to host 192.168.0.4 as foo user with port 2222:
+
+    /scp:192.168.0.4@foo#2222:
+
+- Connect to host 192.168.0.4 as root using multihops syntax:
+
+    /ssh:192.168.0.4@foo|sudo:192.168.0.4:
+
+Note: you can also use `tramp-default-proxies-alist' when connecting often to
+some hosts.
+
+Prefer generally scp method unless using multihops (works only with ssh method)
+specially when copying large files.
+
+Note also that you have to hit once `C-j' on top of directory at first connection
+to complete your pattern in minibuffer.
+
+**** Completing host
+
+As soon as you enter the first \":\" after method e.g =/scp:\= you will
+have some completion about previously used hosts or from your =~/.ssh/config\=
+file, hitting `C-j' or `right' on a candidate will insert this host in minibuffer
+without addind the ending \":\".
+As soon the last \":\" is entered Tramp will kick in and you should see the list
+of candidates a few seconds later.
+
+When your connection fails, be sure to delete your tramp connection before retrying
+with M-x `helm-delete-tramp-connection'.
+
+**** Editing local files as root
+
+Use the sudo method:
+
+    /sudo:host: or just /sudo::
+
+*** Attach files to a mail buffer (message-mode)
+
+If you are in a message buffer, the action will appear in action menu, otherwise
+it available at any time with \\<helm-find-files-map>\\[helm-ff-run-gnus-attach-files]
+See how behave `gnus-attach-files' for more infos.
+NOTE: Even if called `gnus-attach-files' it works with mu4e and else.
 
 ** Commands
 \\<helm-find-files-map>
@@ -737,14 +829,18 @@ Just add a space between each pattern like in most helm commands.
 
 *** Important
 
-Grepping on remote file will work only with grep, not ack-grep, but it is
-anyway bad supported as tramp doesn't support multiple process running in a
-short delay (less than 5s actually) among other things,
-so I strongly advice hitting `C-!' (i.e suspend process)
+Grepping works but it is badly supported as tramp doesn't support multiple process running in a
+short delay (less than 5s actually) among other things.
+
+Helm is suspending process automatically while you are typing with a special hook, however
+you are adviced doing this manually by hitting `C-!' (i.e suspend process)
 before entering anything in pattern, and hit again `C-!' when
 your regexp is ready to send to remote process, even if helm is handling
-this by delaying each process at 5s. 
-Or even better don't use tramp at all and mount your remote file system on SSHFS.
+this by delaying each process at 5s.
+
+If your regexp is simple enough, you can though try merely to type it directly.
+
+Another solution is to not use tramp at all and mount your remote file system on SSHFS.
 
 * Helm Gid
 
@@ -1154,11 +1250,19 @@ You can bind globally `M-y' to `helm-show-kill-ring' and once in the helm kill-r
 you can navigate for conveniency to next/previous line with `M-y' and `M-u'.
 Of course `C-n' and `C-p' are still available.
 
+It is possible to delete unwanted candidates from kill-ring.
+
+You can concatenate marked candidates and yank them in current buffer
+creating a new entry in kill-ring.
+Note: You can insert marked candidates as well with `\\<helm-map>\\[helm-copy-to-buffer]'
+but this will not push a new entry with concatenated candidates in kill-ring.
+
 ** Commands
 \\<helm-kill-ring-map>
 \\[helm-next-line]\t\tNext line.
 \\[helm-previous-line]\t\tPrevious line.
 \\[helm-kill-ring-delete]\t\tDelete entry.
+\\[helm-kill-ring-run-append]\t\tYank concatenated marked candidates.
 \\[helm-kill-ring-toggle-truncated]\t\tToggle truncated view of candidate.
 \\[helm-kill-ring-kill-selection]\t\tKill real value of selection.")
 

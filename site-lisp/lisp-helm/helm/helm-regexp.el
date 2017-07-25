@@ -140,6 +140,7 @@ i.e Don't replace inside a word, regexp is surrounded with \\bregexp\\b."
     :multiline t
     :multimatch nil
     :requires-pattern 2
+    :group 'helm-regexp
     :mode-line "Press TAB to select action."
     :action '(("Kill Regexp as sexp" . helm-kill-regexp-as-sexp)
               ("Query Replace Regexp (C-u Not inside word.)"
@@ -152,8 +153,9 @@ i.e Don't replace inside a word, regexp is surrounded with \\bregexp\\b."
     (propertize
      (cl-loop with ln = (format "%5d: %s" (1- (line-number-at-pos s)) line)
            for i from 0 to (1- (/ (length matches) 2))
-           concat (format "\n         %s'%s'" (format "Group %d: " i)
-                          (match-string i))
+           if (match-string i)
+           concat (format "\n%s%s'%s'"
+                          (make-string 10 ? ) (format "Group %d: " i) it)
            into ln1
            finally return (concat ln ln1))
      'helm-realvalue s)))
@@ -190,7 +192,14 @@ i.e Don't replace inside a word, regexp is surrounded with \\bregexp\\b."
       'global
     (cl-loop with buffers = (helm-attr 'moccur-buffers)
              for buf in buffers
-             for bufstr = (with-current-buffer buf (buffer-string))
+             for bufstr = (with-current-buffer buf
+                            ;; A leading space is needed to allow helm
+                            ;; searching the first line of buffer
+                            ;; (#1725).
+                            (concat (if (memql (char-after (point-min))
+                                               '(? ?\t ?\n))
+                                        "" " ")
+                                    (buffer-string)))
              do (add-text-properties
                  0 (length bufstr)
                  `(buffer-name ,(buffer-name (get-buffer buf)))
@@ -212,7 +221,8 @@ i.e Don't replace inside a word, regexp is surrounded with \\bregexp\\b."
                                  'buffer-name)
               (save-restriction
                 (narrow-to-region (or (previous-single-property-change
-                                       (point) 'buffer-name) 1)
+                                       (point) 'buffer-name)
+                                      (point-at-bol 2))
                                   (or (next-single-property-change
                                        (if (= beg end)
                                            (helm-moccur--next-or-previous-char)
@@ -320,7 +330,8 @@ Same as `helm-moccur-goto-line' but go in new frame."
    (help-message :initform 'helm-moccur-help-message)
    (keymap :initform helm-moccur-map)
    (history :initform 'helm-occur-history)
-   (requires-pattern :initform 2)))
+   (requires-pattern :initform 2)
+   (group :initform 'helm-regexp)))
 
 (defun helm-moccur-resume-fn ()
   (with-helm-buffer
@@ -478,17 +489,43 @@ Same as `helm-moccur-goto-line' but go in new frame."
       (setq buf new-buf))
     (with-current-buffer (get-buffer-create buf)
       (setq buffer-read-only t)
-      (let ((inhibit-read-only t))
+      (let ((inhibit-read-only t)
+            (map (make-sparse-keymap)))
         (erase-buffer)
         (insert "-*- mode: helm-moccur -*-\n\n"
                 (format "Moccur Results for `%s':\n\n" helm-input))
         (save-excursion
           (insert (with-current-buffer helm-buffer
                     (goto-char (point-min)) (forward-line 1)
-                    (buffer-substring (point) (point-max))))))
+                    (buffer-substring (point) (point-max)))))
+        (save-excursion
+          (while (not (eobp))
+            (add-text-properties
+             (point-at-bol) (point-at-eol)
+             `(keymap ,map
+               help-echo ,(concat
+                           (buffer-file-name
+                            (get-buffer (get-text-property
+                                         (point) 'buffer-name)))
+                           "\nmouse-1: set point\nmouse-2: jump to selection")
+               mouse-face highlight))
+            (define-key map [mouse-1] 'mouse-set-point)
+            (define-key map [mouse-2] 'helm-moccur-mode-mouse-goto-line)
+            (define-key map [mouse-3] 'ignore)
+            (forward-line 1))))
       (helm-moccur-mode))
     (pop-to-buffer buf)
     (message "Helm Moccur Results saved in `%s' buffer" buf)))
+
+(defun helm-moccur-mode-mouse-goto-line (event)
+  (interactive "e")
+  (let* ((window (posn-window (event-end event)))
+         (pos    (posn-point (event-end event))))
+    (with-selected-window window
+      (when (eq major-mode 'helm-moccur-mode)
+        (goto-char pos)
+        (helm-moccur-mode-goto-line)))))
+(put 'helm-moccur-mode-mouse-goto-line 'helm-only t)
 
 ;;;###autoload
 (define-derived-mode helm-moccur-mode
