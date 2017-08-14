@@ -65,6 +65,12 @@ Any other non--nil value update after confirmation."
   :group 'helm-regexp
   :type 'boolean)
 
+(defcustom helm-moccur-show-buffer-fontification nil
+  "Show fontification of searched buffer in results when non nil."
+  :group 'helm-regexp
+  :type '(radio :tag "Allow preserving fontification of searched buffer in results"
+                (const :tag "Don't preserve buffer fontification" nil)
+                (const :tag "Preserve buffer fontification" t)))
 
 (defface helm-moccur-buffer
     '((t (:foreground "DarkTurquoise" :underline t)))
@@ -191,6 +197,8 @@ i.e Don't replace inside a word, regexp is surrounded with \\bregexp\\b."
   (helm-init-candidates-in-buffer
       'global
     (cl-loop with buffers = (helm-attr 'moccur-buffers)
+             with bsubstring = (if helm-moccur-show-buffer-fontification
+                                   #'buffer-substring #'buffer-substring-no-properties)
              for buf in buffers
              for bufstr = (with-current-buffer buf
                             ;; A leading space is needed to allow helm
@@ -199,7 +207,7 @@ i.e Don't replace inside a word, regexp is surrounded with \\bregexp\\b."
                             (concat (if (memql (char-after (point-min))
                                                '(? ?\t ?\n))
                                         "" " ")
-                                    (buffer-string)))
+                                    (funcall bsubstring (point-min) (point-max))))
              do (add-text-properties
                  0 (length bufstr)
                  `(buffer-name ,(buffer-name (get-buffer buf)))
@@ -417,6 +425,7 @@ Same as `helm-moccur-goto-line' but go in new frame."
               collect (buffer-chars-modified-tick (get-buffer b)))))
   (helm :sources 'helm-source-moccur
         :buffer "*helm multi occur*"
+        :default (helm-aif (thing-at-point 'symbol) (regexp-quote it))
         :history 'helm-occur-history
         :keymap helm-moccur-map
         :input input
@@ -550,7 +559,9 @@ Special commands:
         (forward-line 1))
       (let ((inhibit-read-only t)
             (buffer (current-buffer))
-            (buflst helm-multi-occur-buffer-list))
+            (buflst helm-multi-occur-buffer-list)
+            (bsubstring (if helm-moccur-show-buffer-fontification
+                            #'buffer-substring #'buffer-substring-no-properties)))
         (delete-region (point) (point-max))
         (message "Reverting buffer...")
         (save-excursion
@@ -560,7 +571,8 @@ Special commands:
              (cl-loop for buf in buflst
                       for bufstr = (or (and (buffer-live-p (get-buffer buf))
                                             (with-current-buffer buf
-                                              (buffer-string)))
+                                              (funcall bsubstring
+                                               (point-min) (point-max))))
                                        "")
                       unless (string= bufstr "")
                       do (add-text-properties
@@ -616,6 +628,7 @@ Special commands:
               collect (buffer-chars-modified-tick (get-buffer b)))))
   (helm :sources 'helm-source-occur
         :buffer "*helm occur*"
+        :default (helm-aif (thing-at-point 'symbol) (regexp-quote it))
         :history 'helm-occur-history
         :preselect (and (memq 'helm-source-occur helm-sources-using-default-as-input)
                         (format "%s:%d:" (regexp-quote (buffer-name))

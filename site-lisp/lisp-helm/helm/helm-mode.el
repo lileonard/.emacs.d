@@ -244,7 +244,7 @@ If COLLECTION is an `obarray', a TEST should be needed. See `obarray'."
                  ((and (functionp collection) minibuffer-completing-file-name)
                   (cl-loop for f in (funcall collection helm-pattern test t)
                            unless (member f '("./" "../"))
-                           if (string-match ffap-url-regexp helm-pattern)
+                           if (string-match helm--url-regexp helm-pattern)
                            collect f
                            else
                            collect (concat (file-name-as-directory
@@ -345,7 +345,7 @@ If COLLECTION is an `obarray', a TEST should be needed. See `obarray'."
                             quit-when-no-cand
                             (volatile t)
                             sort
-                            (fc-transformer 'helm-cr-default-transformer)
+                            fc-transformer
                             hist-fc-transformer
                             marked-candidates
                             nomark
@@ -513,7 +513,9 @@ that use `helm-comp-read' See `helm-M-x' for example."
                   :match-part match-part
                   :multiline multiline
                   :header-name header-name
-                  :filtered-candidate-transformer fc-transformer
+                  :filtered-candidate-transformer
+                  (append (helm-mklist fc-transformer)
+                          '(helm-cr-default-transformer))
                   :requires-pattern requires-pattern
                   :persistent-action persistent-action
                   :persistent-help persistent-help
@@ -528,7 +530,9 @@ that use `helm-comp-read' See `helm-M-x' for example."
                     :match-part match-part
                     :multiline multiline
                     :header-name header-name
-                    :filtered-candidate-transformer fc-transformer
+                    :filtered-candidate-transformer
+                    (append (helm-mklist fc-transformer)
+                            '(helm-cr-default-transformer))
                     :requires-pattern requires-pattern
                     :persistent-action persistent-action
                     :fuzzy-match fuzzy
@@ -971,8 +975,6 @@ Keys description:
                  (file-equal-p result initial-input)
                  default)
             (if (listp default) (car default) default))
-           ((and result (stringp result))
-            (expand-file-name result))
            ((and result (listp result))
             (mapcar #'expand-file-name result))
            (t result))
@@ -1015,6 +1017,9 @@ Don't use it directly, use instead `helm-read-file-name' in your programs."
          helm-completion-mode-start-message ; Be quiet
          helm-completion-mode-quit-message  ; Same here
          fname)
+    ;; Build `default-filename' with `dir'+`initial' when
+    ;; `default-filename' is not specified.
+    ;; See `read-file-name' docstring for more infos.
     (setq default-filename (helm-mode--default-filename
                             default-filename dir initial))
     ;; Some functions that normally call `completing-read' can switch

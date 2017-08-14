@@ -339,9 +339,17 @@ The usage is the same as `cond'."
       (let ((clause1 (car clauses)))
         `(let ((,sym ,(car clause1)))
            (helm-aif ,sym
-               (or (progn ,@(cdr clause1)) it)
+               (if (cdr ',clause1)
+                   (progn ,@(cdr clause1))
+                 it)
              (helm-acond ,@(cdr clauses))))))))
 
+(defmacro helm-aand (&rest conditions)
+  "Anaphoric version of `and'."
+  (cond ((null conditions) t)
+        ((null (cdr conditions)) (car conditions))
+        (t `(helm-aif ,(car conditions)
+                (helm-aand ,@(cdr conditions))))))
 
 ;;; Fuzzy matching routines
 ;;

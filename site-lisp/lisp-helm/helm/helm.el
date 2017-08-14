@@ -1248,7 +1248,8 @@ to modify it.")
 (defvar helm-alive-p nil)
 (defvar helm-visible-mark-overlays nil)
 (defvar helm-update-blacklist-regexps '("^" "^ *" "$" "!" " " "\\b"
-                                        "\\<" "\\>" "\\_<" "\\_>" ".*"))
+                                        "\\<" "\\>" "\\_<" "\\_>" ".*"
+                                        "??" "?*" "*?" "?"))
 (defvar helm--force-updating-p nil
   "[INTERNAL] Don't use this in your programs.")
 (defvar helm-exit-status 0
@@ -1299,7 +1300,7 @@ because they are automatically added.
 
 You should not modify this yourself unless you know what you are doing.")
 ;; Same as `ffap-url-regexp' but keep it here to ensure `ffap-url-regexp' is not nil.
-(defvar helm--url-regexp "\\(news\\(post\\)?:\\|mailto:\\|file:\\|\\(ftp\\|https?\\|telnet\\|gopher\\|www\\|wais\\)://\\)")
+(defvar helm--url-regexp "\\`\\(news\\(post\\)?:\\|mailto:\\|file:\\|\\(ftp\\|https?\\|telnet\\|gopher\\|www\\|wais\\)://\\)")
 (defvar helm--ignore-errors nil
   "Flag to prevent helm popping up errors in candidates functions.
 Should be set in candidates functions if needed, will be restored
@@ -3699,6 +3700,10 @@ without recomputing them, it should be a list of lists."
              (member (assoc-default 'name source) helm-source-filter))
          (>= len
              (helm-aif (assq 'requires-pattern source) (or (cdr it) 1) 0))
+         ;; Entering repeatedly these strings (*, ?) takes 100% CPU
+         ;; and hang emacs on MacOs preventing deleting backward those
+         ;; characters (issue #1802).
+         (not (string-match-p "[*]\\{2,\\}\\|[?]\\{3,\\}" helm-pattern))
          ;; These incomplete regexps hang helm forever
          ;; so defer update. Maybe replace spaces quoted when using
          ;; multi-match.
@@ -3830,6 +3835,7 @@ respectively `helm-cand-num' and `helm-cur-source'."
                (not (zerop (length dispvalue))))
       (funcall insert-function dispvalue)
       (setq end (point-at-eol))
+      (put-text-property start end 'read-only nil)
       ;; Some sources with candidates-in-buffer have already added
       ;; 'helm-realvalue property when creating candidate buffer.
       (unless (get-text-property start 'helm-realvalue)
@@ -4499,12 +4505,15 @@ Key arg DIRECTION can be one of:
   (goto-char (point-max)))
 
 (defun helm-move--end-of-source ()
-  (goto-char (or (helm-get-next-header-pos) (point-max)))
-  (when (helm-pos-header-line-p) (forward-line -2)))
+  (helm-aif (helm-get-next-header-pos)
+      (progn (goto-char it) (forward-line -2))
+    (goto-char (point-max))))
 
 (defun helm-move--beginning-of-source ()
-  (goto-char (helm-get-previous-header-pos))
-  (forward-line 1))
+  (helm-aif (helm-get-previous-header-pos)
+      (progn (goto-char it)
+             (forward-line 1))
+    (goto-char (point-min))))
 
 (defun helm-move--previous-source-fn ()
   (forward-line -1)
@@ -6146,7 +6155,8 @@ It may appear after first results popup in helm buffer."))
   (with-helm-alive-p
     (with-helm-buffer
       (setq truncate-lines (not truncate-lines))
-      (helm-update (regexp-quote (helm-get-selection nil t))))))
+      (when (helm-get-previous-header-pos)
+        (helm-update (regexp-quote (helm-get-selection nil t)))))))
 (put 'helm-toggle-truncate-line 'helm-only t)
 
 (provide 'helm)
