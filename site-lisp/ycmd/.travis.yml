@@ -1,0 +1,60 @@
+language: emacs-lisp
+sudo: false
+cache:
+  directories:
+    - .cask/
+    - $HOME/emacs
+    - $HOME/.ccache
+    - $HOME/ycmd
+    - $HOME/.npm  # Node packages from npm
+
+addons:
+  apt:
+    sources:
+      - ubuntu-toolchain-r-test  # for new libstdc++
+      - george-edison55-precise-backports # for a more recent version of cmake (3.2.3)
+    packages:
+      - cmake-data
+      - cmake
+      # 4.9 is the first version of GCC with good enough C++11 support; in
+      # particular regex support.
+      - gcc-4.9
+      - g++-4.9
+
+env:
+  matrix:
+    # Run unit tests against oldest supported stable, latest stable, and trunk
+    - EMACS_VERSION=24.4
+    - EMACS_VERSION=24.5
+    - EMACS_VERSION=25.1
+    - EMACS_VERSION=25.2
+    - EMACS_VERSION=snapshot COMPILEFLAGS='error-on-warn'
+before_install:
+  # gcc-4.9
+  - mkdir "${HOME}/bin"
+  - ln -s "/usr/bin/g++-4.9" "${HOME}/bin/c++"
+  - ln -s "/usr/bin/gcc-4.9" "${HOME}/bin/cc"
+  - ln -s "/usr/bin/gcov-4.9" "${HOME}/bin/gcov"
+
+  - export PATH="$HOME/bin:$PATH"
+  - wget 'https://raw.githubusercontent.com/flycheck/emacs-travis/master/emacs-travis.mk'
+  - if [[ -n $EMACS_VERSION ]]; then make -f emacs-travis.mk install_emacs; fi
+  - if [[ -n $EMACS_VERSION ]]; then make -f emacs-travis.mk install_cask; fi
+  - if [[ -n $EMACS_VERSION ]]; then emacs --version; fi
+
+  # ycmd
+  - travis/install_ycmd.sh
+
+install:
+  - if [[ -n $EMACS_VERSION ]]; then make deps; fi
+script:
+  - if [[ -n $EMACS_VERSION ]]; then make all; fi
+  - if [[ -n $EMACS_VERSION ]]; then make YCMDPATH="$HOME/ycmd/ycmd" REQUEST_BACKEND=url-retrieve test; fi
+  - if [[ -n $EMACS_VERSION ]]; then make YCMDPATH="$HOME/ycmd/ycmd" REQUEST_BACKEND=curl test; fi
+matrix:
+  # Finish the build even if any build with allowed failures are still running
+  fast_finish: true
+  allow_failures:
+    # Allow the snapshot build to fail, because Emacs snapshot sometimes fails
+    # to build
+    - env: EMACS_VERSION=snapshot COMPILEFLAGS='error-on-warn'

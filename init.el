@@ -5,7 +5,7 @@
 ;; You may delete these explanatory comments.
 (package-initialize)
 
-(setq gc-cons-threshold (* 66 1024 1024))
+(setq gc-cons-threshold (* 266 1024 1024))
 ;; add all path in .emacs.d to load path
 (let ((default-directory  "~/.emacs.d/"))
   (normal-top-level-add-subdirs-to-load-path))
@@ -30,7 +30,7 @@
 (require 'init-helm)
 (require 'init-ido)
 (require 'init-cedet)
-(require 'init-sr-speedbar)
+(require 'init-neotree)
 (require 'init-yasnippet)
 (require 'init-autocomplete)
 (require 'init-magit)
@@ -52,7 +52,6 @@
 (require 'my-bracket-pair)
 (require 'my-elisp-functions)
 (require 'my-keybinding)
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; show start time and each init.el costs
 (autoload 'esup "esup" "Emacs Start Up Profiler." t)
