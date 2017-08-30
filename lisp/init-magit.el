@@ -1,16 +1,20 @@
-(autoload 'magit-status "magit" nil t )
-(autoload 'magit-commit "magit" nil t )
-(autoload 'magit-push   "magit" nil t )
-(autoload 'magit-show   "magit" nil t )
+(require 'magit)
 (global-set-key (kbd "<f12>") 'magit-status)
-(global-set-key (kbd "<C-f12>") 'magit-commit)
-(global-set-key (kbd "<S-f12>") 'magit-push)
-(global-set-key (kbd "<S-f12>") 'magit-show)
 
-(setq magit-save-some-buffers nil
-      magit-process-popup-time 10
-      magit-completing-read-function 'magit-ido-completing-read)
-
+(defun aborn/simple-git-commit-push (msg)
+  "Simple commit current git project and push to its upstream."
+  (interactive "sCommit Message: ")
+  (when (= 0 (length msg))
+    (setq msg (format-time-string "commit by magit in emacs@%Y-%m-%d %H:%M:%S"
+                                  (current-time))))
+  (message "commit message is %s" msg)
+  (when (and buffer-file-name
+             (buffer-modified-p))
+    (save-buffer))                   ;; save it first if modified.
+  (magit-stage-modified)
+  (magit-commit (list "-m" msg))
+  (magit-push-current-to-upstream nil))
+(global-set-key (kbd "<s-f12>") 'aborn/simple-git-commit-push)
 ;; Sometimes I want check other developer's commit
 ;; show file of specific version
 ;; show the commit
@@ -63,4 +67,5 @@
     -    (when (not (eq section magit-highlighted-section))
            +    (when (and (not (eq section magit-highlighted-section))
                            +                    magit-use-highlights)))))
+
 (provide 'init-magit)
