@@ -8,6 +8,8 @@
 (setq projectile-switch-project-action 'helm-projectile-find-file)
 (setq projectile-file-exists-remote-cache-expire (* 10 60))
 (setq projectile-file-exists-local-cache-expire (* 5 60))
+(setq projectile-switch-project-action 'neotree-projectile-action)
+
 (add-to-list 'projectile-globally-ignored-directories "backup")
 
 ;; mode-line setting

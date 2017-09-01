@@ -1,6 +1,6 @@
 (require 'neotree)
 (setq neo-smart-open t)
-(setq projectile-switch-project-action 'neotree-projectile-action)
+(setq neo-show-hidden-files nil)
 (defun neotree-project-dir ()
   "Open NeoTree using the git root."
   (interactive)
@@ -14,7 +14,6 @@
               (neotree-find file-name)))
       (message "Could not find git project root."))))
 (global-set-key [f5] 'neotree-project-dir)
-
 
 ;;(global-set-key [f5] 'neotree-toggle)
 

@@ -1,7 +1,6 @@
 (require 'magit)
-(global-set-key (kbd "<f12>") 'magit-status)
 
-(defun aborn/simple-git-commit-push (msg)
+(defun git-commit&push (msg)
   "Simple commit current git project and push to its upstream."
   (interactive "sCommit Message: ")
   (when (= 0 (length msg))
@@ -14,7 +13,7 @@
   (magit-stage-modified)
   (magit-commit (list "-m" msg))
   (magit-push-current-to-upstream nil))
-(global-set-key (kbd "<s-f12>") 'aborn/simple-git-commit-push)
+
 ;; Sometimes I want check other developer's commit
 ;; show file of specific version
 ;; show the commit
@@ -67,5 +66,10 @@
     -    (when (not (eq section magit-highlighted-section))
            +    (when (and (not (eq section magit-highlighted-section))
                            +                    magit-use-highlights)))))
+
+(global-set-key (kbd "<f12>") 'magit-status)
+(global-set-key (kbd "<s-f12>") 'git-commit&push)
+(global-set-key (kbd "<S-f12>") 'magit-commit)
+
 
 (provide 'init-magit)

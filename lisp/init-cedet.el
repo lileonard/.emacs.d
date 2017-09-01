@@ -25,6 +25,8 @@
                    ;; (global-semantic-show-unmatched-syntax-mode)
                    ;; commit it for my tab-bar
                    )))
+;; let semantic show all the function information
+(require 'stickyfunc-enhance)
 ;; semanticdb path
 (setq semanticdb-default-save-directory "~/.emacs.d/.semanticdb/")
 ;;customise my CEDET
