@@ -1,5 +1,4 @@
 (require 'magit)
-
 (defun git-commit&push (msg)
   "Simple commit current git project and push to its upstream."
   (interactive "sCommit Message: ")
