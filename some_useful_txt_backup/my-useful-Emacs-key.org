@@ -120,9 +120,10 @@
  | C-c C-e | 导出Org文件      |
 
 * git & magit
- | f12   | magit status |
- | C-f12 | magit commit |
- | S-f12 | magit push |
+  | f12   | magit-status)    |
+  | s-f12 | git-commit&push) |
+  | S-f12 | magit-commit)    |
+  | C-f12 | git-commit&push) |
  
 * Bookmark
 ** viss-bookmark-toggle

@@ -69,6 +69,5 @@
 (global-set-key (kbd "<f12>") 'magit-status)
 (global-set-key (kbd "<s-f12>") 'git-commit&push)
 (global-set-key (kbd "<S-f12>") 'magit-commit)
-
-
+(global-set-key (kbd "<C-f12>") 'git-commit&push)
 (provide 'init-magit)
