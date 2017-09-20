@@ -1,3 +1,4 @@
+
 ;;; cmake-project.el --- Integrates CMake build process with Emacs
 
 ;; Copyright (C) 2012, 2013 Alexander Lamaison
@@ -5,7 +6,6 @@
 ;; Author:  Alexander Lamaison <alexander.lamaison@gmail>
 ;; Maintainer: Alexander Lamaison <alexander.lamaison@gmail>
 ;; URL: http://github.com/alamaison/emacs-cmake-project
-;; Package-Version: 0.7
 ;; Version: 0.7
 ;; Keywords: c cmake languages tools
 
@@ -50,7 +50,7 @@
 
 ;;; Code:
 
-; Based on `upward-find-file' at http://emacswiki.org/emacs/CompileCommand
+                                        ; Based on `upward-find-file' at http://emacswiki.org/emacs/CompileCommand
 (defun cmake-project--upward-find-last-file (filename &optional startdir)
   "Move up directories until we stop finding a certain
 filename. When we stop finding it, return the last directory in
@@ -61,7 +61,7 @@ return nil. Start at startdir or . if startdir not given"
                   (if startdir startdir ".")))
         (found-tip nil) ; set if we stop finding it so we know when to exit loop
         (top nil))  ; top is set when we get
-                    ; to / so that we only check it once
+                                        ; to / so that we only check it once
 
     (if (not (file-exists-p (expand-file-name filename dirname)))
         nil ; not even in initial dir!
@@ -167,11 +167,13 @@ prevent a fatal Flymake shutdown."
       out)))
 
 ;;;###autoload
-(defun cmake-project-configure-project (build-directory generator)
+(defun cmake-project-configure-project (build-directory generator &optional flags)
   "Configure or reconfigure a CMake build tree.
 BUILD-DIRECTORY is the path to the build-tree directory.  If the
 directory does not already exist, it will be created.  The source
-directory is found automatically based on the current buffer."
+directory is found automatically based on the current
+buffer. With a prefix argument additional CMake flags can be
+specified interactively."
   (interactive
    (let ((directory-parts
           (when cmake-project-build-directory (cmake-project--split-directory-path
@@ -182,7 +184,9 @@ directory is found automatically based on the current buffer."
               "Configure in directory: " root nil nil directory-name)
              (completing-read
               "Generator (optional): "
-              (cmake-project--available-generators) nil t)))))
+              (cmake-project--available-generators) nil t)
+             (if current-prefix-arg
+                 (read-from-minibuffer "Additional CMake flags (optional): "))))))
   (let ((source-directory (cmake-project-find-root-directory))
         (build-directory (file-name-as-directory build-directory)))
     (unless (file-exists-p build-directory) (make-directory build-directory))
@@ -196,26 +200,32 @@ directory is found automatically based on the current buffer."
     (let ((default-directory build-directory))
       (compilation-start
        (concat
-         ;; HACK: force compilation-start to cd to default-directory
-         ;; by inserting dummy cd at front.  Without this, the old
-         ;; broken version may pick up quoted path without spaces and
-         ;; then assume the quotes are part of the path causing an
-         ;; error (see
-         ;; https://github.com/alamaison/emacs-cmake-project/issues/1)
+        ;; HACK: force compilation-start to cd to default-directory
+        ;; by inserting dummy cd at front.  Without this, the old
+        ;; broken version may pick up quoted path without spaces and
+        ;; then assume the quotes are part of the path causing an
+        ;; error (see
+        ;; https://github.com/alamaison/emacs-cmake-project/issues/1)
         "cd . && "
         "cd " (shell-quote-argument (expand-file-name build-directory))
-        " && cmake " (shell-quote-argument
-                      (expand-file-name source-directory))
+        " && cmake "
+        (unless (string= "" flags) (concat flags " "))
+        (shell-quote-argument
+         (expand-file-name source-directory))
         (if (string= "" generator)
             ""
-          (concat " -G " (shell-quote-argument generator)))))
+          (concat " -G " (shell-quote-argument
+                          (if (string= (substring generator (- (length generator) 7)) " [arch]")
+                              (substring generator 0 (- (length generator) 7))
+                            (concat generator ""))
+                          )))))
       (cmake-project--changed-build-directory build-directory))))
 
 ;;;###autoload
 (define-minor-mode cmake-project-mode
   "Minor mode that integrates a CMake-based project with Emacs
 build tools such as the CompileCommand and Flymake."
-  :lighter "CMake"
+  :lighter " CMake"
 
   (cond
    ;; Enabling mode
@@ -233,9 +243,6 @@ build tools such as the CompileCommand and Flymake."
     (ad-enable-advice
      'flymake-post-syntax-check 'before 'cmake-flymake-post-syntax-check)
     (ad-activate 'flymake-get-file-name-mode-and-masks))
-
-    (autoload 'cmake-project-configure-project "cmake-project"
-      "Configure CMake project" t)
 
    ;; Disabling mode
    (t
