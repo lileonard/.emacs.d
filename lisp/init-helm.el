@@ -3,7 +3,7 @@
 (require 'helm-types)
 (require 'helm-locate)
 (require 'helm-buffers)
-(require 'helm-files)
+;;(require 'helm-files)
 (autoload 'helm-semantic-or-imenu "helm-semantic.el" nil t)
 (setq helm-recentf-fuzzy-match t
       helm-buffers-fuzzy-matching t
@@ -121,7 +121,7 @@
 (require 'helm-flx)
 (helm-flx-mode 1)
 
-(require 'helm-projectile)
+(autoload 'helm-projectile-grep "helm-projectile")
 (global-set-key (kbd "M-f") 'helm-projectile-grep)
 
 (provide 'init-helm)

@@ -43,7 +43,6 @@
 (require 'init-linum-mode)
 (require 'init-hs-minor-mode)
 (require 'init-flycheck)
-(require 'init-calendar)
 ;; settings that from others
 (require 'coding-settings)
 ;; my settings
