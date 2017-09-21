@@ -1,4 +1,11 @@
-(require 'magit)
+;;(require 'magit)
+
+(autoload 'magit-stage-modified "magit"  t)
+(autoload 'magit-commit "magit"  t)
+(autoload 'magit-status "magit" t)
+(autoload 'magit-commit "magit" t)
+;;(autoload 'magit-status "magit" t)
+
 (defun git-commit&push (msg)
   "Simple commit current git project and push to its upstream."
   (interactive "sCommit Message: ")
