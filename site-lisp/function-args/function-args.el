@@ -1,11 +1,11 @@
 ;;; function-args.el --- C++ completion for GNU Emacs -*- lexical-binding: t -*-
 
-;; Copyright (C) 2013-2014  Oleh Krehel
+;; Copyright (C) 2013-2017  Oleh Krehel
 
 ;; Author: Oleh Krehel <ohwoeowho@gmail.com>
 ;; URL: https://github.com/abo-abo/function-args
-;; Version: 0.5.1
-;; Package-Requires: ((swiper "0.2.0"))
+;; Version: 0.6.0
+;; Package-Requires: ((ivy "0.9.1"))
 
 ;; This file is not part of GNU Emacs
 
@@ -46,6 +46,7 @@
 (require 'semantic/ia)
 (require 'semantic/db-find)
 (require 'semantic-directory)
+(require 'json)
 (defvar ivy-last)
 (declare-function ivy-read "ext:ivy")
 (declare-function ivy-state-window "ext:ivy")
@@ -91,10 +92,10 @@
 (defconst fa-hint-dark-color "gray20")
 
 (defface fa-face-hint
-  `((((class color) (background light))
-     :inherit 'default :background "#fff3bc")
-    (((class color) (background dark))
-     :background ,fa-hint-dark-color))
+    `((((class color) (background light))
+       :inherit 'default :background "#fff3bc")
+      (((class color) (background dark))
+       :background ,fa-hint-dark-color))
   "Basic hint face."
   :group 'function-args-faces)
 
@@ -105,7 +106,7 @@
 
 (defface fa-face-type
     `((((class color) (background light))
-       :inherit 'font-lock-type-face :background "black")
+       :inherit 'font-lock-type-face :background "#fff3bc")
       (((class color) (background dark))
        :inherit 'font-lock-type-face :background ,fa-hint-dark-color))
   "Face for displaying types."
@@ -194,12 +195,13 @@
 
 (let ((map function-args-mode-map))
   (define-key map (kbd "M-o") 'moo-complete)
-  (define-key map (kbd "M-i") 'fa-show)
+  (define-key map (kbd "C-2") 'fa-show)
   (define-key map (kbd "M-n") 'fa-idx-cycle-down)
   (define-key map (kbd "M-h") 'fa-idx-cycle-up)
   (define-key map (kbd "M-u") 'fa-abort)
   (define-key map (kbd "M-j") 'fa-jump-maybe)
-  (define-key map (kbd "C-M-j") 'moo-jump-local))
+  (define-key map (kbd "C-M-j") 'moo-jump-local)
+  (define-key map (kbd "C-M-k") 'moo-jump-directory))
 
 (defvar fa-overlay nil
   "Hint overlay instance.")
@@ -264,15 +266,17 @@ Otherwise, call `c-indent-new-comment-line' that's usually bound to \"M-j\"."
 (defun fa-show ()
   "Display the arguments of the closest function."
   (interactive)
-  (save-excursion
-    (fa-do-position)
-    (setq fa-lst (fa-calculate))
-    (setq fa-hint-pos (point))
-    (setq fa-idx 0))
-  (if (eq (length fa-lst) 0)
-      (message "nothing found")
-    (fa-update-arg)
-    (fa-start-tracking)))
+  (if (overlayp fa-overlay)
+      (fa-abort)
+    (save-excursion
+      (fa-do-position)
+      (setq fa-lst (fa-calculate))
+      (setq fa-hint-pos (point))
+      (setq fa-idx 0))
+    (if (eq (length fa-lst) 0)
+        (message "nothing found")
+      (fa-update-arg)
+      (fa-start-tracking))))
 
 (defun fa-abort ()
   "Stop tracking the cursor and remove the overlay."
@@ -304,40 +308,117 @@ Otherwise, call `c-indent-new-comment-line' that's usually bound to \"M-j\"."
         (goto-char
          (cdr tag))))))
 
+(defun moo-complete--candidates (&optional only-class)
+  (let ((symbol (moo-ctxt-current-symbol))
+        prefix candidates)
+    (cond
+      ((= (length symbol) 2)
+       ;; either var.prefix or var->prefix
+       (setq prefix (cadr symbol))
+       (setq candidates (moo-complete-candidates-2 prefix (car symbol))))
+      ((= (length symbol) 1)
+       (setq prefix (car symbol))
+       (setq candidates (moo-complete-candidates-1 prefix))
+       (when only-class
+         (setq candidates
+               (moo-filter-tag-by-class 'variable candidates))))
+      ((= (length symbol) 3)
+       (setq prefix (caddr symbol))
+       (setq candidates
+             (or (moo-ttype->tmembers
+                  (moo-complete-type-member
+                   (car (moo-complete-candidates-2 (cadr symbol) (car symbol)))))
+                 (semantic-analyze-possible-completions
+                  (semantic-analyze-current-context (point)))))))
+    (cons prefix candidates)))
+
 (defun moo-complete (arg)
   "Complete current C++ symbol at point.
 When ARG is not nil offer only variables as candidates."
   (interactive "P")
-  (let ((symbol (moo-ctxt-current-symbol))
-        prefix candidates)
-    (if (cond
-          ;; ———  ————————————————————————————————————————————————————————————————————
-          ((= (length symbol) 2)
-           ;; either var.prefix or var->prefix
-           (setq prefix (cadr symbol))
-           (setq candidates (moo-complete-candidates-2 prefix (car symbol))))
-          ;; ———  ————————————————————————————————————————————————————————————————————
-          ((= (length symbol) 1)
-           (setq prefix (car symbol))
-           (setq candidates (moo-complete-candidates-1 prefix))
-           (if arg
-               (setq candidates
-                     (moo-filter-tag-by-class 'variable candidates))
-             t))
-          ;; ———  ————————————————————————————————————————————————————————————————————
-          ((= (length symbol) 3)
-           (setq prefix (caddr symbol))
-           (setq candidates
-                 (or (moo-ttype->tmembers
-                      (moo-complete-type-member
-                       (car (moo-complete-candidates-2 (cadr symbol) (car symbol)))))
-                     (semantic-analyze-possible-completions
-                      (semantic-analyze-current-context (point)))))))
+  (cl-destructuring-bind (prefix . candidates) (moo-complete--candidates arg)
+    (if candidates
         (moo-handle-completion
          prefix
          (cl-delete-duplicates candidates :test #'moo-tag=))
-      ;; ———  ————————————————————————————————————————————————————————————————————————
       (semantic-ia-complete-symbol (point)))))
+
+(defun moo-files-in-directory (prefix dir)
+  (let ((default-directory dir))
+    (delete
+     "../"
+     (delete
+      "./"
+      (all-completions prefix 'read-file-name-internal)))))
+
+(defun moo-locate-compile-commands-json ()
+  (let ((base "compile_commands.json")
+        (templates '("./" "./build/" "../build/"))
+        dir
+        name)
+    (while (setq dir (pop templates))
+      (if (file-exists-p
+           (setq name (expand-file-name base dir)))
+          (setq templates nil)
+        (setq name nil)))
+    name))
+
+(defun moo-headers-directories-default ()
+  (let* ((cmd "gcc -Wp,-v -x c++ - -fsyntax-only")
+         (out (shell-command-to-string cmd)))
+    (if out
+        (if (string-match "#include <...> search starts here:\n\\([^^]*\\)End of search" out)
+            (split-string (match-string 1 out))
+          (error "unexpected content: %s" out))
+      (error "unexpected output: %s" cmd))))
+
+(defun moo-headers-directories ()
+  (let ((compile-commands (moo-locate-compile-commands-json))
+        (default-includes (moo-headers-directories-default)))
+    (if compile-commands
+        (let* ((json (json-read-file compile-commands))
+               (file (buffer-file-name))
+               (entry (cl-find-if (lambda (x) (equal file (cdr (assoc 'file x))))
+                                  json)))
+          (if entry
+              (let* ((cmd (cdr (assoc 'command entry)))
+                     (start -1)
+                     includes)
+                (while (setq start (string-match "-I\\(/[^q ]+\\) " cmd (1+ start)))
+                  (push (file-name-as-directory (match-string 1 cmd)) includes))
+                (append default-includes (nreverse includes)))
+            (error "File %s not found in %s"
+                   (buffer-file-name)
+                   compile-commands)))
+      default-includes)))
+
+(defun moo-completion-headers ()
+  (when (looking-back "^#include *\\(?:\"\\|<\\)\\(.*\\)")
+    (let* ((sym (match-string-no-properties 1))
+           (beg (match-beginning 1))
+           (end (match-end 1))
+           (cands (delete-dups
+                   (cl-mapcan
+                    (lambda (dir)
+                      (moo-files-in-directory sym dir))
+                    (moo-headers-directories)))))
+      (when (string-match "/\\([^/]*\\)$" sym)
+        (cl-incf beg (match-beginning 1))
+        (setq sym (match-string 1)))
+      (list beg end cands))))
+
+(defun moo-completion-at-point ()
+  (let ((bnd (semantic-ctxt-current-symbol-and-bounds))
+        beg end)
+    (if bnd
+        (progn
+          (setq beg (caar (cddr bnd)))
+          (setq end (cdar (cddr bnd))))
+      (setq beg (point))
+      (setq end (point)))
+    (list
+     beg end (mapcar #'semantic-tag-name
+                     (cdr (moo-complete--candidates))))))
 
 ;; ——— Predicates ——————————————————————————————————————————————————————————————
 (defmacro fa-and (&rest predicates)
@@ -635,6 +716,9 @@ Select bold faces when BOLD is t."
      (propertize (cdr cel) 'face
                  (if bold 'fa-face-hint-bold 'fa-face-hint)))))
 
+(defvar fa-space-before-function-args ""
+  "Variable used when displaying a function tag.")
+
 (defun fa-tfunction->fal (tag &optional output-string)
   "Return function argument list structure for TAG.
 It has the structure: (template type (file . position) arguments)."
@@ -686,7 +770,7 @@ It has the structure: (template type (file . position) arguments)."
                    (if type-p
                        (propertize (fa-type->str type-p) 'face 'font-lock-type-face)
                      "?")
-                   (if pointer-p " *" ""))))
+                   (if pointer-p "*" ""))))
       (if (null output-string)
           (cons
            ;; name and type part
@@ -707,12 +791,14 @@ It has the structure: (template type (file . position) arguments)."
                'font-lock-keyword-face))
          (if constructor-flag-p
              ""
-           (if (string-match "\\*$" return-type)
-               return-type
-             (concat return-type " ")))
+           (concat return-type " "))
          (propertize name 'face 'font-lock-function-name-face)
-         " ("
-         (mapconcat (lambda (x) (concat (car x) " " (cdr x)))
+         fa-space-before-function-args
+         "("
+         (mapconcat (lambda (x)
+                      (if (string= (cdr x) "")
+                          (car x)
+                        (concat (car x) " " (cdr x))))
                     argument-conses
                     ", ")
          ")"
@@ -747,14 +833,14 @@ TYPE and NAME are strings."
          (pop r))
         (t (error "Unknown token %s" item))))
     (cons (concat (and constant-flag-p (propertize "const " 'face 'font-lock-keyword-face))
-                  (propertize (fa-type->str type-p) 'face 'font-lock-type-face))
-          (concat (and reference-p "&")
-                  (and pointer-p "*")
-                  ;; pretty up std:: identifiers
-                  (replace-regexp-in-string "^_+" "" name)
-                  (and dereference-p "[]")
-                  (and default-value-p (format " = %s"
-                                               default-value-p))))))
+                  (propertize (fa-type->str type-p) 'face 'font-lock-type-face)
+                  (and reference-p "&")
+                  (and pointer-p "*"))
+          (concat
+           ;; pretty up std:: identifiers
+           (replace-regexp-in-string "^_+" "" name)
+           (and dereference-p "[]")
+           (and default-value-p (format " = %s" default-value-p))))))
 
 (defun fa-type->str (tag)
   "Return string representation of type TAG."
@@ -860,8 +946,106 @@ TYPE and NAME are strings."
 
 (defvar moo-jump-local-cache (make-hash-table :test 'equal))
 
-(defun moo-jump-local (arg)
-  "Select a tag to jump to from tags defined in current buffer.
+(defvar moo-jump-keymap
+  (let ((map (make-sparse-keymap)))
+    (define-key map (kbd "C-M-j")
+      (lambda ()
+        (interactive)
+        (ivy-exit-with-action
+         (lambda (_)
+           (moo-jump-directory nil ivy-text)))))
+    (define-key map (kbd "C-M-k")
+      (lambda ()
+        (interactive)
+        (ivy-call)
+        (let ((buf (with-ivy-window (current-buffer))))
+          (ivy-exit-with-action
+           `(lambda (_)
+              (switch-to-buffer ,buf)
+              (moo-jump-local ivy-text))))))
+    map))
+
+(defun moo-fetch-tags ()
+  (delq nil
+        (mapcar
+         (lambda (x)
+           (let ((s (moo-tag->str x)))
+             (when s
+               (cons s x))))
+         (moo-flatten-namepaces
+          (semantic-fetch-tags)))))
+
+(defun moo-jump-local (&optional initial-input)
+  "Jump to a tag in the current file."
+  (interactive)
+  (ivy-read "tag: " (moo-fetch-tags)
+            :initial-input initial-input
+            :action #'moo-action-jump
+            :keymap moo-jump-keymap
+            :preselect (car (semantic-current-tag))))
+
+(defun moo-implement-action (x)
+  (delete-region ivy-completion-beg ivy-completion-end)
+  (let* ((tag (cdr x))
+         (argument-conses
+          (mapcar
+           #'fa-variable->cons
+           (mapcar
+            (lambda (x) (unless (stringp (car x)) (setcar x "")) x)
+            (semantic-tag-get-attribute tag :arguments))))
+         (return-type (semantic-tag-type tag))
+         (return-type
+          (if (stringp return-type)
+              return-type
+            (moo-tag->str return-type)))
+         (scope (semantic-tag-get-attribute tag :parent)))
+    ;; constructor?
+    (unless (equal return-type scope)
+      (insert return-type
+              (if (semantic-tag-get-attribute tag :pointer)
+                  "*"
+                "")
+              " "))
+    (insert scope "::")
+    (insert (semantic-tag-name tag))
+    (insert "("
+            (mapconcat (lambda (x)
+                         (concat (car x)
+                                 (if (string= (cdr x) "")
+                                     ""
+                                   (concat " " (cdr x)))))
+                       argument-conses ", ")
+            ")")
+    (insert " {\n  \n}")
+    (setq ivy-completion-end (point))
+    (backward-char 2)))
+
+(defun moo-implement ()
+  "Implement a class method.
+Currently, the class has to be in the current buffer."
+  (interactive)
+  (if (moo-c++-class-name)
+      (moo-propose-virtual)
+    (setq ivy-completion-beg (point))
+    (setq ivy-completion-end (point))
+    (let ((cands
+           (mapcar (lambda (x)
+                     (cons
+                      (concat (semantic-tag-get-attribute x :parent)
+                              "::"
+                              (moo-tag->str x))
+                      x))
+                   (cl-remove-if-not #'moo-functionp
+                                     (moo-flatten-namepaces
+                                      (cl-remove-if-not
+                                       #'moo-typep
+                                       (semantic-fetch-tags)))))))
+      (ivy-read "class: " cands
+                :action 'moo-implement-action))))
+
+
+(defun moo-jump-directory (arg &optional initial-input)
+  "Select a tag to jump to from tags defined in current directory.
 When ARG is non-nil, regenerate tags."
   (interactive "P")
   (let* ((file-list (cl-remove-if
@@ -897,7 +1081,8 @@ When ARG is non-nil, regenerate tags."
     (moo-select-candidate
      ready-tags
      #'moo-action-jump
-     preselect)))
+     preselect
+     initial-input)))
 
 (defun moo-reset-superclasses-cache ()
   "Reset `fa-superclasses'."
@@ -1047,6 +1232,8 @@ NAME is the TAG name."
 (defun moo-action-insert (candidate formatter &optional prefix)
   "Insert tag CANDIDATE.
 When PREFIX is not nil, erase it before inserting."
+  (when (stringp (cadr candidate))
+    (setq candidate (cdr candidate)))
   (when prefix
     (moo-erase-string prefix))
   (cond ((eq formatter 'full-tag)
@@ -1072,11 +1259,12 @@ When PREFIX is not nil, erase it before inserting."
               (stringp (car candidate)))
          (insert (car candidate)))
         (t
-         (error "Unexpected"))))
+         (error "Unexpected")))
+  (indent-for-tab-command))
 
 (defvar ivy-height)
 
-(defun moo-select-candidate (candidates action &optional preselect)
+(defun moo-select-candidate (candidates action &optional preselect initial-input)
   (cond ((eq moo-select-method 'display-completion-list)
          (with-output-to-temp-buffer "*moo-jump*"
            (display-completion-list
@@ -1089,7 +1277,10 @@ When PREFIX is not nil, erase it before inserting."
                      :preselect preselect
                      :action action
                      :require-match t
-                     :sort nil)))
+                     :sort nil
+                     :keymap moo-jump-keymap
+                     :initial-input initial-input
+                     :caller 'moo-select-candidate)))
 
         ((prog1 (eq moo-select-method 'helm)
            (require 'helm)
@@ -1113,11 +1304,19 @@ When PREFIX is not nil, erase it before inserting."
         (t
          (error "Bad `moo-select-method': %S" moo-select-method))))
 
+(defun moo-action-implement (tag)
+  (with-ivy-window
+    (insert (moo-tag->str tag))))
+
+(ivy-set-actions 'moo-select-candidate
+                 '(("i" moo-action-implement "implement")))
+
 (when (version< emacs-version "25.1")
   (eval-after-load 'etags
     '(add-to-list 'byte-compile-not-obsolete-vars 'find-tag-marker-ring)))
 
 (defun moo-action-jump (tag)
+  (setq tag (cdr tag))
   (with-selected-window (cl-case moo-select-method
                           (ivy
                            (ivy-state-window ivy-last))
@@ -1131,7 +1330,8 @@ When PREFIX is not nil, erase it before inserting."
                 (ov (semantic-tag-overlay tag)))
             (ring-insert
              find-tag-marker-ring (point-marker))
-            (find-file file-name)
+            (when file-name
+              (find-file file-name))
             (goto-char (if (overlayp ov)
                            (overlay-start ov)
                          (aref ov 0)))))
@@ -1159,12 +1359,7 @@ Optional PREDICATE is used to improve uniqueness of returned tag."
      str
      `(lambda (x)
         (and (not (semantic-tag-get-attribute x :prototype))
-             ,(if predicate `(,predicate x) t)
-             (or (not (moo-variablep x))
-                 (equal ,class-name
-                        (save-excursion
-                          (goto-char (moo-tget-beginning-position x))
-                          (moo-c++-class-name)))))))))
+             ,(if predicate `(,predicate x) t))))))
 
 (defun moo-type-tag-at-point (str)
   (moo-tag-at-point-generic
@@ -1237,12 +1432,24 @@ Optional PREDICATE is used to improve uniqueness of returned tag."
                        ;; is it a usual pointer or a smart pointer?
                        (if var-pointer-p
                            (moo-complete-type-member var-tag)
-                         (let ((type-template (semantic-tag-get-attribute
-                                               (semantic-tag-get-attribute var-tag :type)
-                                               :template-specifier)))
-                           ;; assume that the first template parameter is the relevant one
-                           ;; (normally, there should be only one anyway)
-                           (moo-stype->tag (caar type-template)))))
+                         (let ((type (semantic-tag-get-attribute var-tag :type)))
+                           (cond ((listp type)
+                                  (let ((template-specifier
+                                         (semantic-tag-get-attribute
+                                          type
+                                          :template-specifier)))
+                                    (if template-specifier
+                                        ;; assume that the first template parameter is the relevant one
+                                        ;; (normally, there should be only one anyway)
+                                        (moo-stype->tag (caar template-specifier))
+                                      (car (moo-desperately-find-sname
+                                            (semantic-tag-name type))))))
+                                 ((equal type "struct")
+                                  (if (eq (semantic-tag-class var-tag) 'type)
+                                      var-tag
+                                    (error "unexpected")))
+                                 (t
+                                  (error "unexpected"))))))
                       ;; otherwise just get its type
                       (t
                        (cond ((moo-typep var-tag)
@@ -1255,13 +1462,13 @@ Optional PREDICATE is used to improve uniqueness of returned tag."
                   #'identity)
                  ;; wildcard
                  ((eq ?_ (aref prefix 0))
-                  `(lambda(x) (cl-search ,(substring prefix 1) (downcase (car x)))))
+                  `(lambda (x) (cl-search ,(substring prefix 1) (downcase (car x)))))
                  ;; case-sensitive
                  ((fa-char-upcasep (aref prefix 0))
-                  (lambda(x) (eq 0 (cl-search prefix (car x)))))
+                  (lambda (x) (eq 0 (cl-search prefix (car x)))))
                  ;; case-insensitive
                  (t
-                  `(lambda(x) (eq 0 (cl-search ,(downcase prefix) (downcase (car x)))))))))
+                  `(lambda (x) (eq 0 (cl-search ,(downcase prefix) (downcase (car x)))))))))
     (filter pred tmembers)))
 
 (defun moo-complete-candidates-1 (prefix)
@@ -1452,20 +1659,14 @@ This includes the constructors of types with name STR."
     (let ((ctxt (semantic-analyze-current-context (point))))
       (if (null ctxt)
           (error "Nothing under cursor")
-        ;; (setq ctxt (car (oref ctxt prefix)))
         (setq ctxt (car (reverse (oref ctxt prefix))))
         (ignore-errors
           (cond ((stringp ctxt)
-                 (or (moo-tag-at-point ctxt) ctxt))
-                ;; check if variable constructor initialization is mistaken
-                ;; for function prototype definition:
-                ;; ((and (moo-functionp ctxt)
-                ;;       (moo-prototype-flag-p ctxt)
-                ;;       (let ((arg1 (caar (semantic-tag-get-attribute ctxt :arguments))))
-                ;;         (and arg1 (stringp arg1) (string= arg1 ""))))
-                ;;  (or (ignore-errors
-                ;;        (moo-tag-at-point (car (semantic-tag-get-attribute ctxt :type))))
-                ;;      (semantic-tag-get-attribute ctxt :type)))
+                 (or (moo-tag-at-point
+                      ctxt
+                      (lambda (tag)
+                        (semantic-tag-of-class-p tag 'type)))
+                     ctxt))
                 (t
                  ctxt)))))))
 
@@ -1477,7 +1678,8 @@ This includes the constructors of types with name STR."
              (filter
               (lambda (x) (and (moo-typep x) (semantic-tag-get-attribute x :members)))
               (moo-desperately-find-sname str)))))
-    (cond ((= 0 (length candidates)))
+    (cond ((= 0 (length candidates))
+           nil)
           ((= 1 (length candidates))
            (car candidates))
           (t (error "`moo-stype->tag': too many candidates")))))
@@ -1605,7 +1807,8 @@ Returns TAG if it's not a typedef."
                                 func
                                 (let ((truefile (semantic-tag-get-attribute tag :truefile)))
                                   (mapcar (lambda (x)
-                                            (semantic-tag-put-attribute x :truefile truefile))
+                                            (semantic-tag-put-attribute x :truefile truefile)
+                                            (semantic-tag-put-attribute x :parent (semantic-tag-name tag)))
                                           (semantic-tag-get-attribute tag :members)))
                                 (funcall func out tag depth)
                                 (1+ depth))))
@@ -1660,8 +1863,8 @@ Returns TAG if it's not a typedef."
               (up-list)
               (backward-list))
             ;; TODO take care of nested classes
-            (if (fa-looking-back
-                 "\\(?:class\\|struct\\) \\([A-Za-z][A-Z_a-z0-9]*\\)[: \t\n]+[^{;]*?")
+            (if (looking-back
+                 "\\(?:class\\|struct\\) \\([A-Za-z][A-Z_a-z0-9]*\\).*\n")
                 (progn
                   (goto-char (match-beginning 0))
                   (setq name (match-string-no-properties 1))

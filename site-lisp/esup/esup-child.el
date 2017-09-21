@@ -197,8 +197,7 @@ LEVEL is the number of `load's or `require's we've stepped into."
                           (point)))
               (start (progn (forward-sexp -1)
                             (point)))
-              results
-              (after-init-time nil))
+              results)
           (while (> start last-start)
             (setq results (append results
                                   (esup-child-profile-sexp start end level)))

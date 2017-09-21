@@ -22,13 +22,13 @@
         ((equal switch-to 'dark)
          (progn (moe-dark)))))
 
-(defun switch-at-fixed-time ()
+(defun my-switch-at-fixed-time ()
   (let ((now (string-to-number (format-time-string "%H"))))
-    (if (and (>= now 7) (<= now 17))
+    (if (and (>= now 06) (<= now 17))
         (moe-load-theme 'light)
       (moe-load-theme 'dark))
     nil))
-(switch-at-fixed-time)
+(my-switch-at-fixed-time)
 
 ;; my custom theme settings
 (setq moe-light-pure-white-background-in-terminal t)
