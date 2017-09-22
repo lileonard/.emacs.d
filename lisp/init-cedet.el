@@ -27,14 +27,15 @@
                    )))
 ;; let semantic show all the function information
 (require 'stickyfunc-enhance)
-;; semanticdb path
-(setq semanticdb-default-save-directory "~/.emacs.d/.semanticdb/")
+
 ;;customise my CEDET
 ;; Include settings
 (autoload 'semantic/db "semantic/db" "db" t)
 (autoload 'semantic/ia "semantic/ia" "ia" t)
 (autoload 'semantic/bovine/gcc "semantic/bovine/gcc" "gcc" t)
 (autoload 'semantic-add-system-include "semantic/bovine/c" "c" t)
+;; semanticdb path
+(setq semanticdb-default-save-directory "~/.emacs.d/.semanticdb/")
 ;; project include setting
 (defun my-semantic-include-setting ()
   (let ((include-sys-dirs my-sys-c-include))

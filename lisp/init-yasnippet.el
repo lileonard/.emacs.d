@@ -1,7 +1,7 @@
 (require 'yasnippet)
 (setq yas-snippet-dirs '("~/.emacs.d/snippets"))
 
-
+(defvar yas-global-mode nil)
 (yas-reload-all)
 (add-hook 'c-mode-common-hook   #'yas-minor-mode)
 (add-hook 'emacs-lisp-mode-hook #'yas-minor-mode)
@@ -10,6 +10,12 @@
 (add-hook 'lisp-mode-hook       #'yas-minor-mode)
 (add-hook 'python-mode-hook     #'yas-minor-mode)
 (add-hook 'org-mode-hook        #'yas-minor-mode)
+
+(setq yas-triggers-in-field t
+      yas-wrap-around-region t
+      yas-prompt-functions '(yas-completing-prompt)
+      yas-minor-mode-map (make-sparse-keymap))
+
 
 (defun yas-popup-isearch-prompt (prompt choices &optional display-fn)
   (when (featurep 'popup)

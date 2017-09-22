@@ -1,10 +1,5 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;frame and appearance settings
-;;----------------------------------------------------------------------------
-;; Show a marker in the left fringe for lines not in the buffer
-;;----------------------------------------------------------------------------
-(show-paren-mode t)
-(setq show-paren-style 'parentheses)
 (auto-image-file-mode t)
 (setq inhibit-startup-echo-area-message t
       inhibit-startup-screen t

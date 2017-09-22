@@ -56,6 +56,7 @@
 ;;(setq cua-keep-region-after-copy t) ;; Standard Windows behaviour
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(require 'whitespace)
 (global-whitespace-mode 1)
 ;;(setq whitespace-tabpace-style (quote (spaces tabs newline space-mark tab-mark newline-mark)))
 (setq whitespace-style (quote (tab-mark))
