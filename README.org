@@ -25,10 +25,17 @@
 
 * 主要参考
 [[http://www.emacser.com/emacs-resource.htm][Emacs中文网(long time no update)]]
+
 [[http://www.emacswiki.org/][Emacs Wiki]]
-[[http://xahlee.org/][李杀网]]
+
+[[http://xahlee.org/][李杀网
+]]
 [[http://blog.csdn.net/redguardtoo/article/details/7222501/][一年成为Emacs高手]]
+
 [[http://www.emacsist.com/][emacsist(long time no update)]]
+
 [[https://github.com/bayandin/awesome-awesomeness/][awesome-awesomeness]]
+
 [[https://emacs.zeef.com/ehartc/][zeef emacs]]
+
 [[https://github.com/syl20bnr/spacemacs][spcemacs]]
