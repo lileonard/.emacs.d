@@ -1,7 +1,3 @@
-(require 'paren)
-(show-paren-mode t)
-(set-face-foreground 'show-paren-match "Darkblue")
-(set-face-attribute 'show-paren-match nil :weight 'extra-bold)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'highlight-parentheses)
 (global-highlight-parentheses-mode t)

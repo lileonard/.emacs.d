@@ -55,7 +55,13 @@
         'font-lock-keyword-face nil
         :bold t
         :foreground "#008B8B")
-       (set-foreground-color "#232323"))
+       (set-foreground-color "#232323")
+       (set-face-attribute
+        'show-paren-match nil
+        :bold t
+        :foreground "#FFC125"
+        :background "#32CD32")
+       )
       ((eq (frame-parameter nil 'background-mode) 'dark)
        (set-face-attribute
         'font-lock-comment-face nil
@@ -71,5 +77,10 @@
         :bold t
         :foreground "DeepSkyBlue1")
        (set-foreground-color "#E0E0E0")
-       (set-background-color "#073642")))
+       (set-background-color "#073642")
+       (set-face-attribute
+        'show-paren-match nil
+        :bold t
+        :foreground "#0000EE"
+        :background "#DAA520")))
 (provide 'init-colortheme)

@@ -1,10 +1,10 @@
 ;;; Init-BasicSet.el --- basic settings              -*- lexical-binding: t; -*-
-
+;; basic set and build in plugins
 ;; Copyright (C) 2016  Li Yuanheng
 
 ;; Author: Li Yuanheng <liyuanheng.leo@gmail.com>
 
-;; basic settings 
+;; basic settings
 (setq visible-bell t
       mouse-yank-at-point t
       kill-ring-max 366
@@ -51,10 +51,12 @@
 (setq-default indent-tabs-mode nil
               default-tab-width 4)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;c-c:copy c-x:cut c-v:paste 
+;;c-c:copy c-x:cut c-v:paste
 (cua-mode t);; nil (cua-base))
 ;;(setq cua-keep-region-after-copy t) ;; Standard Windows behaviour
-
+(require 'paren)
+(show-paren-mode t)
+(setq show-paren-style 'parentheses)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'whitespace)
 (global-whitespace-mode 1)
@@ -62,14 +64,14 @@
 (setq whitespace-style (quote (tab-mark))
       whitespace-display-mappings
       ;; all numbers are Unicode codepoint in decimal. e.g. (insert-char 182 1)
-      '(   
+      '(
         (space-mark 32 [183] [46]) ; 32 SPACE 「 」, 183 MIDDLE DOT 「·」, 46 FULL STOP 「.」
         (newline-mark 10 [182 10]) ; 10 LINE FEED
         (tab-mark 9 [8677 9]) ; 9 TAB, 9655 WHITE RIGHT-POINTING TRIANGLE 「」
         ))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; don't let the cursor go into minibuffer prompt
-(setq minibuffer-prompt-properties 
+(setq minibuffer-prompt-properties
       (quote
        (read-only t point-entered minibuffer-avoid-prompt face minibuffer-prompt)))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
