@@ -1,9 +1,10 @@
 ;;; ggtags.el --- emacs frontend to GNU Global source code tagging system  -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2013-2016  Free Software Foundation, Inc.
+;; Copyright (C) 2013-2017  Free Software Foundation, Inc.
 
 ;; Author: Leo Liu <sdl.web@gmail.com>
 ;; Version: 0.8.13
+;; Package-Version: 20170918.1838
 ;; Keywords: tools, convenience
 ;; Created: 2013-01-29
 ;; URL: https://github.com/leoliu/ggtags
@@ -454,7 +455,7 @@ Set to nil to disable tag highlighting."
                        (ggtags-program-path program) nil t nil args))
           (output (progn
                     (goto-char (point-max))
-                    (skip-chars-backward " \t\n")
+                    (skip-chars-backward " \t\n\r")
                     (buffer-substring (point-min) (point)))))
       (or (zerop exit)
           (error "`%s' non-zero exit: %s" program output))
@@ -1022,7 +1023,7 @@ definition tags."
                 (funcall (if (ggtags-sort-by-nearness-p)
                              #'file-relative-name #'ggtags-project-relative-file)
                          buffer-file-name)))
-       (shell-quote-argument name)))))
+       "--" (shell-quote-argument name)))))
 
 (defun ggtags-find-tag-mouse (event)
   (interactive "e")
@@ -1034,35 +1035,35 @@ definition tags."
 ;; Another option for `M-.'.
 (defun ggtags-find-definition (name)
   (interactive (list (ggtags-read-tag 'definition current-prefix-arg)))
-  (ggtags-find-tag 'definition (shell-quote-argument name)))
+  (ggtags-find-tag 'definition "--" (shell-quote-argument name)))
 
 (defun ggtags-setup-libpath-search (type name)
   (pcase (and ggtags-global-search-libpath-for-reference
               (ggtags-get-libpath))
     ((and libs (guard libs))
      (cl-labels ((cont (buf how)
-                   (pcase ggtags-global-exit-info
-                     (`(0 0 ,_)
-                      (with-temp-buffer
-                        (setq default-directory
-                              (file-name-as-directory (pop libs)))
-                        (and libs (setq ggtags-global-continuation #'cont))
-                        (if (ggtags-find-project)
-                            (ggtags-find-tag type (shell-quote-argument name))
-                          (cont buf how))))
-                     (_ (ggtags-global-handle-exit buf how)))))
+                       (pcase ggtags-global-exit-info
+                         (`(0 0 ,_)
+                          (with-temp-buffer
+                            (setq default-directory
+                                  (file-name-as-directory (pop libs)))
+                            (and libs (setq ggtags-global-continuation #'cont))
+                            (if (ggtags-find-project)
+                                (ggtags-find-tag type (shell-quote-argument name))
+                              (cont buf how))))
+                         (_ (ggtags-global-handle-exit buf how)))))
        (setq ggtags-global-continuation #'cont)))))
 
 (defun ggtags-find-reference (name)
   (interactive (list (ggtags-read-tag 'reference current-prefix-arg)))
   (ggtags-setup-libpath-search 'reference name)
-  (ggtags-find-tag 'reference (shell-quote-argument name)))
+  (ggtags-find-tag 'reference "--" (shell-quote-argument name)))
 
 (defun ggtags-find-other-symbol (name)
   "Find tag NAME that is a reference without a definition."
   (interactive (list (ggtags-read-tag 'symbol current-prefix-arg)))
   (ggtags-setup-libpath-search 'symbol name)
-  (ggtags-find-tag 'symbol (shell-quote-argument name)))
+  (ggtags-find-tag 'symbol "--" (shell-quote-argument name)))
 
 (defun ggtags-quote-pattern (pattern)
   (prin1-to-string (substring-no-properties pattern)))
@@ -1297,24 +1298,24 @@ Global and Emacs."
     (erase-buffer)
     (ggtags-view-search-history-mode)
     (cl-labels ((prop (s)
-                  (propertize s 'face 'minibuffer-prompt))
+                      (propertize s 'face 'minibuffer-prompt))
                 (prop-tag (cmd)
-                  (with-temp-buffer
-                    (insert cmd)
-                    (forward-sexp -1)
-                    (if (eobp)
-                        cmd
-                      (put-text-property (point) (point-max)
-                                         'face font-lock-constant-face)
-                      (buffer-string))))
+                          (with-temp-buffer
+                            (insert cmd)
+                            (forward-sexp -1)
+                            (if (eobp)
+                                cmd
+                              (put-text-property (point) (point-max)
+                                                 'face font-lock-constant-face)
+                              (buffer-string))))
                 (pp (data)
-                  (pcase data
-                    (`(,_id ,cmd ,dir ,_env ,line ,text)
-                     (insert (prop " cmd: ") (prop-tag cmd) "\n"
-                             (prop " dir: ") dir "\n"
-                             (prop "line: ") (number-to-string line) "\n"
-                             (prop "text: ") text "\n"
-                             (propertize (make-string 32 ?-) 'face 'shadow))))))
+                    (pcase data
+                      (`(,_id ,cmd ,dir ,_env ,line ,text)
+                       (insert (prop " cmd: ") (prop-tag cmd) "\n"
+                               (prop " dir: ") dir "\n"
+                               (prop "line: ") (number-to-string line) "\n"
+                               (prop "text: ") text "\n"
+                               (propertize (make-string 32 ?-) 'face 'shadow))))))
       (setq ggtags-global-search-ewoc
             (ewoc-create #'pp "Global search history keys:  n:next  p:prev  r:register  RET:choose\n")))
     (dolist (data ggtags-global-search-history)
@@ -1328,10 +1329,10 @@ Global and Emacs."
 Use \\[jump-to-register] to restore the search session."
   (interactive (list (register-read-with-preview "Save search to register: ")))
   (cl-labels ((prn (data)
-                (pcase data
-                  (`(,command ,root ,_env ,line ,_)
-                   (princ (format "a ggtags search session `%s' in directory `%s' at line %d."
-                                  command root line))))))
+                   (pcase data
+                     (`(,command ,root ,_env ,line ,_)
+                      (princ (format "a ggtags search session `%s' in directory `%s' at line %d."
+                                     command root line))))))
     (set-register r (registerv-make
                      (if ggtags-global-search-ewoc
                          (cdr (ewoc-data (ewoc-locate ggtags-global-search-ewoc)))
@@ -2051,19 +2052,19 @@ When finished invoke CALLBACK in BUFFER with process exit status."
   (cl-typecase code
     ((not string) code)
     (string (cl-labels ((prepare-buffer ()
-                          (with-current-buffer
-                              (get-buffer-create " *Code-Fontify*")
-                            (delay-mode-hooks (funcall mode))
-                            (setq font-lock-mode t)
-                            (funcall font-lock-function font-lock-mode)
-                            (setq jit-lock-mode nil)
-                            (current-buffer))))
+                                        (with-current-buffer
+                                            (get-buffer-create " *Code-Fontify*")
+                                          (let ((inhibit-read-only t))
+                                            (erase-buffer))
+                                          (funcall mode)
+                                          (setq font-lock-mode t)
+                                          (funcall font-lock-function font-lock-mode)
+                                          (setq jit-lock-mode nil)
+                                          (current-buffer))))
               (with-current-buffer (prepare-buffer)
                 (let ((inhibit-read-only t))
-                  (erase-buffer)
                   (insert code)
-                  (font-lock-default-fontify-region
-                   (point-min) (point-max) nil))
+                  (font-lock-default-fontify-region (point-min) (point-max) nil))
                 (buffer-string))))))
 
 (defun ggtags-get-definition-default (defs)
@@ -2077,6 +2078,7 @@ When finished invoke CALLBACK in BUFFER with process exit status."
   (let* ((re (cadr (assq 'grep ggtags-global-error-regexp-alist-alist)))
          (current (current-buffer))
          (buffer (get-buffer-create " *ggtags-definition*"))
+         (args (list "--result=grep" "--path-style=absolute" name))
          ;; Need these bindings so that let-binding
          ;; `ggtags-print-definition-function' can work see
          ;; `ggtags-eldoc-function'.
@@ -2096,8 +2098,8 @@ When finished invoke CALLBACK in BUFFER with process exit status."
     (ggtags-with-current-project
       (ggtags-global-output
        buffer
-       (list (ggtags-program-path "global")
-             "--result=grep" "--path-style=absolute" name)
+       (cons (ggtags-program-path "global")
+             (if (ggtags-sort-by-nearness-p) (cons "--nearness" args) args))
        show 100))))
 
 (defvar ggtags-mode-prefix-map

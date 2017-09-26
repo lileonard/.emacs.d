@@ -239,9 +239,6 @@
                                       (cons "-2" "-2")
                                       (cons "+i" "+i")
                                       (cons "-i" "-i"))
-
-
-
 ;; end provide
 (provide 'init-small-packages)
 
