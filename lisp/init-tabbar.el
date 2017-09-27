@@ -143,6 +143,5 @@
 
 (global-set-key (kbd "<C-tab>") 'tabbar-forward)
 (global-set-key (kbd "<s-tab>") 'tabbar-backward)
-(global-set-key (kbd "<backtab>") 'tabbar-backward)
 
 (provide 'init-tabbar)

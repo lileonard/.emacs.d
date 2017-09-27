@@ -75,6 +75,7 @@
 (require 'init-ido)
 (require 'init-cedet)
 (require 'init-yasnippet)
+(require 'init-company)
 (require 'init-autocomplete)
 (require 'init-neotree)
 (require 'init-magit)
