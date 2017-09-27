@@ -10,7 +10,6 @@
                 c-mode-common-hook  
                 java-mode-hook
                 python-mode-hook))
-
   (add-hook hook (lambda ()
                    (semantic-mode)
                    (global-ede-mode)

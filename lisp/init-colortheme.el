@@ -10,6 +10,11 @@
 ;; (load-theme 'moe-light t t)
 ;; (enable-theme 'moe-light)
 ;; moe theme
+(defadvice load-theme (before disable-themes-first activate)
+  ;; disable all themes
+  (dolist (i custom-enabled-themes)
+    (disable-theme i)))
+
 (require 'moe-theme)
 ;; (require 'moe-theme-switcher)
 ;; (setq moe-theme-switch-by-sunrise-and-sunset t)

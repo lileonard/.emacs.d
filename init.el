@@ -4,27 +4,14 @@
 ;; just comment it out by adding a semicolon to the start of the line.
 ;; You may delete these explanatory comments.
 (package-initialize)
-(defvar best-gc-cons-threshold 4000000 "Best default gc threshold value. Should't be too big.")
-;; don't GC during startup to save time
-(setq gc-cons-threshold most-positive-fixnum)
-;; {{ emergency security fix
-;; https://bugs.debian.org/766397
-(eval-after-load "enriched"
-  '(defun enriched-decode-display-prop (start end &optional param)
-     (list start end)))
 
-;; add all path in .emacs.d to load path
 (let ((default-directory  "~/.emacs.d/"))
   (normal-top-level-add-subdirs-to-load-path))
-
-;; *Message* buffer should be writable in 24.4+
-(defadvice switch-to-buffer (after switch-to-buffer-after-hack activate)
-  (if (string= "*Messages*" (buffer-name))
-      (read-only-mode -1)))
 
 ;; basic settings
 (require 'init-basicset)
 ;; face settings
+(require 'init-windows)
 (require 'init-colortheme)
 (require 'init-framebuffers)
 (require 'init-font)
@@ -40,6 +27,7 @@
 (require 'init-latex)
 (require 'init-python)
 ;; ;; minor mode and plugin settings
+(require 'init-sessions)
 (require 'init-helm)
 (require 'init-ido)
 (require 'init-cedet)
@@ -65,10 +53,8 @@
 (require 'my-elisp-functions)
 (require 'my-keybinding)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(setq gc-cons-threshold best-gc-cons-threshold)
 ;; show start time and each init.el costs
 (autoload 'esup "esup" "Emacs Start Up Profiler." t)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-
+(setq gc-cons-threshold best-gc-cons-threshold)
 

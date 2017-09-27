@@ -16,8 +16,7 @@
   会对compilation-mode的子mode也返回t,而该函数返回nil"
   (eq 'compilation-mode (buffer-local-value 'major-mode (get-buffer buf))))
 
-(winner-mode t)
-(setq winner-dont-bind-my-keys t)
+
 (defun compilation-kill-buffer-when-compile-success(buf exit-message)
   (tooltip-show exit-message)
   (when  (and (not (compilation-abnormally-exit-message-p exit-message))

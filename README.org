@@ -28,8 +28,8 @@
 
 [[http://www.emacswiki.org/][Emacs Wiki]]
 
-[[http://xahlee.org/][李杀网
-]]
+[[http://xahlee.org/][李杀网]]
+
 [[http://blog.csdn.net/redguardtoo/article/details/7222501/][一年成为Emacs高手]]
 
 [[http://www.emacsist.com/][emacsist(long time no update)]]
