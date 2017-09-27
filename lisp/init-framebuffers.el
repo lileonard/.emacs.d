@@ -54,9 +54,15 @@
                            " || code system: %z"))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;these 3 lines turn off GUI junk
-(menu-bar-mode -1)
-(tool-bar-mode -1)
-(scroll-bar-mode -1)
+;; NO tool bar
+(if (fboundp 'tool-bar-mode)
+  (tool-bar-mode -1))
+;; no scroll bar
+(if (fboundp 'set-scroll-bar-mode)
+  (set-scroll-bar-mode nil))
+;; no menu bar
+(if (fboundp 'menu-bar-mode)
+  (menu-bar-mode -1))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; (toggle-frame-fullscreen)
 (toggle-frame-maximized)

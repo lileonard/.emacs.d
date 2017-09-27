@@ -74,7 +74,7 @@
 (require 'init-helm)
 (require 'init-ido)
 (require 'init-cedet)
-(require 'init-yasnippet) 
+(require 'init-yasnippet)
 (require 'init-autocomplete)
 (require 'init-neotree)
 (require 'init-magit)
