@@ -30,15 +30,15 @@
   "Stop the load of linum-mode for some major modes."
   (unless (member major-mode linum-mode-inhibit-modes-list)
     ad-do-it))
-(ad-activate 'linum-on)
 
-(require 'hlinum)
-(hlinum-activate)
 ;; updated line number every second
 (setq linum-delay t)
 (defadvice linum-schedule (around my-linum-schedule () activate)
   (run-with-idle-timer 1 nil #'linum-update-current))
+(ad-activate 'linum-on)
 
+(require 'hlinum)
+(hlinum-activate)
 
 
 (provide 'init-linum-mode)

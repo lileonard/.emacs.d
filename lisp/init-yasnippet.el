@@ -1,8 +1,17 @@
 (require 'yasnippet)
+
+;; my private snippets, should be placed before enabling yasnippet
 (setq yas-snippet-dirs '("~/.emacs.d/snippets"))
+;; reload snippets
+(yas-reload-all)
+(defun my-yas-reload-all ()
+  "Compile and reload yasnippets.  Run the command after adding new snippets."
+  (interactive)
+  (yas-compile-directory (file-truename "~/.emacs.d/snippets"))
+  (yas-reload-all)
+  (yas-minor-mode 1))
 
 (defvar yas-global-mode nil)
-(yas-reload-all)
 (add-hook 'c-mode-common-hook   #'yas-minor-mode)
 (add-hook 'emacs-lisp-mode-hook #'yas-minor-mode)
 (add-hook 'cmake-mode-hook      #'yas-minor-mode)

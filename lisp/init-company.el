@@ -3,7 +3,6 @@
 (require 'company-etags)
 (require 'company-dabbrev)
 
-
 (add-hook 'after-init-hook 'global-company-mode)
 
 ;; @see https://github.com/company-mode/company-mode/issues/348
@@ -25,7 +24,7 @@
       company-dabbrev-ignore-case nil
       ;; press M-number to choose candidate
       company-show-numbers t
-      company-idle-delay nil
+      company-idle-delay 1
       company-require-match nil
       company-etags-ignore-case t)
 
@@ -57,5 +56,5 @@
      (add-to-list 'company-etags-modes 'web-mode)
      (add-to-list 'company-etags-modes 'lua-mode)))
 
-(global-set-key (kbd "<backtab>") 'company-complete-common)
+(global-set-key (kbd "<tab>") 'company-complete-common)
 (provide 'init-company)

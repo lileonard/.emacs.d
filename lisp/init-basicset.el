@@ -24,7 +24,7 @@
       suggest-key-bindings 1)
 (setq-default indent-tabs-mode nil)
 
-(flymake-mode -1)
+(flymake-mode nil)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (setq enable-recursive-minibuffers t
       scroll-conservatively 100)
