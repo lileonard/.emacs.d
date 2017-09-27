@@ -87,8 +87,6 @@
 (require 'init-linum-mode)
 (require 'init-hs-minor-mode)
 (require 'init-flycheck)
-;; settings that from others
-(require 'coding-settings)
 ;; my settings
 (require 'my-c-config)
 (require 'my-compilation-settings)
