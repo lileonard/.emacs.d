@@ -4,48 +4,7 @@
 
 ;; Author: Li Yuanheng <liyuanheng.leo@gmail.com>
 
-;; basic settings
-(defvar best-gc-cons-threshold 4000000 "Best default gc threshold value. Should't be too big.")
-;; don't GC during startup to save time
-(setq gc-cons-threshold most-positive-fixnum)
-;;----------------------------------------------------------------------------
-;; Which functionality to enable (use t or nil for true and false)
-;;----------------------------------------------------------------------------
-(setq *is-a-mac* (eq system-type 'darwin))
-(setq *win64* (eq system-type 'windows-nt) )
-(setq *cygwin* (eq system-type 'cygwin) )
-(setq *linux* (or (eq system-type 'gnu/linux) (eq system-type 'linux)) )
-(setq *unix* (or *linux* (eq system-type 'usg-unix-v) (eq system-type 'berkeley-unix)) )
-(setq *emacs24* (and (not (featurep 'xemacs)) (or (>= emacs-major-version 24))) )
-(setq *emacs25* (and (not (featurep 'xemacs)) (or (>= emacs-major-version 25))) )
-(setq *no-memory* (cond
-                   (*is-a-mac*
-                    (< (string-to-number
-                        (nth 1
-                             (split-string
-                              (shell-command-to-string "sysctl hw.physmem"))))
-                       4000000000))
-                   (*linux* nil)
-                   (t nil)))
 
-(setq *emacs24old*  (or (and (= emacs-major-version 24) (= emacs-minor-version 3))
-                        (not *emacs24*)))
-
-;; @see https://www.reddit.com/r/emacs/comments/55ork0/is_emacs_251_noticeably_slower_than_245_on_windows/
-;; Emacs 25 does gc too frequently
-(when *emacs25*
-  ;; (setq garbage-collection-messages t) ; for debug
-  (setq gc-cons-threshold (* 64 1024 1024) )
-  (setq gc-cons-percentage 0.5)
-  (run-with-idle-timer 5 t #'garbage-collect))
-;; add all path in .emacs.d to load path
-(eval-after-load "enriched"
-  '(defun enriched-decode-display-prop (start end &optional param)
-     (list start end)))
-;; *Message* buffer should be writable in 24.4+
-(defadvice switch-to-buffer (after switch-to-buffer-after-hack activate)
-  (if (string= "*Messages*" (buffer-name))
-      (read-only-mode -1)))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (setq visible-bell t
       mouse-yank-at-point t
@@ -145,7 +104,7 @@
 ;;   /usr/lib/gcc/x86_64-redhat-linux/4.4.7/include
 ;;   /usr/include
 ;; and do NOT forget CUDA & MPI &FFTW
-(defconst my-sys-c-include
+(defvar my-sys-c-include
   (list
    "/usr/lib/gcc/x86_64-redhat-linux/4.8.5/../../../../include/c++/4.8.5"
    "/usr/lib/gcc/x86_64-redhat-linux/4.8.5/../../../../include/c++/4.8.5/x86_64-redhat-linux"
@@ -161,7 +120,7 @@
    "/home/lyh/Soft/mpich/include"
    "/home/lyh/Soft/mpich/include/primitives"))
 
-(defconst my-custom-include-dirs
+(defvar my-custom-include-dirs
   (list
    "./" "../" "../include" "../inc" "../common"
    "../public" "." "../config"
