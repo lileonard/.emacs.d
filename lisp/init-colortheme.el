@@ -88,4 +88,5 @@
         :bold t
         :foreground "#0000EE"
         :background "#DAA520")))
+
 (provide 'init-colortheme)

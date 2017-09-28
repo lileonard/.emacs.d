@@ -8,9 +8,11 @@
 ;; @see https://github.com/company-mode/company-mode/issues/348
 (require 'company-statistics)
 (company-statistics-mode)
-
 (add-to-list 'company-backends 'company-cmake)
 (add-to-list 'company-backends 'company-c-headers)
+;; don`t need it beacuse I have ac keywords
+;;(add-to-list 'company-backends 'company-keywords)
+
 ;; can't work with TRAMP
 (setq company-backends (delete 'company-ropemacs company-backends))
 ;; (setq company-backends (delete 'company-capf company-backends))
@@ -56,5 +58,11 @@
      (add-to-list 'company-etags-modes 'web-mode)
      (add-to-list 'company-etags-modes 'lua-mode)))
 
-(global-set-key (kbd "<tab>") 'company-complete-common)
+(global-set-key (kbd "<backtab>") 'company-complete-common)
+
+;; set face
+(set-face-attribute
+ 'company-tooltip-annotation nil
+ :foreground "yellow")
+
 (provide 'init-company)
