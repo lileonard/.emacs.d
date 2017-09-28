@@ -56,11 +56,8 @@
 (global-set-key (kbd "<f9>")     'compile)
 
 (require 'cpputils-cmake)
-(add-hook 'c-mode-common-hook
-          (lambda ()
-            (if (derived-mode-p 'c-mode 'c++-mode)
-                (cppcm-reload-all)
-              )))
+(add-hook 'c-mode-hook     (lambda () (cppcm-reload-all)))
+(add-hook 'c++-mode-hook   (lambda () (cppcm-reload-all)))
 ;; OPTIONAL, somebody reported that they can use this package with Fortran
 (add-hook 'c90-mode-hook (lambda () (cppcm-reload-all)))
 ;; OPTIONAL, avoid typing full path when starting gdb

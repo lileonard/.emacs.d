@@ -12,7 +12,8 @@
   (yas-minor-mode 1))
 
 (defvar yas-global-mode nil)
-(add-hook 'c-mode-common-hook   #'yas-minor-mode)
+(add-hook 'c-mode-hook          #'yas-minor-mode)
+(add-hook 'c++-mode-hook        #'yas-minor-mode)
 (add-hook 'emacs-lisp-mode-hook #'yas-minor-mode)
 (add-hook 'cmake-mode-hook      #'yas-minor-mode)
 (add-hook 'latex-mode-hook      #'yas-minor-mode)

@@ -7,7 +7,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; basic modes
 (dolist (hook '(emacs-lisp-mode-hook  
-                c-mode-common-hook  
+                c-mode-hook
+                c++-mode-hook
                 java-mode-hook
                 python-mode-hook))
   (add-hook hook (lambda ()

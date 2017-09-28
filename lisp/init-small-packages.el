@@ -5,8 +5,19 @@
                         "IndianRed1"
                         "IndianRed3"
                         "IndianRed4")
-      hl-paren-delay 0.6)
-;; downloaded packages
+      hl-paren-delay 0.3)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(require 'indent-guide)
+(add-hook 'c++-mode-hook           #'indent-guide-mode)
+(add-hook 'c-mode-hook             #'indent-guide-mode)
+(add-hook 'cmake-mode-hook         #'indent-guide-mode)
+(add-hook 'lisp-mode-hook          #'indent-guide-mode)
+(add-hook 'emacs-lisp-mode-hook    #'indent-guide-mode)
+(add-hook 'python-mode-hook        #'indent-guide-mode)
+(add-hook 'matlab-mode-hook        #'indent-guide-mode)
+(setq indent-guide-delay 0.0)
+(setq indent-guide-char "|")
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'fuzzy)
 (require 'pos-tip)
@@ -19,7 +30,8 @@
 (autoload 'goto-last-change "goto-last-change" nil t)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'rainbow-delimiters)
-(add-hook 'c-mode-common-hook      #'rainbow-delimiters-mode)
+(add-hook 'c++-mode-hook           #'rainbow-delimiters-mode)
+(add-hook 'c-mode-hook             #'rainbow-delimiters-mode)
 (add-hook 'cmake-mode-hook         #'rainbow-delimiters-mode)
 (add-hook 'lisp-mode-hook          #'rainbow-delimiters-mode)
 (add-hook 'emacs-lisp-mode-hook    #'rainbow-delimiters-mode)
@@ -58,7 +70,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Package: ws-butler
 (require 'ws-butler)
-(add-hook 'c-mode-common-hook 'ws-butler-mode)
+(add-hook 'c-mode-hook    'ws-butler-mode)
+(add-hook 'c++-mode-hook  'ws-butler-mode)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (autoload 'phi-rectangle "phi-rectangle.el" "phi-rectangle" t)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -102,10 +115,11 @@
 (beacon-mode 1)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'highlight-numbers)
-(add-hook 'c-mode-common-hook 'highlight-numbers-mode)
-(add-hook 'emacs-lisp-mode-hook 'highlight-numbers-mode)
-(add-hook 'python-mode-hook 'highlight-numbers-mode)
-(add-hook 'matlab-mode-hook 'highlight-numbers-mode)
+(add-hook 'c-mode-hook           'highlight-numbers-mode)
+(add-hook 'c++-mode-hook         'highlight-numbers-mode)
+(add-hook 'emacs-lisp-mode-hook  'highlight-numbers-mode)
+(add-hook 'python-mode-hook      'highlight-numbers-mode)
+(add-hook 'matlab-mode-hook      'highlight-numbers-mode)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; belong to cedet 1.1 but deleted in new version of cedet
 (require 'linemark)
@@ -196,7 +210,8 @@
 (global-set-key [prior] 'pager-page-up)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'electric-operator)
-(add-hook 'c-mode-common-hook      #'electric-operator-mode)
+(add-hook 'c++-mode-hook           #'electric-operator-mode)
+(add-hook 'c-mode-hook             #'electric-operator-mode)
 (add-hook 'emacs-lisp-mode-hook    #'electric-operator-mode)
 (add-hook 'python-mode-hook        #'electric-operator-mode)
 (add-hook 'matlab-mode-hook        #'electric-operator-mode)

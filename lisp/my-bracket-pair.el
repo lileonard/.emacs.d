@@ -70,6 +70,7 @@
           (indent-region old-point (point) nil)))
       (goto-char after-point)
       (c-indent-line))))
-(add-hook 'c-mode-common-hook 'my-c-brace-hook)
+(add-hook 'c-mode-hook    'my-c-brace-hook)
+(add-hook 'c++-mode-hook  'my-c-brace-hook)
 
 (provide 'my-bracket-pair)
