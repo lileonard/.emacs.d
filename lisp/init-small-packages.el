@@ -255,10 +255,6 @@
                                       (cons "+i" "+i")
                                       (cons "-i" "-i"))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(autoload 'mc/mark-next-like-this     "multiple-cursors.el" "mark multiple lines" t)
-(autoload 'mc/mark-previous-like-this "multiple-cursors.el" "mark multiple lines" t)
-(global-set-key (kbd "C->") 'mc/mark-next-like-this)
-(global-set-key (kbd "C-<") 'mc/mark-previous-like-this)
 ;; end provide
 (provide 'init-small-packages)
 

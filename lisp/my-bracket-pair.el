@@ -35,11 +35,11 @@
 
 
 (require 'smartparens-config)
-(add-hook 'c++-mode-hook           #'smartparens-mode)
-(add-hook 'c-mode-hook             #'smartparens-mode)
-(add-hook 'emacs-lisp-mode-hook    #'smartparens-mode)
-(add-hook 'python-mode-hook        #'smartparens-mode)
-(add-hook 'matlab-mode-hook        #'smartparens-mode)
+(add-hook 'c++-mode-hook           #'smartparens-strict-mode)
+(add-hook 'c-mode-hook             #'smartparens-strict-mode)
+(add-hook 'emacs-lisp-mode-hook    #'smartparens-strict-mode)
+(add-hook 'python-mode-hook        #'smartparens-strict-mode)
+(add-hook 'matlab-mode-hook        #'smartparens-strict-mode)
 ;;WCY's brace style auto pair {} and do lots of my barce pair
 (defun my-c-brace-hook ()
   (interactive)

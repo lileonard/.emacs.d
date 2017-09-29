@@ -1,4 +1,4 @@
-;;; golden-ratio.el --- Automatic resizing of Emacs windows to the golden ratio
+e;;; golden-ratio.el --- Automatic resizing of Emacs windows to the golden ratio
 
 ;; Copyright (C) 2012 Roman Gonzalez
 

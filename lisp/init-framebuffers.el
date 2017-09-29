@@ -6,7 +6,9 @@
       inhibit-startup-message t
       use-file-dialog t
       use-dialog-box t
-      display-time-mode nil)
+      display-time-mode nil
+      ;; Show a marker in the left fringe for lines not in the buffer
+      indicate-empty-lines t)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (setq-default
  initial-scratch-message
@@ -35,6 +37,7 @@
 ;; %Z -- like %z, but including the end-of-line format.
 ;; %[ -- print one [ for each recursive editing level.  %] similar.
 ;; %% -- print %.   %- -- print infinitely many dashes.
+
 
 
 (setq frame-title-format '((:eval
