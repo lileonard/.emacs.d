@@ -187,7 +187,7 @@
 ;; major mode for auto-complete
 
 (dolist (mode '(matlab-mode
-                cc-mode c++-mode cmake-mode
+                c-mode cc-mode c++-mode cmake-mode
                 org-mode
                 latex-mode plain-tex-mode
                 log-edit-mode  text-mode

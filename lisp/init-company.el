@@ -2,7 +2,7 @@
 (require 'company-gtags)
 (require 'company-etags)
 (require 'company-dabbrev)
-
+(require 'company-c-headers)
 (add-hook 'after-init-hook 'global-company-mode)
 
 ;; @see https://github.com/company-mode/company-mode/issues/348
@@ -10,6 +10,8 @@
 (company-statistics-mode)
 (add-to-list 'company-backends 'company-cmake)
 (add-to-list 'company-backends 'company-c-headers)
+(add-to-list 'company-c-headers-path-system 'my-sys-c-include)
+(add-to-list 'company-c-headers-path-user   'my-custom-include-dirs)
 ;; don`t need it beacuse I have ac keywords
 ;;(add-to-list 'company-backends 'company-keywords)
 
