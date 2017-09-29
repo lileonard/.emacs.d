@@ -7,6 +7,8 @@
                         "IndianRed4")
       hl-paren-delay 0.3)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; indent-guide, a good but worse in performance plugin,
+;; especially when you open a file that includes very large, deep blocks
 ;; (require 'indent-guide)
 ;; (add-hook 'c++-mode-hook           #'indent-guide-mode)
 ;; (add-hook 'c-mode-hook             #'indent-guide-mode)
@@ -205,9 +207,10 @@
 (setq ivy-use-virtual-buffers t)
 (global-set-key "\C-s" 'swiper)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(require 'pager)
-(global-set-key [next]  'pager-page-down)
+(autoload 'pager-page-up       "pager.el" "pager" t)
+(autoload 'pager-page-down     "pager.el" "pager" t)
 (global-set-key [prior] 'pager-page-up)
+(global-set-key [next]  'pager-page-down)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'electric-operator)
 (add-hook 'c++-mode-hook           #'electric-operator-mode)
@@ -251,6 +254,11 @@
                                       (cons "-2" "-2")
                                       (cons "+i" "+i")
                                       (cons "-i" "-i"))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(autoload 'mc/mark-next-like-this     "multiple-cursors.el" "mark multiple lines" t)
+(autoload 'mc/mark-previous-like-this "multiple-cursors.el" "mark multiple lines" t)
+(global-set-key (kbd "C->") 'mc/mark-next-like-this)
+(global-set-key (kbd "C-<") 'mc/mark-previous-like-this)
 ;; end provide
 (provide 'init-small-packages)
 
