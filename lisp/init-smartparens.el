@@ -33,13 +33,12 @@
 ;;   (local-set-key (kbd "\[") 'skeleton-pair-insert-maybe))
 ;; (add-hook 'lisp-mode-hook 'my-brace-with-bracket-auto-pair)
 
-
 (require 'smartparens-config)
-(add-hook 'c++-mode-hook           #'smartparens-strict-mode)
-(add-hook 'c-mode-hook             #'smartparens-strict-mode)
-(add-hook 'emacs-lisp-mode-hook    #'smartparens-strict-mode)
-(add-hook 'python-mode-hook        #'smartparens-strict-mode)
-(add-hook 'matlab-mode-hook        #'smartparens-strict-mode)
+(add-hook 'c++-mode-hook           #'smartparens-mode)
+(add-hook 'c-mode-hook             #'smartparens-mode)
+(add-hook 'emacs-lisp-mode-hook    #'smartparens-mode)
+(add-hook 'python-mode-hook        #'smartparens-mode)
+(add-hook 'matlab-mode-hook        #'smartparens-mode)
 ;;WCY's brace style auto pair {} and do lots of my barce pair
 (defun my-c-brace-hook ()
   (interactive)
@@ -75,4 +74,4 @@
       (c-indent-line))))
 (add-hook 'c-mode-hook    'my-c-brace-hook)
 (add-hook 'c++-mode-hook  'my-c-brace-hook)
-(provide 'my-bracket-pair)
+(provide 'init-smartparens)

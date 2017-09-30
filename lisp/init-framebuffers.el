@@ -37,9 +37,6 @@
 ;; %Z -- like %z, but including the end-of-line format.
 ;; %[ -- print one [ for each recursive editing level.  %] similar.
 ;; %% -- print %.   %- -- print infinitely many dashes.
-
-
-
 (setq frame-title-format '((:eval
                             (if (buffer-file-name)
                                 (abbreviate-file-name (buffer-file-name))))

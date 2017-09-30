@@ -6,7 +6,10 @@
         (hl-line-mode 1)))
 (add-hook 'c-mode-hook
   '(lambda ()
-        (gtags-mode 1)))
+     (gtags-mode 1)))
+(add-hook 'c++-mode-hook
+          '(lambda ()
+             (gtags-mode 1)))
 ; Customization
 (setq gtags-suggested-key-mapping t)
 (setq gtags-auto-update t)
