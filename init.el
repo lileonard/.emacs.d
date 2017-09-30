@@ -91,6 +91,7 @@
 (require 'init-linum-mode)
 (require 'init-highline)
 (require 'init-neotree)
+(require 'init-highlight-indentation)
 ;; my init functions
 (require 'my-c-config)
 (require 'my-keybinding)
