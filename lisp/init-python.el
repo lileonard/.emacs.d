@@ -50,7 +50,7 @@
   (unless (is-buffer-file-temp)
     z    ;; run command `pip install jedi flake8 importmagic` in shell,
     ;; or just check https://github.com/jorgenschaefer/elpy
-    (elpy-mode 1)
+    (elpy-enable)
     ;; http://emacs.stackexchange.com/questions/3322/python-auto-indent-problem/3338#3338
     ;; emacs 24.4 only
     (setq electric-indent-chars (delq ?: electric-indent-chars))))
