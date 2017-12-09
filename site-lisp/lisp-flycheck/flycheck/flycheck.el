@@ -9,7 +9,7 @@
 ;;             fmdkdd <fmdkdd@gmail.com>
 ;; URL: http://www.flycheck.org
 ;; Keywords: convenience, languages, tools
-;; Version: 31-cvs
+;; Version: 31
 ;; Package-Requires: ((dash "2.12.1") (pkg-info "0.4") (let-alist "1.0.4") (seq "1.11") (emacs "24.3"))
 
 ;; This file is not part of GNU Emacs.
@@ -205,6 +205,7 @@ attention to case differences."
     json-python-json
     less
     less-stylelint
+    llvm-llc
     lua-luacheck
     lua
     perl
@@ -213,6 +214,7 @@ attention to case differences."
     php-phpmd
     php-phpcs
     processing
+    proselint
     protobuf-protoc
     pug
     puppet-parser
@@ -2743,10 +2745,20 @@ buffer."
           (flycheck-buffer-automatically 'new-line 'force-deferred)
         (setq flycheck-idle-change-timer
               (run-at-time flycheck-idle-change-delay nil
-                           #'flycheck-handle-idle-change))))))
+                           #'flycheck--handle-idle-change-in-buffer
+                           (current-buffer)))))))
+
+(defun flycheck--handle-idle-change-in-buffer (buffer)
+  "Handle an expired idle timer in BUFFER since the last change.
+This thin wrapper around `flycheck-handle-idle-change' is needed
+because some users override that function, as described in URL
+`https://github.com/flycheck/flycheck/pull/1305'."
+  (when (buffer-live-p buffer)
+    (with-current-buffer buffer
+      (flycheck-handle-idle-change))))
 
 (defun flycheck-handle-idle-change ()
-  "Handle an expired idle time since the last change."
+  "Handle an expired idle timer since the last change."
   (flycheck-clear-idle-change-timer)
   (flycheck-buffer-automatically 'idle-change))
 
@@ -3256,7 +3268,7 @@ nil."
                    (if (or .error .warning)
                        (format ":%s/%s" (or .error 0) (or .warning 0))
                      "")))
-                (`interrupted "-")
+                (`interrupted ".")
                 (`suspicious "?"))))
     (concat " " flycheck-mode-line-prefix text)))
 
@@ -7585,7 +7597,8 @@ Requires Go 1.6 or newer.  See URL `https://golang.org/cmd/go'."
             (option-list "-tags=" flycheck-go-build-tags concat)
             "-c" "-o" null-device)
   :error-patterns
-  ((error line-start (file-name) ":" line ": "
+  ((error line-start (file-name) ":" line ":"
+          (optional column ":") " "
           (message (one-or-more not-newline)
                    (zero-or-more "\n\t" (one-or-more not-newline)))
           line-end))
@@ -8058,7 +8071,7 @@ for more information about the custom directories."
   :package-version '(flycheck . "29"))
 
 (defun flycheck-eslint-config-exists-p ()
-  "Whether there is an eslint config for the current buffer."
+  "Whether there is a valid eslint config for the current buffer."
   (let* ((executable (flycheck-find-checker-executable 'javascript-eslint))
          (exitcode (and executable (call-process executable nil nil nil
                                                  "--print-config" "."))))
@@ -8100,7 +8113,7 @@ See URL `http://eslint.org/'."
       (list
        (flycheck-verification-result-new
         :label "config file"
-        :message (if have-config "found" "missing")
+        :message (if have-config "found" "missing or incorrect")
         :face (if have-config 'success '(bold error)))))))
 
 (defun flycheck-parse-jscs (output checker buffer)
@@ -8215,6 +8228,24 @@ See URL `http://stylelint.io/'."
   :standard-input t
   :error-parser flycheck-parse-stylelint
   :modes (less-css-mode))
+
+(flycheck-define-checker llvm-llc
+  "Flycheck LLVM IR checker using llc.
+
+See URL `http://llvm.org/docs/CommandGuide/llc.html'."
+  :command ("llc" "-o" null-device source)
+  :error-patterns
+  ((error line-start
+          ;; llc prints the executable path
+          (zero-or-one (minimal-match (one-or-more not-newline)) ": ")
+          (file-name) ":" line ":" column ": error: " (message)
+          line-end))
+  :error-filter
+  (lambda (errors)
+    ;; sanitize errors occurring in inline assembly
+    (flycheck-sanitize-errors
+     (flycheck-remove-error-file-names "<inline asm>" errors)))
+  :modes llvm-mode)
 
 (flycheck-def-config-file-var flycheck-luacheckrc lua-luacheck ".luacheckrc"
   :safe #'stringp)
@@ -8427,6 +8458,40 @@ See https://github.com/processing/processing/wiki/Command-Line"
   :modes processing-mode
   ;; This syntax checker needs a file name
   :predicate (lambda () (buffer-file-name)))
+
+(defun flycheck-proselint-parse-errors (output checker buffer)
+  "Parse proselint json output errors from OUTPUT.
+
+CHECKER and BUFFER denoted the CHECKER that returned OUTPUT and
+the BUFFER that was checked respectively.
+
+See URL `http://proselint.com/' for more information about proselint."
+  (mapcar (lambda (err)
+            (let-alist err
+              (flycheck-error-new-at
+               .line
+               .column
+               (pcase .severity
+                 (`"suggestion" 'info)
+                 (`"warning"    'warning)
+                 (`"error"      'error)
+                 ;; Default to error
+                 (_             'error))
+               .message
+               :id .check
+               :buffer buffer
+               :checker checker)))
+          (let-alist (car (flycheck-parse-json output))
+            .data.errors)))
+
+(flycheck-define-checker proselint
+  "Flycheck checker using Proselint.
+
+See URL `http://proselint.com/'."
+  :command ("proselint" "--json" "-")
+  :standard-input t
+  :error-parser flycheck-proselint-parse-errors
+  :modes (text-mode markdown-mode gfm-mode))
 
 (flycheck-define-checker protobuf-protoc
   "A protobuf syntax checker using the protoc compiler.

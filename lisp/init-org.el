@@ -19,7 +19,6 @@
       '(
         ("TODO"      . (:foreground "red"     :weight bold))
         ("DOING"     . (:foreground "green"   :weight bold))
-        ("HANGUP"    . (:foreground "yellow"  :weight bold))
         ("DONE"      . (:foreground "orange"  :weight bold))
         ("CANCELLED" . (:foreground "gray"    :weight bold))))
 ;;Sort a column in an Org Table
