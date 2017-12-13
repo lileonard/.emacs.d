@@ -91,7 +91,10 @@ Only buffer names are fuzzy matched when this is enabled,
 (defcustom helm-mini-default-sources '(helm-source-buffers-list
                                        helm-source-recentf
                                        helm-source-buffer-not-found)
-  "Default sources list used in `helm-mini'."
+  "Default sources list used in `helm-mini'.
+
+When adding a source here it is up to you to ensure the library of
+this source is accessible and properly loaded."
   :group 'helm-buffers
   :type '(repeat (choice symbol)))
 
@@ -120,6 +123,11 @@ Only buffer names are fuzzy matched when this is enabled,
   "Face used for buffer files not already saved on disk."
   :group 'helm-buffers-faces)
 
+(defface helm-buffer-modified
+    '((t :inherit font-lock-comment-face))
+  "Face used for modified buffers."
+  :group 'helm-buffers-faces)
+
 (defface helm-buffer-size
     '((((background dark)) :foreground "RosyBrown")
       (((background light)) :foreground "SlateGray"))
@@ -145,6 +153,18 @@ Only buffer names are fuzzy matched when this is enabled,
     '((t (:inherit italic)))
   "Face used for non-file buffers in `helm-buffers-list'."
   :group 'helm-buffers-faces)
+
+(defvar helm-buffers-tick-counter nil
+  "Allows recording local changes to a non-file buffer.
+Typical usage of this var is for modes that want to see if
+their buffers have changed since last visit.
+Such programs may want to record tick counter after visiting their
+buffers like this:
+
+    (setq helm-buffers-tick-counter (buffer-modified-tick))
+
+Note that this variable is buffer-local.")
+(make-variable-buffer-local 'helm-buffers-tick-counter)
 
 
 ;;; Buffers keymap
@@ -189,14 +209,19 @@ Only buffer names are fuzzy matched when this is enabled,
     map))
 
 
-(defvar helm-buffers-list-cache nil)
 (defvar helm-buffer-max-len-mode nil)
 (defvar helm-buffers-in-project-p nil)
 
 (defun helm-buffers-list--init ()
+  (require 'dired)
   ;; Issue #51 Create the list before `helm-buffer' creation.
-  (setq helm-buffers-list-cache (funcall (helm-attr 'buffer-list)))
-  (let ((result (cl-loop for b in helm-buffers-list-cache
+  ;; We were using a global cache in the past and 'candidates was
+  ;; bound to this cache, this was a problem when using more than one
+  ;; source with a different 'buffer-list fn as the same cache was
+  ;; reused in each source (issue #1907), now 'candidates attr is set
+  ;; directly so that each list of candidates is local to source.
+  (helm-attrset 'candidates (funcall (helm-attr 'buffer-list)))
+  (let ((result (cl-loop for b in (helm-attr 'candidates)
                          maximize (length b) into len-buf
                          maximize (length (with-current-buffer b
                                             (format-mode-line mode-name)))
@@ -215,15 +240,9 @@ Only buffer names are fuzzy matched when this is enabled,
     :documentation
     "  A function with no arguments to create buffer list.")
    (init :initform 'helm-buffers-list--init)
-   (candidates :initform helm-buffers-list-cache)
    (multimatch :initform nil)
    (match :initform 'helm-buffers-match-function)
    (persistent-action :initform 'helm-buffers-list-persistent-action)
-   (resume :initform (lambda ()
-                       (run-with-idle-timer
-                        0.1 nil (lambda ()
-                                  (with-helm-buffer
-                                    (helm-force-update))))))
    (keymap :initform helm-buffer-map)
    (migemo :initform 'nomultimatch)
    (volatile :initform t)
@@ -324,6 +343,7 @@ See `ido-make-buffer-list' for more infos."
                'face face2)))))
 
 (defun helm-buffer--details (buffer &optional details)
+  (require 'dired)
   (let* ((mode (with-current-buffer buffer (format-mode-line mode-name)))
          (buf (get-buffer buffer))
          (size (propertize (helm-buffer-size buf)
@@ -361,12 +381,19 @@ See `ido-make-buffer-list' for more infos."
         ((and file-name (buffer-modified-p buf))
          (helm-buffer--show-details
           name name-prefix file-name size mode dir
-          'helm-ff-symlink 'helm-buffer-process nil details 'mod))
+          'helm-buffer-modified 'helm-buffer-process nil details 'mod))
         ;; A buffer file not modified and saved on disk.=>green
         (file-name
          (helm-buffer--show-details
           name name-prefix file-name size mode dir
           'helm-buffer-file 'helm-buffer-process nil details 'filebuf))
+        ;; A non-file, modified buffer
+        ((with-current-buffer name
+           (and helm-buffers-tick-counter
+                (/= helm-buffers-tick-counter (buffer-modified-tick))))
+         (helm-buffer--show-details
+          name (and proc name-prefix) dir size mode dir
+          'helm-buffer-modified 'helm-buffer-process proc details 'nofile-mod))
         ;; Any non--file buffer.=>italic
         (t
          (helm-buffer--show-details
@@ -377,36 +404,39 @@ See `ido-make-buffer-list' for more infos."
   "Transformer function to highlight BUFFERS list.
 Should be called after others transformers i.e (boring buffers)."
   (cl-loop for i in buffers
-        for (name size mode meta) = (if helm-buffer-details-flag
-                                        (helm-buffer--details i 'details)
-                                      (helm-buffer--details i))
-        for truncbuf = (if (> (string-width name) helm-buffer-max-length)
-                           (helm-substring-by-width
-                            name helm-buffer-max-length
-                            helm-buffers-end-truncated-string)
-                         (concat name
-                                 (make-string
-                                       (- (+ helm-buffer-max-length
-                                             (length helm-buffers-end-truncated-string))
-                                          (string-width name)) ? )))
-        for len = (length mode)
-        when (> len helm-buffer-max-len-mode)
-        do (setq helm-buffer-max-len-mode len)
-        for fmode = (concat (make-string
-                             (- (max helm-buffer-max-len-mode len) len) ? )
-                            mode)
-        ;; The max length of a number should be 1023.9X where X is the
-        ;; units, this is 7 characters.
-        for formatted-size = (and size (format "%7s" size))
-        collect           (let ((helm-pattern (helm-buffers--pattern-sans-filters
-                                               (and helm-buffers-fuzzy-matching ""))))
-                            (cons (if helm-buffer-details-flag
-                                      (concat
-                                       (funcall helm-fuzzy-matching-highlight-fn truncbuf)
-                                       "\t" formatted-size
-                                       "  " fmode "  " meta)
-                                      (funcall helm-fuzzy-matching-highlight-fn name))
-                                  (get-buffer i)))))
+           for (name size mode meta) = (if helm-buffer-details-flag
+                                           (helm-buffer--details i 'details)
+                                         (helm-buffer--details i))
+           for truncbuf = (if (> (string-width name) helm-buffer-max-length)
+                              (helm-substring-by-width
+                               name helm-buffer-max-length
+                               helm-buffers-end-truncated-string)
+                            (concat name
+                                    (make-string
+                                     (- (+ helm-buffer-max-length
+                                           (length
+                                            helm-buffers-end-truncated-string))
+                                        (string-width name))
+                                     ? )))
+           for len = (length mode)
+           when (> len helm-buffer-max-len-mode)
+           do (setq helm-buffer-max-len-mode len)
+           for fmode = (concat (make-string
+                                (- (max helm-buffer-max-len-mode len) len) ? )
+                               mode)
+           ;; The max length of a number should be 1023.9X where X is the
+           ;; units, this is 7 characters.
+           for formatted-size = (and size (format "%7s" size))
+           collect (let ((helm-pattern (helm-buffers--pattern-sans-filters
+                                        (and helm-buffers-fuzzy-matching ""))))
+                     (cons (if helm-buffer-details-flag
+                               (concat
+                                (funcall helm-fuzzy-matching-highlight-fn
+                                         truncbuf)
+                                "\t" formatted-size
+                                "  " fmode "  " meta)
+                             (funcall helm-fuzzy-matching-highlight-fn name))
+                           (get-buffer i)))))
 
 (defun helm-buffer--get-preselection (buffer)
   (let ((bufname (buffer-name buffer)))
@@ -419,17 +449,21 @@ Should be called after others transformers i.e (boring buffers)."
                  (helm-substring-by-width
                   bufname helm-buffer-max-length
                   helm-buffers-end-truncated-string))
-                (concat (regexp-quote bufname)
-                        (if helm-buffer-details-flag
-                            "$" "[[:blank:]]+"))))))
+              (concat (regexp-quote bufname)
+                      (if helm-buffer-details-flag
+                          "$" "[[:blank:]]+"))))))
 
 (defun helm-toggle-buffers-details ()
   (interactive)
   (with-helm-alive-p
-    (let ((preselect (helm-buffer--get-preselection
-                      (helm-get-selection))))
+    (let* ((buf (helm-get-selection))
+           (preselect (helm-buffer--get-preselection buf)))
       (setq helm-buffer-details-flag (not helm-buffer-details-flag))
-      (helm-update preselect))))
+      (helm-update (lambda ()
+                     (helm-awhile (re-search-forward preselect nil t)
+                       (helm-mark-current-line)
+                       (when (equal buf (helm-get-selection))
+                         (cl-return t))))))))
 (put 'helm-toggle-buffers-details 'helm-only t)
 
 (defun helm-buffers--pattern-sans-filters (&optional separator)
@@ -569,7 +603,8 @@ i.e same color."
 (defun helm-buffers--match-from-directory (candidate)
   (let* ((cand (replace-regexp-in-string "^\\s-\\{1\\}" "" candidate))
          (buf  (get-buffer cand))
-         (buf-fname (buffer-file-name buf))
+         (buf-fname (or (buffer-file-name buf)
+                        (car-safe (rassoc buf dired-buffers))))
          (regexps (cl-loop with pattern = helm-pattern
                           for p in (helm-mm-split-pattern pattern)
                           when (string-match "\\`/" p)
@@ -730,7 +765,7 @@ If REGEXP-FLAG is given use `query-replace-regexp'."
   "Run switch to other window action from `helm-source-buffers-list'."
   (interactive)
   (with-helm-alive-p
-    (helm-exit-and-execute-action 'helm-switch-to-buffers-other-window)))
+    (helm-exit-and-execute-action 'helm-buffer-switch-buffers-other-window)))
 (put 'helm-buffer-switch-other-window 'helm-only t)
 
 (defun helm-buffer-switch-other-frame ()
@@ -739,6 +774,19 @@ If REGEXP-FLAG is given use `query-replace-regexp'."
   (with-helm-alive-p
     (helm-exit-and-execute-action 'switch-to-buffer-other-frame)))
 (put 'helm-buffer-switch-other-frame 'helm-only t)
+
+(defun helm-buffer-switch-buffers (_candidate)
+  "Switch to buffer candidates and replace current buffer.
+
+If more than one buffer marked switch to these buffers in separate windows.
+If a prefix arg is given split windows vertically."
+  (let ((buffers (helm-marked-candidates)))
+    (helm-window-show-buffers buffers)))
+
+(defun helm-buffer-switch-buffers-other-window (_candidate)
+  "Switch to marked buffers in other windows."
+  (let ((buffers (helm-marked-candidates)))
+    (helm-window-show-buffers buffers t)))
 
 (defun helm-buffer-run-ediff ()
   "Run ediff action from `helm-source-buffers-list'."
@@ -789,8 +837,7 @@ If REGEXP-FLAG is given use `query-replace-regexp'."
                           (format "^%s"
                                   (helm-buffers--quote-truncated-buffer b)))
                          (save-selected-window
-                           (when (y-or-n-p (format "kill buffer (%s)? " b))
-                             (helm-buffers-persistent-kill-1 b)))
+                           (helm-buffers-persistent-kill-1 b))
                          (message nil)
                          (helm--remove-marked-and-update-mode-line b)))
       (with-helm-buffer
@@ -916,7 +963,7 @@ displayed with the `file-name-shadow' face if available."
 (defun helm-mini ()
   "Preconfigured `helm' lightweight version \(buffer -> recentf\)."
   (interactive)
-  (require 'helm-files)
+  (require 'helm-x-files)
   (unless helm-source-buffers-list
     (setq helm-source-buffers-list
           (helm-make-source "Buffers" 'helm-source-buffers)))

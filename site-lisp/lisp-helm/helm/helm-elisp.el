@@ -25,7 +25,6 @@
 (require 'helm-info)
 (require 'helm-eval)
 (require 'helm-files)
-(require 'advice)
 
 (declare-function 'helm-describe-function "helm-lib")
 (declare-function 'helm-describe-variable "helm-lib")
@@ -190,7 +189,7 @@ If `helm-turn-on-show-completion' is nil just do nothing."
          (helm-split-window-default-side
           (if (eq helm-split-window-default-side 'same)
               'below helm-split-window-default-side))
-         helm-split-window-in-side-p
+         helm-split-window-inside-p
          helm-reuse-last-window-split-state)
      (helm-set-local-variable
       'helm-display-function
@@ -508,6 +507,63 @@ Filename completion happen if string start after or between a double quote."
       candidates
       (sort candidates #'helm-generic-sort-fn)))
 
+(defun helm-apropos-clean-history-variable (candidate)
+  (with-helm-current-buffer ; var is maybe local
+    (let* ((sym   (intern-soft candidate))
+           (cands (symbol-value sym))
+           (mkds  (and (listp cands)
+                       (helm-comp-read "Delete entry: "
+                                       cands :marked-candidates t))))
+      (cl-assert (listp mkds) nil "Variable value is not a list")
+      (cl-loop for elm in mkds do
+               (if (local-variable-p sym)
+                   (set (make-local-variable sym)
+                        (setq cands (delete elm cands)))
+                 (set sym (setq cands (delete elm cands))))))))
+
+(defun helm-apropos-clean-ring (candidate)
+  (with-helm-current-buffer ; var is maybe local
+    (let* ((sym   (intern-soft candidate))
+           (val   (symbol-value sym))
+           (cands (and (ring-p val) (ring-elements val)))
+           (mkds  (and cands (helm-comp-read
+                                "Delete entry: "
+                                cands :marked-candidates t))))
+      (when mkds
+        (cl-loop for elm in mkds do
+                 (ring-remove
+                  val (helm-position
+                       elm
+                       (ring-elements val)
+                       :test 'equal))
+                 and do (if (local-variable-p sym)
+                            (set (make-local-variable sym) val)
+                          (set sym val)))))))
+
+(defun helm-apropos-action-transformer (actions candidate)
+  (let* ((sym (helm-symbolify candidate))
+         (val (with-helm-current-buffer (symbol-value sym))))
+    (cond ((custom-variable-p sym)
+           (append
+            actions
+            (let ((standard-value (eval (car (get sym 'standard-value)))))
+              (unless (equal standard-value (symbol-value sym))
+                `(("Reset Variable to default value"
+                   . ,(lambda (candidate)
+                        (let ((sym (helm-symbolify candidate)))
+                          (set sym standard-value)))))))
+            '(("Customize variable" .
+               (lambda (candidate)
+                 (customize-option (helm-symbolify candidate)))))))
+          ((and val (with-helm-current-buffer (ring-p (symbol-value sym))))
+           (append actions
+                   '(("Clean ring" . helm-apropos-clean-ring))))
+          ((and (string-match-p "history" candidate) (listp val))
+           (append actions
+                   '(("Clean variable" .
+                      helm-apropos-clean-history-variable))))
+          (t actions))))
+
 (defun helm-def-source--emacs-variables (&optional default)
   (helm-build-in-buffer-source "Variables"
     :init (lambda ()
@@ -525,22 +581,7 @@ Filename completion happen if string start after or between a double quote."
               ("Find variable" . helm-find-variable)
               ("Info lookup" . helm-info-lookup-symbol)
               ("Set variable" . helm-set-variable))
-    :action-transformer
-    (lambda (actions candidate)
-      (let ((sym (helm-symbolify candidate)))
-        (if (custom-variable-p sym)
-            (append
-             actions
-             (let ((standard-value (eval (car (get sym 'standard-value)))))
-               (unless (equal standard-value (symbol-value sym))
-                 `(("Reset Variable to default value" .
-                    ,(lambda (candidate)
-                       (let ((sym (helm-symbolify candidate)))
-                         (set sym standard-value)))))))
-             '(("Customize variable" .
-                (lambda (candidate)
-                  (customize-option (helm-symbolify candidate))))))
-          actions)))))
+    :action-transformer 'helm-apropos-action-transformer))
 
 (defun helm-def-source--emacs-faces (&optional default)
   "Create `helm' source for faces to be displayed with
@@ -698,6 +739,7 @@ i.e the `symbol-name' of any existing symbol."
 ;;
 (defvar helm-source-advice
   (helm-build-sync-source "Function Advice"
+    :init (lambda () (require 'advice))
     :candidates 'helm-advice-candidates
     :action (helm-make-actions "Toggle Enable/Disable" 'helm-advice-toggle)
     :persistent-action 'helm-advice-persistent-action

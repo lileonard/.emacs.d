@@ -12,7 +12,7 @@
        org-tags-column 80)
 ;; 在一个任务完成后，写心得或者备注并加上时间戳
 (setq org-todo-keywords
-      '((sequence "TODO(t)" "DOING(i!)" "HANGUP(h!)" "|" "DONE(d!)" "CANCELLED(c!)")))
+      '((sequence "TODO(t)" "DOING(i!)" "DONE(d!)" "CANCELLED(c!)")))
 (setq org-log-done 'time)
 ;; org-mode colors
 (setq org-todo-keyword-faces
