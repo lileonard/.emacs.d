@@ -3,12 +3,11 @@
 ;; installed packages.  Don't delete this line.  If you don't want it,
 ;; just comment it out by adding a semicolon to the start of the line.
 ;; You may delete these explanatory comments.
+  ;; (setq garbage-collection-messages t) ; for debug
+(setq gc-cons-threshold (* 64 1024 1024) )
+(setq gc-cons-percentage 0.5)
+(run-with-idle-timer 5 t #'garbage-collect)
 (package-initialize)
-;; basic settings
-(defvar best-gc-cons-threshold 4000000 "Best default gc threshold value. Should't be too big.")
-;; don't GC during startup to save time
-(setq gc-cons-threshold most-positive-fixnum)
-
 ;; add all path under .emacs.d to loadpath
 (let ((default-directory  "~/.emacs.d/"))
   (normal-top-level-add-subdirs-to-load-path))
@@ -62,4 +61,3 @@
 ;; show start time and each init.el costs
 (autoload 'esup "esup" "Emacs Start Up Profiler." t)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(setq gc-cons-threshold best-gc-cons-threshold)

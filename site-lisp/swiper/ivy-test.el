@@ -573,6 +573,31 @@ will bring the behavior in line with the newer Emacsen."
             "bl C-p C-M-j")
            "bl")))
 
+(defmacro ivy-with-r (expr &rest keys)
+  `(with-output-to-string
+     (save-window-excursion
+       (switch-to-buffer standard-output t)
+       ,expr
+       (ivy-mode)
+       (execute-kbd-macro
+        ,(apply #'vconcat (mapcar #'kbd keys))))))
+
+(ert-deftest ivy-completion-in-region ()
+  (should (string=
+           (ivy-with-r
+            (progn
+              (emacs-lisp-mode)
+              (insert " emacs-lisp-mode-h"))
+            "C-M-i")
+           " emacs-lisp-mode-hook"))
+  (should (string=
+           (ivy-with-r
+            (progn
+              (emacs-lisp-mode)
+              (insert "(nconc"))
+            "C-M-i")
+           "(nconc")))
+
 (ert-deftest ivy-completing-read-def-handling ()
   ;; DEF in COLLECTION
   (should
