@@ -1,7 +1,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;mode and expand name settings
-(setq default-major-mode 'text-mode)
-(mapcar
+(setq major-mode 'text-mode)
+(mapc
  (function (lambda (setting)
              (setq auto-mode-alist
                    (cons setting auto-mode-alist))))
@@ -28,9 +28,9 @@
    ("\\.m$"         .          matlab-mode) 
    ("\\.py$"        .          python-mode)
    ("CMakeLists\\.txt\\'"   .  cmake-mode)
+   ("\\.pr[io]$"            .  qt-pro-mode)
    ("\\.cmake\\'"           .  cmake-mode)
-   (".gitignore"    .          text-mode)
-   ))
+  ))
 
 (provide 'init-modbindings)
 

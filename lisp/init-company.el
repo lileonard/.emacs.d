@@ -3,7 +3,12 @@
 (require 'company-etags)
 (require 'company-dabbrev)
 (require 'company-c-headers)
-(add-hook 'after-init-hook 'global-company-mode)
+
+(add-hook 'c++-mode-hook           #'company-mode)
+(add-hook 'c-mode-hook             #'company-mode)
+(add-hook 'python-mode-hook        #'company-mode)
+(add-hook 'matlab-mode-hook        #'company-mode)
+;;(add-hook 'after-init-hook 'global-company-mode)
 
 ;; @see https://github.com/company-mode/company-mode/issues/348
 (require 'company-statistics)

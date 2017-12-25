@@ -188,7 +188,8 @@
 
 (dolist (mode '(matlab-mode
                 c-mode cc-mode c++-mode cmake-mode
-                org-mode
+                qt-pro-mode
+                org-mode idlwave-mode
                 latex-mode plain-tex-mode
                 log-edit-mode  text-mode
                 sass-mode
