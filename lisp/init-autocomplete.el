@@ -36,7 +36,7 @@
         ac-auto-show-menu 0.6
         ac-menu-height 9
         ;; Start auto-completion after 2 characters of a word
-        ac-auto-start 0.1 
+        ac-auto-start 2
         ac-ignore-case t
         help-xref-following nil 
         ac-quick-help-prefer-pos-tip t

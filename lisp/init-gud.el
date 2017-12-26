@@ -33,21 +33,6 @@
   (hack-gud-mode))
 ;; }}
 
-(defun gud-cls (&optional num)
-  "clear gud screen"
-  (interactive "p")
-  (let ((old-window (selected-window)))
-    (save-excursion
-      (cond
-       ((buffer-live-p (get-buffer "*gud-main*"))
-        (select-window (get-buffer-window "*gud-main*"))
-        (end-of-buffer)
-        (recenter-top-bottom)
-        (if (> num 1) (recenter-top-bottom))
-        (select-window old-window))
-       (t (error "GUD buffer doesn't exist!"))
-       ))))
-
 (defadvice gdb-setup-windows (after my-setup-gdb-windows activate)
   "Layout the window pattern for option `gdb-many-windows'."
   (gdb-get-buffer-create 'gdb-locals-buffer)
