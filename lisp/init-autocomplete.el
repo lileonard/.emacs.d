@@ -170,7 +170,7 @@
                ac-source-yasnippet
                ac-source-gtags
                ac-source-etags
-               ac-source-semantic
+               ;; ac-source-semantic
                ;; ac-source-semantic-raw
                ;; a good ac source but too slow
                ac-source-features

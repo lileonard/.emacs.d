@@ -46,7 +46,6 @@
 (require 'init-projectile)
 (require 'init-flycheck)
 (require 'init-hs-minor-mode)
-(require 'init-cedet)
 (require 'init-smartparens)
 ;; plugin inits
 (require 'init-linum-mode)
