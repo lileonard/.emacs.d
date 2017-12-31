@@ -39,6 +39,7 @@
 (require 'init-helm)
 (require 'init-magit)
 (require 'init-tags)
+(require 'init-cedet)
 (require 'init-gud)
 (require 'init-eldoc)
 (require 'init-bookmark)
