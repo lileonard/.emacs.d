@@ -1,7 +1,7 @@
 (require 'tabbar)
 (tabbar-mode)
 (tabbar-mwheel-mode)
-(setq tabbar-use-images nil)
+;;(setq tabbar-use-images nil)
 
 (defun tabbar-buffer-groups ()
   "Return the list of group names the current buffer belongs to.
@@ -94,6 +94,19 @@
 (add-hook 'after-save-hook 'ztl-modification-state-change)
 (add-hook 'first-change-hook 'ztl-on-buffer-modification)
 
+(defun tabbar-add-tab (tabset object &optional append_ignored)
+  "Add to TABSET a tab with value OBJECT if there isn't one there yet.
+ If the tab is added, it is added at the beginning of the tab list,
+ unless the optional argument APPEND is non-nil, in which case it is
+ added at the end."
+  (let ((tabs (tabbar-tabs tabset)))
+    (if (tabbar-get-tab object tabset)
+        tabs
+      (let ((tab (tabbar-make-tab object tabset)))
+        (tabbar-set-template tabset nil)
+        (set tabset (sort (cons tab tabs)
+                          (lambda (a b) (string< (buffer-name (car a)) (buffer-name (car b))))))))))
+
 ;;;; 设置tabbar外观
 ;; 设置tabbar间隔 
 ;; (setq tabbar-separator-value "§")
@@ -140,7 +153,22 @@
  'tabbar-modified nil
  :box '(:line-width 1 :color "white" :style released-button)
  :foreground "red")
-
+;;my mouse setting
+(defun tabbar-buffer-select-tab (event tab)
+  "On mouse EVENT, select TAB."
+  (let ((mouse-button (event-basic-type event))
+        (buffer (tabbar-tab-value tab)))
+    (cond
+     ((eq mouse-button 'mouse-3)
+      (pop-to-buffer buffer nil))
+     ((eq mouse-button 'mouse-2)
+      (kill-buffer buffer))
+     (t
+      (switch-to-buffer buffer)))
+    ;; Don't show groups.
+    (tabbar-buffer-show-groups nil)
+    ))
 (global-set-key (kbd "<C-tab>") 'tabbar-forward)
 (global-set-key (kbd "<s-tab>") 'tabbar-backward)
+
 (provide 'init-tabbar)

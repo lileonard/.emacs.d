@@ -8,8 +8,8 @@
   ;; only auto-check when save
   (setq flycheck-check-syntax-automatically '(mode-enabled save))
   ;; when mouse on the error show error information
-  (setq flycheck-pos-tip t)
-  (setq flycheck-display-errors-function #'flycheck-display-error-messages-unless-error-list))
+  (setq flycheck-display-errors-function #'flycheck-display-error-messages-unless-error-list)
+  (setq flycheck-display-error-at-point-timer nil))
 
 ;; c/c++
 (defun my-flycheck-c-setup ()

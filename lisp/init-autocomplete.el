@@ -36,7 +36,7 @@
         ac-auto-show-menu 0.6
         ac-menu-height 9
         ;; Start auto-completion after 2 characters of a word
-        ac-auto-start 2
+        ac-auto-start 2 
         ac-ignore-case t
         help-xref-following nil 
         ac-quick-help-prefer-pos-tip t
@@ -170,7 +170,7 @@
                ac-source-yasnippet
                ac-source-gtags
                ac-source-etags
-               ;; ac-source-semantic
+                ac-source-semantic
                ;; ac-source-semantic-raw
                ;; a good ac source but too slow
                ac-source-features
@@ -186,7 +186,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; major mode for auto-complete
 
-(dolist (mode '(matlab-mode
+(dolist (mode '(matlab-mode gud-mode
                 c-mode cc-mode c++-mode cmake-mode
                 qt-pro-mode
                 org-mode idlwave-mode

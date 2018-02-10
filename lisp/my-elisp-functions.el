@@ -177,7 +177,11 @@ int main(int argc, char *argv[])
     MPI_Finalize();
     "
    ))
-
+;;auto insert yuanzhoulv pi
+(defun my-pi ()
+  (interactive)
+  (insert "3.1415926535897932384626433832795028841971693993751"
+          ))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; auto insert a MPI Init introduction
 (defun my-insert-notes ()

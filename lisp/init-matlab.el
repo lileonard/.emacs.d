@@ -13,4 +13,5 @@
              (define-key matlab-mode-map (kbd "C-c C-e")
                'matlab-insert-end-block)))
 
+
 (provide 'init-matlab)

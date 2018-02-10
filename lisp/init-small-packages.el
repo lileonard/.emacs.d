@@ -256,8 +256,7 @@
                                       (cons "-i" "-i"))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (autoload 'qt-pro-mode "qt-pro-mode.el" "qt-pro-mode" t)
-;;(require 'qt-pro-mode)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; end provide
 (provide 'init-small-packages)
-
+ 

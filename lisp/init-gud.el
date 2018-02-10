@@ -1,38 +1,9 @@
-;;debug settings
+ ;;debug settings
 (setq gdb-many-windows t
       gdb-show-main t
       gud-chdir-before-run nil
       gud-tooltip-mode t)
-(defvar gud-overlay
-  (let* ((ov (make-overlay (point-min) (point-min))))
-    (overlay-put ov 'face 'secondary-selection)
-    ov)
-  "Overlay variable for GUD highlighting.")
-(defun gud-kill-buffer ()
-  (if (derived-mode-p 'gud-mode)
-      (delete-overlay gud-overlay)))
-(add-hook 'kill-buffer-hook 'gud-kill-buffer)
-
-;; {{ hack buffer
-;; move the cursor to the end of last line if it's gud-mode
-(defun hack-gud-mode ()
-  (when (string= major-mode "gud-mode")
-    (goto-char (point-max))))
-
-(defadvice switch-to-buffer
-    (after switch-to-buffer-after activate)
-  (hack-gud-mode))
-
-(defadvice select-window-by-number
-    (after select-window-by-number-after activate)
-  (hack-gud-mode))
-
-;; windmove-do-window-select is from windmove.el
-(defadvice windmove-do-window-select
-    (after windmove-do-window-select-after activate)
-  (hack-gud-mode))
-;; }}
-
+;; mini window size
 (defadvice gdb-setup-windows (after my-setup-gdb-windows activate)
   "Layout the window pattern for option `gdb-many-windows'."
   (gdb-get-buffer-create 'gdb-locals-buffer)
