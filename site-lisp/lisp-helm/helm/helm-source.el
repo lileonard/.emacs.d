@@ -1,6 +1,6 @@
 ;;; helm-source.el --- Helm source creation. -*- lexical-binding: t -*-
 
-;; Copyright (C) 2015 ~ 2017  Thierry Volpiatto <thierry.volpiatto@gmail.com>
+;; Copyright (C) 2015 ~ 2018  Thierry Volpiatto <thierry.volpiatto@gmail.com>
 
 ;; Author: Thierry Volpiatto <thierry.volpiatto@gmail.com>
 ;; URL: http://github.com/emacs-helm/helm
@@ -157,8 +157,63 @@
     "  Can be a either a Function called with one parameter (the
   selected candidate) or a cons cell where first element is this
   same function and second element a symbol (e.g never-split)
-  that inform `helm-execute-persistent-action'to not split his
-  window to execute this persistent action.")
+  that inform `helm-execute-persistent-action' to not split his
+  window to execute this persistent action.
+  Example:
+
+    (defun foo-persistent-action (candidate)
+       (do-something candidate))
+
+    :persistent-action '(foo-persistent-action . never-split) ; Don't split
+  or
+    :persistent-action 'foo-persistent-action ; Split
+
+  When specifying :persistent-action by slot directly, foo-persistent-action
+  will be executed without quitting helm when hitting `C-j'.
+
+  Note that other persistent actions can be defined using other
+  bindings than `C-j' by simply defining an interactive function bound
+  to a key in the keymap source.
+  The function should create a new attribute in source before calling
+  `helm-execute-persistent-action' on this attribute.
+  Example:
+
+     (defun helm-ff-persistent-delete ()
+       \"Delete current candidate without quitting.\"
+       (interactive)
+       (with-helm-alive-p
+         (helm-attrset 'quick-delete '(helm-ff-quick-delete . never-split))
+         (helm-execute-persistent-action 'quick-delete)))
+
+  This function is then bound in `helm-find-files-map'.")
+
+   (persistent-action-if
+    :initarg :persistent-action-if
+    :initform nil
+    :custom function
+    :documentation
+    "  Similar from persistent action but it is a function that should
+  return an object suitable for persistent action when called , i.e. a
+  function or a cons cell.
+  Example:
+
+     (defun foo-persistent-action (candidate)
+       (cond (something
+              ;; Don't split helm-window.
+              (cons (lambda (_ignore)
+                      (do-something candidate))
+                    'no-split))
+             ;; Split helm-window.
+             (something-else
+              (lambda (_ignore)
+                (do-something-else candidate)))))
+
+     :persistent-action-if 'foo-persistent-action
+
+  Here when hitting `C-j' one of the lambda's will be executed
+  depending on something or something-else condition, splitting or not
+  splitting as needed.
+  See `helm-find-files-persistent-action-if' definition as another example.")
 
    (persistent-help
     :initarg :persistent-help
@@ -167,8 +222,8 @@
     :documentation
     "  A string to explain persistent-action of this source. It also
   accepts a function or a variable name.
-  It will be displayed in `header-line'.
-  Have no effect when `helm-echo-input-in-header-line' is non--nil.")
+  It will be displayed in `header-line' or in `minibuffer' depending
+  of value of `helm-echo-input-in-header-line' and `helm-display-header-line'.")
 
    (help-message
     :initarg :help-message
@@ -294,6 +349,15 @@
   Note: This have nothing to do with display-to-real.
   It is unuseful as the same can be performed by using more than
   one function in transformers, it is kept only for backward compatibility.")
+
+   (marked-with-props
+    :initarg :marked-with-props
+    :initform nil
+    :custom (choice boolean symbol)
+    :documentation
+    "  Get candidates with their properties in `helm-marked-candidates'.
+  Allow using the FORCE-DISPLAY-PART of `helm-get-selection' in marked
+  candidates, use t or 'withprop to pass it to `helm-get-selection'.")
 
    (action-transformer
     :initarg :action-transformer
@@ -470,7 +534,8 @@
     :custom (choice string function)
     :documentation
     "  Source local `header-line-format'.
-  Have no effect when `helm-echo-input-in-header-line' is non--nil.
+  It will be displayed in `header-line' or in `minibuffer' depending
+  of value of `helm-echo-input-in-header-line' and `helm-display-header-line'.
   It accepts also variable/function name.")
 
    (resume

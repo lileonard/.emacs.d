@@ -1,6 +1,6 @@
 ;;; helm-for-files.el --- helm-for-files and related. -*- lexical-binding: t -*-
 
-;; Copyright (C) 2012 ~ 2017 Thierry Volpiatto <thierry.volpiatto@gmail.com>
+;; Copyright (C) 2012 ~ 2018 Thierry Volpiatto <thierry.volpiatto@gmail.com>
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -127,7 +127,7 @@ this source is accessible and properly loaded."
                 '(("Delete file(s) from recentf" .
                    (lambda (_candidate)
                      (cl-loop for file in (helm-marked-candidates)
-                              do (setq recentf-list (delq file recentf-list)))))))))
+                              do (setq recentf-list (delete file recentf-list)))))))))
 
 (defvar helm-source-recentf nil
   "See (info \"(emacs)File Conveniences\").

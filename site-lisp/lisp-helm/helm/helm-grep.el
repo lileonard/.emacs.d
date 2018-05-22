@@ -1,6 +1,6 @@
 ;;; helm-grep.el --- Helm Incremental Grep. -*- lexical-binding: t -*-
 
-;; Copyright (C) 2012 ~ 2017 Thierry Volpiatto <thierry.volpiatto@gmail.com>
+;; Copyright (C) 2012 ~ 2018 Thierry Volpiatto <thierry.volpiatto@gmail.com>
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -17,6 +17,7 @@
 
 ;;; Code:
 (require 'cl-lib)
+(require 'format-spec)
 (require 'helm)
 (require 'helm-help)
 (require 'helm-regexp)
@@ -247,7 +248,8 @@ You probably don't need to use this unless you know what you are doing."
 (defface helm-grep-match
   '((((background light)) :foreground "#b00000")
     (((background dark))  :foreground "gold1"))
-  "Face used to highlight grep matches."
+  "Face used to highlight grep matches.
+Have no effect when grep backend use \"--color=\"."
   :group 'helm-grep-faces)
 
 (defface helm-grep-file
@@ -673,6 +675,8 @@ If N is positive go forward otherwise go backward."
         ;; Exit when current-fname is not matched or in `helm-grep-mode'
         ;; the line is not a grep line i.e 'fname:num:tag'.
         (setq sel (buffer-substring (point-at-bol) (point-at-eol)))
+        (when helm-allow-mouse
+          (helm--mouse-reset-selection-help-echo))
         (unless (or (string= current-fname
                              (car (helm-grep-split-line sel)))
                     (and (eq major-mode 'helm-grep-mode)
@@ -1154,7 +1158,13 @@ in recurse, and ignore EXTS, search being made recursively on files matching
          (line   (if ansi-p (helm--ansi-color-apply candidate) candidate))
          (split  (helm-grep-split-line line))
          (fname  (if (and root split)
-                     (expand-file-name (car split) root)
+                     ;; Filename should always be provided as a local
+                     ;; path, if the root directory is remote, the
+                     ;; tramp prefix will be added before executing
+                     ;; action, see `helm-grep-action' and issue #2032.
+                     (expand-file-name (car split)
+                                       (or (file-remote-p root 'localname)
+                                           root))
                    (car-safe split)))
          (lineno (nth 1 split))
          (str    (nth 2 split))

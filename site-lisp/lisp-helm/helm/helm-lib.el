@@ -1,6 +1,6 @@
 ;;; helm-lib.el --- Helm routines. -*- lexical-binding: t -*-
 
-;; Copyright (C) 2015 ~ 2017  Thierry Volpiatto <thierry.volpiatto@gmail.com>
+;; Copyright (C) 2015 ~ 2018  Thierry Volpiatto <thierry.volpiatto@gmail.com>
 
 ;; Author: Thierry Volpiatto <thierry.volpiatto@gmail.com>
 ;; URL: http://github.com/emacs-helm/helm
@@ -33,8 +33,11 @@
 (declare-function helm-attrset "helm.el")
 (declare-function org-open-at-point "org.el")
 (declare-function org-content "org.el")
+(declare-function org-mark-ring-goto "org.el")
+(declare-function org-mark-ring-push "org.el")
 (defvar helm-current-position)
 (defvar wdired-old-marks)
+(defvar helm-persistent-action-display-window)
 
 ;;; User vars.
 ;;
@@ -71,6 +74,44 @@ can be reach by tweaking `display-buffer-alist' but it is
 much more convenient to use a simple boolean value here."
   :type 'boolean
   :group 'helm-help)
+
+(defvar helm-ff--boring-regexp nil)
+(defun helm-ff--setup-boring-regex (var val)
+  (set var val)
+  (setq helm-ff--boring-regexp
+          (cl-loop with last = (car (last val))
+                   for r in (butlast val)
+                   if (string-match "\\$\\'" r)
+                   concat (concat r "\\|") into result
+                   else concat (concat r "$\\|") into result
+                   finally return
+                   (concat result last
+                           (if (string-match "\\$\\'" last) "" "$")))))
+
+(defcustom helm-boring-file-regexp-list
+  (mapcar (lambda (f)
+            (let ((rgx (regexp-quote f)))
+              (if (string-match-p "[^/]$" f)
+                  ;; files: e.g .o => \\.o$
+                  (concat rgx "$")
+                ;; directories: e.g .git/ => \.git\\(/\\|$\\)
+                (concat (substring rgx 0 -1) "\\(/\\|$\\)"))))
+          completion-ignored-extensions)
+  "A list of regexps matching boring files.
+
+This list is build by default on `completion-ignored-extensions'.
+The directory names should end with \"/?\" e.g. \"\\.git/?\" and the
+file names should end with \"$\" e.g. \"\\.o$\".
+
+These regexps may be used to match the entire path, not just the file
+name, so for example to ignore files with a prefix \".bak.\", use
+\"\\.bak\\..*$\" as the regexp.
+
+NOTE: When modifying this, be sure to use customize interface or the
+customize functions e.g. `customize-set-variable' and NOT `setq'."
+  :group 'helm-files
+  :type  '(repeat (choice regexp))
+  :set 'helm-ff--setup-boring-regex)
 
 
 ;;; Internal vars
@@ -172,8 +213,8 @@ When only `add-text-properties' is available APPEND is ignored."
                                   if (member f old-to-rename)
                                   collect (assoc-default f files-renamed)
                                   else collect f))))
-	  ;; Re-sort the buffer.
-	  (revert-buffer)
+	  ;; Re-sort the buffer if all went well.
+	  (unless (> errors 0) (revert-buffer))
 	  (let ((inhibit-read-only t))
 	    (dired-mark-remembered wdired-old-marks)))
       (let ((inhibit-read-only t))
@@ -443,21 +484,26 @@ e.g helm.el$
   "Show long message during `helm' session in BUFNAME.
 INSERT-CONTENT-FN is the function that insert
 text to be displayed in BUFNAME."
-  (let ((winconf (current-frame-configuration)))
-    (unwind-protect
-         (progn
-           (setq helm-suspend-update-flag t)
-           (set-buffer (get-buffer-create bufname))
-           (switch-to-buffer bufname)
-           (when helm-help-full-frame (delete-other-windows))
-           (delete-region (point-min) (point-max))
-           (org-mode)
-           (save-excursion
-             (funcall insert-content-fn))
-           (buffer-disable-undo)
-           (helm-help-event-loop))
-      (setq helm-suspend-update-flag nil)
-      (set-frame-configuration winconf))))
+  (let ((winconf (current-frame-configuration))
+        (hframe (selected-frame)))
+    (with-selected-frame helm-initial-frame
+      (select-frame-set-input-focus helm-initial-frame)
+      (unwind-protect
+           (progn
+             (setq helm-suspend-update-flag t)
+             (set-buffer (get-buffer-create bufname))
+             (switch-to-buffer bufname)
+             (when helm-help-full-frame (delete-other-windows))
+             (delete-region (point-min) (point-max))
+             (org-mode)
+             (org-mark-ring-push) ; Put mark at bob
+             (save-excursion
+               (funcall insert-content-fn))
+             (buffer-disable-undo)
+             (helm-help-event-loop))
+        (raise-frame hframe)
+        (setq helm-suspend-update-flag nil)
+        (set-frame-configuration winconf)))))
 
 (defun helm-help-scroll-up (amount)
   (condition-case _err
@@ -517,6 +563,8 @@ text to be displayed in BUFNAME."
         (?\C-  (helm-help-toggle-mark))
         (?\t   (org-cycle))
         (?\C-m (ignore-errors (call-interactively #'org-open-at-point)))
+        (?\C-& (ignore-errors (call-interactively #'org-mark-ring-goto)))
+        (?\C-% (call-interactively #'org-mark-ring-push))
         (?\M-\t (pcase (helm-iter-next iter-org-state)
                   ((pred numberp) (org-content))
                   ((and state) (org-cycle state))))
@@ -590,8 +638,12 @@ This is same as `remove-duplicates' but with memoisation.
 It is much faster, especially in large lists.
 A test function can be provided with TEST argument key.
 Default is `eq'.
-NOTE: Comparison of special elisp objects fails because their printed
-representation which is stored in hash-tables can't be compared."
+NOTE: Comparison of special elisp objects (e.g. markers etc...) fails
+because their printed representations which are stored in hash-table
+can't be compared with with the real object in SEQ.
+This is a bug in `puthash' which store the printable representation of
+object instead of storing the object itself, this to provide at the
+end a printable representation of hashtable itself."
   (cl-loop with cont = (make-hash-table :test test)
            for elm in seq
            unless (gethash elm cont)
@@ -693,15 +745,14 @@ ARGS is (cand1 cand2 ...) or ((disp1 . real1) (disp2 . real2) ...)
 (defun helm-source-by-name (name &optional sources)
   "Get a Helm source in SOURCES by NAME.
 
-Optional argument SOURCES is a list of Helm sources. The default
-value is computed with `helm-get-sources' which is faster
-than specifying SOURCES because sources are cached."
+Optional argument SOURCES is a list of Helm sources which default to
+`helm-sources'."
   (cl-loop with src-list = (if sources
                                (cl-loop for src in sources
                                         collect (if (listp src)
                                                     src
                                                     (symbol-value src)))
-                               (helm-get-sources))
+                               helm-sources)
            for source in src-list
            thereis (and (string= name (assoc-default 'name source)) source)))
 
@@ -828,6 +879,20 @@ of this function is really needed."
                            (t rep))
                      fixedcase literal nil subexp))
     (buffer-string)))
+
+(defun helm-url-unhex-string (str)
+  "Same as `url-unhex-string' but ensure STR is completely decoded."
+  (setq str (or str ""))
+  (with-temp-buffer
+    (save-excursion (insert str))
+    (while (re-search-forward "%[A-Za-z0-9]\\{2\\}" nil t)
+      (replace-match (byte-to-string (string-to-number
+                                      (substring (match-string 0) 1)
+                                      16))
+                     t t)
+      ;; Restart from beginning until string is completely decoded.
+      (goto-char (point-min)))
+    (decode-coding-string (buffer-string) 'utf-8)))
 
 ;;; Symbols routines
 ;;
@@ -865,7 +930,7 @@ of this function is really needed."
   "Used to build persistent actions describing CANDIDATE with FUN.
 Argument NAME is used internally to know which command to use when
 symbol CANDIDATE refers at the same time to variable and a function.
-See `helm-elisp--show-help'."
+See `helm-elisp-show-help'."
   (let ((hbuf (get-buffer (help-buffer))))
     (cond  ((helm-follow-mode-p)
             (if name
@@ -877,9 +942,9 @@ See `helm-elisp--show-help'."
               ;; When started from a help buffer,
               ;; Don't kill this buffer as it is helm-current-buffer.
               (unless (equal hbuf helm-current-buffer)
-                (kill-buffer hbuf)
                 (set-window-buffer (get-buffer-window hbuf)
-                                   helm-current-buffer))
+                                   helm-current-buffer)
+                (kill-buffer hbuf))
               (helm-attrset 'help-running-p nil)))
            (t
             (if name

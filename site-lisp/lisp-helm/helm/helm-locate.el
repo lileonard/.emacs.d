@@ -1,6 +1,6 @@
 ;;; helm-locate.el --- helm interface for locate. -*- lexical-binding: t -*-
 
-;; Copyright (C) 2012 ~ 2017 Thierry Volpiatto <thierry.volpiatto@gmail.com>
+;; Copyright (C) 2012 ~ 2018 Thierry Volpiatto <thierry.volpiatto@gmail.com>
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -77,7 +77,7 @@ is detected in pattern)."
   :group 'helm-locate)
 
 (defcustom helm-locate-create-db-command
-  "updatedb -l 0 -o %s -U %s"
+  "updatedb -l 0 -o '%s' -U '%s'"
   "Command used to create a locale locate db file."
   :type 'string
   :group 'helm-locate)
@@ -146,6 +146,7 @@ help for more infos."
     (define-key map (kbd "C-=")     'helm-ff-run-ediff-file)
     (define-key map (kbd "C-c =")   'helm-ff-run-ediff-merge-file)
     (define-key map (kbd "C-c o")   'helm-ff-run-switch-other-window)
+    (define-key map (kbd "C-c r")   'helm-ff-run-find-file-as-root)
     (define-key map (kbd "C-c C-o") 'helm-ff-run-switch-other-frame)
     (define-key map (kbd "M-i")     'helm-ff-properties-persistent)
     (define-key map (kbd "C-c C-x") 'helm-ff-run-open-file-externally)
@@ -153,6 +154,7 @@ help for more infos."
     (define-key map (kbd "M-.")     'helm-ff-run-etags)
     (define-key map (kbd "C-c @")   'helm-ff-run-insert-org-link)
     (define-key map (kbd "C-x C-q") 'helm-ff-run-marked-files-in-dired)
+    (define-key map (kbd "C-c C-a") 'helm-ff-run-mail-attach-files)
     map)
   "Generic Keymap for files.")
 
@@ -179,7 +181,8 @@ fall back to `default-directory' if FROM-FF is nil."
   "Default function used to create a locale locate db file.
 Argument DB-NAME name of the db file.
 Argument DIRECTORY root of file system subtree to scan."
-  (format helm-locate-create-db-command db-name directory))
+  (format helm-locate-create-db-command
+          db-name (expand-file-name directory)))
 
 (defvar helm-locate-create-db-function
   #'helm-locate-create-db-default-function
@@ -259,13 +262,18 @@ See also `helm-locate'."
              (replace-regexp-in-string
               "locate"
               (format (if helm-locate-fuzzy-match
-                          "locate -b -d %s" "locate -d %s")
+                          "locate -b -d '%s'" "locate -d '%s'")
                       (mapconcat 'identity
                                  ;; Remove eventually
                                  ;; marked directories by error.
                                  (cl-loop for i in db
                                        unless (file-directory-p i)
-                                       collect i) ":"))
+                                       ;; expand-file-name to resolve
+                                       ;; abbreviated fnames not
+                                       ;; expanding inside single
+                                       ;; quotes i.e. '%s'.
+                                       collect (expand-file-name i))
+                                 ":"))
               helm-locate-command)
            (if (and helm-locate-fuzzy-match
                     (not (string-match-p "\\`locate -b" helm-locate-command)))

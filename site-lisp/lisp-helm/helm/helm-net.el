@@ -1,6 +1,6 @@
 ;;; helm-net.el --- helm browse url and search web. -*- lexical-binding: t -*-
 
-;; Copyright (C) 2012 ~ 2017 Thierry Volpiatto <thierry.volpiatto@gmail.com>
+;; Copyright (C) 2012 ~ 2018 Thierry Volpiatto <thierry.volpiatto@gmail.com>
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -524,16 +524,23 @@ NOTE: Probably not supported on some systems (e.g Windows)."
 ;;;###autoload
 (defun helm-surfraw (pattern engine)
   "Preconfigured `helm' to search PATTERN with search ENGINE."
-  (interactive (list (read-string "SearchFor: "
-                                  nil 'helm-surfraw-input-history
-                                  (thing-at-point 'symbol))
-                     (helm-comp-read
-                      "Engine: "
-                      (helm-build-elvi-list)
-                      :must-match t
-                      :name "Surfraw Search Engines"
-                      :del-input nil
-                      :history helm-surfraw-engines-history)))
+  (interactive
+   (list
+    (let* ((default (if (use-region-p)
+                        (buffer-substring-no-properties
+                         (region-beginning) (region-end))
+                      (thing-at-point 'symbol)))
+           (prompt (if default
+                       (format "SearchFor (default %s): " default)
+                     "SearchFor: ")))
+      (read-string prompt nil 'helm-surfraw-input-history default))
+    (helm-comp-read
+     "Engine: "
+     (helm-build-elvi-list)
+     :must-match t
+     :name "Surfraw Search Engines"
+     :del-input nil
+     :history helm-surfraw-engines-history)))
   (let* ((engine-nodesc (car (split-string engine)))
          (url (if (string= engine-nodesc "duckduckgo")
                   ;; "sr duckduckgo -p foo" is broken, workaround.

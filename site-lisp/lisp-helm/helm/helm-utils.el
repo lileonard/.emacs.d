@@ -1,6 +1,6 @@
 ;;; helm-utils.el --- Utilities Functions for helm. -*- lexical-binding: t -*-
 
-;; Copyright (C) 2012 ~ 2017 Thierry Volpiatto <thierry.volpiatto@gmail.com>
+;; Copyright (C) 2012 ~ 2018 Thierry Volpiatto <thierry.volpiatto@gmail.com>
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -25,6 +25,7 @@
 (declare-function helm-find-files-1 "helm-files.el" (fname &optional preselect))
 (declare-function popup-tip "ext:popup")
 (defvar winner-boring-buffers)
+(defvar helm-show-completion-overlay)
 
 
 (defgroup helm-utils nil
@@ -404,12 +405,17 @@ Default is `helm-current-buffer'."
 
 (defun helm-goto-char (loc)
   "Go to char, revealing if necessary."
+  (require 'org) ; On some old Emacs versions org may not be loaded.
   (goto-char loc)
-  (when (or (eq major-mode 'org-mode)
-            (and (boundp 'outline-minor-mode)
-                 outline-minor-mode))
-    (require 'org) ; On some old Emacs versions org may not be loaded.
-    (org-reveal)))
+  (let ((fn (cond ((eq major-mode 'org-mode) #'org-reveal)
+                  ((and (boundp 'outline-minor-mode)
+                        outline-minor-mode)
+                   (lambda () (outline-flag-subtree nil))))))
+    ;; outline may fail in some conditions e.g. with markdown enabled
+    ;; (issue #1919).
+    (condition-case nil
+        (and fn (funcall fn))
+      (error nil))))
 
 (defun helm-goto-line (lineno &optional noanim)
   "Goto LINENO opening only outline headline if needed.
@@ -482,11 +488,13 @@ from its directory."
   (interactive)
   (with-helm-alive-p
     (require 'helm-grep)
+    (require 'helm-elisp)
     (helm-run-after-exit
      (lambda (f)
        ;; Ensure specifics `helm-execute-action-at-once-if-one'
        ;; fns don't run here.
-       (let (helm-execute-action-at-once-if-one)
+       (let (helm-execute-action-at-once-if-one
+             helm-actions-inherit-frame-settings) ; use this-command
          (if (file-exists-p f)
              (helm-find-files-1 (file-name-directory f)
                                 (concat
@@ -539,6 +547,12 @@ from its directory."
             (expand-file-name (or (buffer-file-name) default-directory))))
          ;; Url.
          ((and (stringp sel) helm--url-regexp (string-match helm--url-regexp sel)) sel)
+         ;; Exit brutally from a `with-helm-show-completion'
+         ((and helm-show-completion-overlay
+               (overlayp helm-show-completion-overlay))
+          (delete-overlay helm-show-completion-overlay)
+          (remove-hook 'helm-move-selection-after-hook 'helm-show-completion)
+          (expand-file-name default-preselection))
          ;; Default.
          (t (expand-file-name default-preselection)))))))
 (put 'helm-quit-and-find-file 'helm-only t)
@@ -739,7 +753,8 @@ Inlined here for compatibility."
   (let* ((start (or start (line-beginning-position)))
          (end (or end (1+ (line-end-position))))
          start-match end-match
-         (args (list start end buf)))
+         (args (list start end buf))
+         (case-fold-search (helm-set-case-fold-search)))
     ;; Highlight the current line.
     (if (not helm-match-line-overlay)
         (setq helm-match-line-overlay (apply 'make-overlay args))

@@ -1,6 +1,6 @@
 ;;; helm-mode.el --- Enable helm completion everywhere. -*- lexical-binding: t -*-
 
-;; Copyright (C) 2012 ~ 2017 Thierry Volpiatto <thierry.volpiatto@gmail.com>
+;; Copyright (C) 2012 ~ 2018 Thierry Volpiatto <thierry.volpiatto@gmail.com>
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -48,19 +48,56 @@
     (find-file-at-point . helm-completing-read-sync-default-handler)
     (ffap . helm-completing-read-sync-default-handler)
     (execute-extended-command . nil))
-  "Alist of handlers to replace `completing-read', `read-file-name' in `helm-mode'.
-Each entry is a cons cell like \(emacs_command . completing-read_handler\)
+  "Completing read functions for specific Emacs commands.
+
+By default `helm-mode' use `helm-completing-read-default-handler' to
+provide helm completion in each `completing-read' or `read-file-name'
+found, but other functions can be specified here for specific
+commands. This also allow disabling helm completion for some commands
+when needed.
+ 
+Each entry is a cons cell like (EMACS_COMMAND . COMPLETING-READ_HANDLER)
 where key and value are symbols.
 
 Each key is an Emacs command that use originaly `completing-read'.
 
-Each value maybe an helm function that take same arguments as
+Each value maybe a helm function that takes same arguments as
 `completing-read' plus NAME and BUFFER, where NAME is the name of the new
-helm source and BUFFER the name of the buffer we will use.
-This function prefix name must start by \"helm\".
+helm source and BUFFER the name of the buffer we will use, but it can
+be also a function not using helm, in this case the function should
+take same args as `completing-read' and not be prefixed by \"helm-\".
 
-See `helm-completing-read-symbols' for example.
+`helm' will use the name of the command calling `completing-read' as
+NAME and BUFFER will be computed as well with NAME but prefixed with
+\"*helm-mode-\".
 
+This function prefix name must start by \"helm-\" when it uses helm,
+otherwise `helm' assumes the function is not a helm function and
+expects same args as `completing-read', this allow you to define a
+handler not using helm completion.
+
+Example:
+
+    (defun foo/test ()
+      (interactive)
+      (message \"%S\" (completing-read \"test: \" '(a b c d e))))
+
+    (defun helm-foo/test-completing-read-handler (prompt collection
+                                                  predicate require-match
+                                                  initial-input hist def
+                                                  inherit-input-method
+                                                  name buffer)
+      (helm-comp-read prompt collection :marked-candidates t
+                                        :name name
+                                        :buffer buffer))
+
+    (add-to-list 'helm-completing-read-handlers-alist
+                 '(foo/test . helm-foo/test-completing-read-handler))
+
+
+We want here to make the regular `completing-read' in `foo/test'
+returns a list of candidate(s) instead of a single candidate.
+ 
 Note that this function will be reused for ALL the `completing-read'
 of this command, so it should handle all cases, e.g
 If first `completing-read' complete against symbols and
@@ -69,16 +106,25 @@ your specialized function should handle the both.
 
 If the value of an entry is nil completion will fall back to
 emacs vanilla behavior.
-e.g If you want to disable helm completion for `describe-function':
-\(describe-function . nil\).
+Example:
+
+If you want to disable helm completion for `describe-function', use:
+
+    (describe-function . nil)
 
 Ido is also supported, you can use `ido-completing-read' and
 `ido-read-file-name' as value of an entry or just 'ido.
-e.g ido completion for `find-file':
-\(find-file . ido\)
+Example:
+Enable ido completion for `find-file':
+
+    (find-file . ido)
+
 same as
-\(find-file . ido-read-file-name\)
-Note that you don't need to enable `ido-mode' for this to work."
+
+    (find-file . ido-read-file-name)
+
+Note that you don't need to enable `ido-mode' for this to work, see
+`helm-mode' documentation."
   :group 'helm-mode
   :type '(alist :key-type symbol :value-type symbol))
 
@@ -156,6 +202,7 @@ So you should not change the default setting of this variable unless you
 know what you are doing."
   :group 'helm-mode
   :type 'boolean)
+
 
 (defvar helm-comp-read-map
   (let ((map (make-sparse-keymap)))
@@ -261,14 +308,16 @@ If COLLECTION is an `obarray', a TEST should be needed. See `obarray'."
                  ;; Normally file completion should not be handled here,
                  ;; but special cases like `find-file-at-point' do it.
                  ;; Handle here specially such cases.
-                 ((and (functionp collection) minibuffer-completing-file-name)
+                 ((and (functionp collection) (not (string= input ""))
+                       minibuffer-completing-file-name)
                   (cl-loop for f in (funcall collection input test t)
                            unless (member f '("./" "../"))
                            if (string-match helm--url-regexp input)
                            collect f
                            else
                            collect (concat (file-name-as-directory
-                                            (helm-basedir input)) f)))
+                                            (helm-basedir input))
+                                           f)))
                  ((functionp collection)
                   (funcall collection input test t))
                  ((and alistp (null test)) collection)
@@ -294,17 +343,21 @@ If COLLECTION is an `obarray', a TEST should be needed. See `obarray'."
       (setq candidates (append (list
                                 ;; Unquote helm-pattern
                                 ;; when it is added
-                                ;; as candidate.
-                                (replace-regexp-in-string
-                                 "\\s\\" "" helm-pattern))
+                                ;; as candidate: Why? #2015
+                                ;; (replace-regexp-in-string
+                                ;;  "\\s\\" "" helm-pattern)
+                                helm-pattern)
                                candidates))
       ;; Notify pattern have been added to candidates.
       (setq unknown-pattern t))
     (cl-loop for c in candidates
              for cand = (if (stringp c)
-                            (replace-regexp-in-string "\\s\\" "" c) c)
+                            (replace-regexp-in-string "\\s\\" "" c)
+                          c)
              for pat = (replace-regexp-in-string "\\s\\" "" helm-pattern)
-             if (and (equal c pat) unknown-pattern) collect
+             if (and (or (equal c pat) (equal c helm-pattern))
+                     unknown-pattern)
+             collect
              (cons (concat (propertize
                             " " 'display
                             (propertize "[?]" 'face 'helm-ff-prefix))
@@ -590,6 +643,7 @@ that use `helm-comp-read' See `helm-M-x' for example."
                          :preselect preselect
                          :prompt prompt
                          :resume 'noresume
+                         :keymap loc-map ;; Needed with empty collection.
                          :allow-nest allow-nest
                          :candidate-number-limit candidate-number-limit
                          :case-fold-search case-fold
@@ -858,7 +912,7 @@ See documentation of `completing-read' and `all-completions' for details."
        (candidate-number-limit helm-ff-candidate-number-limit)
        nomark
        (alistp t)
-       (persistent-action 'helm-find-files-persistent-action)
+       (persistent-action-if 'helm-find-files-persistent-action-if)
        (persistent-help "Hit1 Expand Candidate, Hit2 or (C-u) Find file")
        (mode-line helm-read-file-name-mode-line-string))
   "Read a file name with helm completion.
@@ -892,7 +946,7 @@ Keys description:
 
 - ALISTP: Don't use `all-completions' in history (take effect only on history).
 
-- PERSISTENT-ACTION: a persistent action function.
+- PERSISTENT-ACTION-IF: a persistent if action function.
 
 - PERSISTENT-HELP: persistent help message.
 
@@ -918,7 +972,6 @@ Keys description:
          (helm-ff-auto-update-initial-value
           (and helm-ff-auto-update-initial-value
                (not (minibuffer-window-active-p (minibuffer-window)))))
-         helm-full-frame
          helm-follow-mode-persistent
          (helm-ff-fuzzy-matching
           (and fuzzy
@@ -956,7 +1009,7 @@ Keys description:
              :candidates hist
              :nohighlight t
              :fuzzy-match fuzzy
-             :persistent-action persistent-action
+             :persistent-action-if persistent-action-if
              :persistent-help persistent-help
              :keymap cmap
              :nomark nomark
@@ -988,7 +1041,7 @@ Keys description:
                            (helm-find-files-get-candidates must-match))))
              :filtered-candidate-transformer 'helm-ff-sort-candidates
              :filter-one-by-one 'helm-ff-filter-candidate-one-by-one
-             :persistent-action persistent-action
+             :persistent-action-if persistent-action-if
              :persistent-help persistent-help
              :volatile t
              :keymap cmap
@@ -1006,6 +1059,7 @@ Keys description:
                   :case-fold-search case-fold
                   :default default
                   :buffer buffer
+                  :full-frame nil
                   :preselect preselect)))
     (or
      (cond ((and result (stringp result)
@@ -1017,7 +1071,9 @@ Keys description:
             (if (listp default) (car default) default))
            ((and result (listp result))
             (mapcar #'expand-file-name result))
-           (t result))
+           ((and result (file-directory-p result))
+            (file-name-as-directory (expand-file-name result)))
+           (result (expand-file-name result)))
      (helm-mode--keyboard-quit))))
 
 (defun helm-mode--default-filename (fname dir initial)
@@ -1117,7 +1173,12 @@ Don't use it directly, use instead `helm-read-file-name' in your programs."
       (ido-mode (if ido-state 1 -1))
       ;; Same comment as in `helm--completing-read-default'.
       (setq this-command current-command))
-    (if (eq predicate 'file-directory-p) ; Using `read-directory-name'.
+    (if (and
+         ;; Using `read-directory-name'.
+         (eq predicate 'file-directory-p)
+         ;; `file-name-as-directory' return "./" when FNAME is
+         ;; empty string.
+         (not (string= fname "")))
         (file-name-as-directory fname) fname)))
 
 ;; Read file name handler with history (issue #1652)
@@ -1303,6 +1364,11 @@ Some crap emacs functions may not be supported,
 e.g `ffap-alternate-file' and maybe others
 You can add such functions to `helm-completing-read-handlers-alist'
 with a nil value.
+
+About `ido-mode':
+When you are using `helm-mode', DO NOT use `ido-mode', instead if you
+want some commands use `ido' add these commands to
+`helm-completing-read-handlers-alist' with ido as value.
 
 Note: This mode is incompatible with Emacs23."
   :group 'helm-mode

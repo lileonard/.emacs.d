@@ -3,7 +3,7 @@
 ;; Original Author: Tamas Patrovics
 
 ;; Copyright (C) 2007 Tamas Patrovics
-;; Copyright (C) 2012 ~ 2017 Thierry Volpiatto <thierry.volpiatto@gmail.com>
+;; Copyright (C) 2012 ~ 2018 Thierry Volpiatto <thierry.volpiatto@gmail.com>
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -30,7 +30,10 @@
 
 (defcustom helm-adaptive-history-file
   "~/.emacs.d/helm-adaptive-history"
-  "Path of file where history information is stored."
+  "Path of file where history information is stored.
+When nil history is not saved nor restored after emacs restart unless
+you save/restore `helm-adaptive-history' with something else like
+psession or desktop."
   :type 'string
   :group 'helm-adapt)
 
@@ -164,21 +167,23 @@ Format: ((SOURCE-NAME (SELECTED-CANDIDATE (PATTERN . NUMBER-OF-USE) ...) ...) ..
 (defun helm-adaptive-maybe-load-history ()
   "Load `helm-adaptive-history-file' which contain `helm-adaptive-history'.
 Returns nil if `helm-adaptive-history-file' doesn't exist."
-  (when (file-readable-p helm-adaptive-history-file)
+  (when (and helm-adaptive-history-file
+             (file-readable-p helm-adaptive-history-file))
     (load-file helm-adaptive-history-file)))
 
 (defun helm-adaptive-save-history (&optional arg)
   "Save history information to file given by `helm-adaptive-history-file'."
   (interactive "p")
-  (with-temp-buffer
-    (insert
-     ";; -*- mode: emacs-lisp -*-\n"
-     ";; History entries used for helm adaptive display.\n")
-    (prin1 `(setq helm-adaptive-history ',helm-adaptive-history)
-           (current-buffer))
-    (insert ?\n)
-    (write-region (point-min) (point-max) helm-adaptive-history-file nil
-                  (unless arg 'quiet))))
+  (when helm-adaptive-history-file
+    (with-temp-buffer
+      (insert
+       ";; -*- mode: emacs-lisp -*-\n"
+       ";; History entries used for helm adaptive display.\n")
+      (prin1 `(setq helm-adaptive-history ',helm-adaptive-history)
+             (current-buffer))
+      (insert ?\n)
+      (write-region (point-min) (point-max) helm-adaptive-history-file nil
+                    (unless arg 'quiet)))))
 
 (defun helm-adaptive-sort (candidates source)
   "Sort the CANDIDATES for SOURCE by usage frequency.

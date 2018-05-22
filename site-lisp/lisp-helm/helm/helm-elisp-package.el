@@ -1,6 +1,6 @@
 ;;; helm-elisp-package.el --- helm interface for package.el -*- lexical-binding: t -*-
 
-;; Copyright (C) 2012 ~ 2017 Thierry Volpiatto <thierry.volpiatto@gmail.com>
+;; Copyright (C) 2012 ~ 2018 Thierry Volpiatto <thierry.volpiatto@gmail.com>
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -159,7 +159,10 @@
                 (package-delete (symbol-name (car id))
                                 (package-version-join (cdr id)))))
           (error (message (cadr err))))
-        unless (assoc (elt id 1) package-alist)
+        ;; Seems like package-descs are symbols with props instead of
+        ;; vectors in emacs-27, use package-desc-name to ensure
+        ;; compatibility in all emacs versions.
+        unless (assoc (package-desc-name id) package-alist)
         collect (if (fboundp 'package-desc-full-name)
                         id
                       (cons (symbol-name (car id))

@@ -1,6 +1,6 @@
 ;;; helm-regexp.el --- In buffer regexp searching and replacement for helm. -*- lexical-binding: t -*-
 
-;; Copyright (C) 2012 ~ 2017 Thierry Volpiatto <thierry.volpiatto@gmail.com>
+;; Copyright (C) 2012 ~ 2018 Thierry Volpiatto <thierry.volpiatto@gmail.com>
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -653,7 +653,21 @@ Special commands:
 
 ;;;###autoload
 (defun helm-occur ()
-  "Preconfigured helm for Occur."
+  "Preconfigured helm for searching lines matching pattern in `current-buffer'.
+
+When `helm-source-occur' is member of
+`helm-sources-using-default-as-input' which is the default,
+symbol at point is searched at startup.
+
+When a region is marked search only in this region by narrowing.
+
+To search in multiples buffers start from one of the commands listing
+buffers (i.e. a helm command using `helm-source-buffers-list' like
+`helm-mini') and use the multi occur buffers action.
+
+This is the helm implementation that collect lines matching pattern
+like vanilla emacs `occur' but have nothing to do with it, the search
+engine beeing completely different."
   (interactive)
   (helm-occur-init-source)
   (let ((bufs (list (buffer-name (current-buffer)))))
@@ -665,14 +679,27 @@ Special commands:
               collect (buffer-chars-modified-tick (get-buffer b)))))
   (helm-set-local-variable 'helm-occur--invisible
                            (null helm-occur-show-buffer-name))
-  (helm :sources 'helm-source-occur
-          :buffer "*helm occur*"
-          :default (helm-aif (thing-at-point 'symbol) (regexp-quote it))
-          :history 'helm-occur-history
-          :preselect (and (memq 'helm-source-occur helm-sources-using-default-as-input)
-                          (format "%s:%d:" (regexp-quote (buffer-name))
-                                  (line-number-at-pos (point))))
-          :truncate-lines helm-moccur-truncate-lines))
+  (save-restriction
+    (let (def pos)
+      (when (use-region-p)
+        ;; When user mark defun with `mark-defun' with intention of
+        ;; using helm-occur on this region, it is relevant to use the
+        ;; thing-at-point located at previous position which have been
+        ;; pushed to `mark-ring'.
+        (setq def (save-excursion
+                    (goto-char (setq pos (car mark-ring)))
+                    (helm-aif (thing-at-point 'symbol) (regexp-quote it))))
+        (narrow-to-region (region-beginning) (region-end)))
+      (unwind-protect
+           (helm :sources 'helm-source-occur
+                 :buffer "*helm occur*"
+                 :default (or def (helm-aif (thing-at-point 'symbol) (regexp-quote it)))
+                 :history 'helm-occur-history
+                 :preselect (and (memq 'helm-source-occur helm-sources-using-default-as-input)
+                                 (format "%s:%d:" (regexp-quote (buffer-name))
+                                         (line-number-at-pos (or pos (point)))))
+                 :truncate-lines helm-moccur-truncate-lines)
+        (deactivate-mark t)))))
 
 ;;;###autoload
 (defun helm-occur-from-isearch ()

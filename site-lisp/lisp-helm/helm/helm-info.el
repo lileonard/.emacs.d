@@ -1,6 +1,6 @@
 ;;; helm-info.el --- Browse info index with helm -*- lexical-binding: t -*-
 
-;; Copyright (C) 2012 ~ 2017 Thierry Volpiatto <thierry.volpiatto@gmail.com>
+;; Copyright (C) 2012 ~ 2018 Thierry Volpiatto <thierry.volpiatto@gmail.com>
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -53,8 +53,8 @@ files with `helm-info-at-point'."
                  (helm-candidate-buffer))
       (kill-buffer it))
   (unless (helm-candidate-buffer)
-    (save-window-excursion
-      (info file)
+    (save-selected-window
+      (info file " *helm info temp buffer*")
       (let ((tobuf (helm-candidate-buffer 'global))
             Info-history
             start end line)
@@ -78,7 +78,8 @@ files with `helm-info-at-point'."
                           "\n" "" (buffer-substring start end)))
               (with-current-buffer tobuf
                 (insert line)
-                (insert "\n")))))))))
+                (insert "\n")))))
+        (bury-buffer)))))
 
 (defun helm-info-goto (node-line)
   (Info-goto-node (car node-line))
@@ -244,8 +245,7 @@ Info files are made available."
 
 ;;;###autoload
 (defun helm-info-at-point ()
-  "Preconfigured `helm' for searching info at point.
-With a prefix-arg insert symbol at point."
+  "Preconfigured `helm' for searching info at point."
   (interactive)
   (helm :sources helm-info-default-sources
         :buffer "*helm info*"))
