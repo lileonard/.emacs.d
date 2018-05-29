@@ -10,6 +10,7 @@
 (set-keyboard-coding-system 'utf-8)
 (prefer-coding-system 'utf-8)
 (setq buffer-file-coding-system 'utf-8)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (setq visible-bell t
       mouse-yank-at-point t
@@ -24,7 +25,7 @@
       suggest-key-bindings 1)
 (setq-default indent-tabs-mode nil)
 
-(flymake-mode nil)
+;; (flymake-mode nil)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (setq enable-recursive-minibuffers t
       scroll-conservatively 100)
