@@ -7,20 +7,6 @@
                         "IndianRed4")
       hl-paren-delay 0.3)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; indent-guide, a good but worse in performance plugin,
-;; especially when you open a file that includes very large, deep blocks
-;; (require 'indent-guide)
-;; (add-hook 'c++-mode-hook           #'indent-guide-mode)
-;; (add-hook 'c-mode-hook             #'indent-guide-mode)
-;; (add-hook 'cmake-mode-hook         #'indent-guide-mode)
-;; (add-hook 'lisp-mode-hook          #'indent-guide-mode)
-;; (add-hook 'emacs-lisp-mode-hook    #'indent-guide-mode)
-;; (add-hook 'python-mode-hook        #'indent-guide-mode)
-;; (add-hook 'matlab-mode-hook        #'indent-guide-mode)
-;; (setq indent-guide-delay 0.0)
-;; (setq indent-guide-char "|")
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'fuzzy)
 (require 'pos-tip)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
