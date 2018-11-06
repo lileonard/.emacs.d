@@ -23,7 +23,7 @@
 ;; Free Software Foundation, Inc., 59 Temple Place - Suite 330,
 ;; Boston, MA 02111-1307, USA.
  
-;; Copyright (C) 2005, 2006, 2007, 2008, 2009, 2010 David Reitter
+;; Copyright (C) 2005, 2006, 2007, 2008, 2009, 2010, 2012, 2013, 2014 David Reitter
  
 ;; DESCRIPTION:
 ;; 
@@ -392,23 +392,33 @@ the current window is switched to the new buffer."
   'previous-buffer-here)
 
 
+(defvar obof-force-current-space nil
+  "Instruct `switch-to-buffer' to only visit frames in the current space")
+
 (if (running-on-a-mac-p)
     (defadvice switch-to-buffer (around sw-force-other-frame (&rest args) 
 					activate compile)
       (if one-buffer-one-frame  
-	  ;; technically, code below should work even without this
-	  ;; "if", because it does mostly the same things as switch-to-buffer.
-	  ;; however, we want to be on the safe side, and also not
+	  ;; this does mostly the same things as switch-to-buffer.
+	  ;; However, we want to be sure not to
 	  ;; honor stuff like `obof-same-window-regexps' when obof is off.
 	  (let ((norecord (nth 1 args))
 		(switch t)
 		(window-to-select))
+	    ;; search for a window already displaying this buffer.
 	    (walk-windows
 	     (lambda (w)
-	       (when (equal (window-buffer w) (get-bufobj (car args)))
+	       (when (and
+		      ;; buffer is displayed in this window
+		      (equal (window-buffer w) (get-bufobj (car args)))
+		      ;; Either window's frame *need not be* in the current space,
+		      (or (not obof-force-current-space)
+			  ;; or it *is* in the current space
+			  (memq (window-frame w) (visible-frame-list))))
 		 (setq switch nil)
 		 (setq window-to-select w))) t t) ;) ;; t = include-hidden-frame (must be t) 
 	    (if switch
+		;; Did *not* find a suitable window displaying the buffer.
 		(let ((same-window-regexps 
 		       (if (eq obof-same-window-regexps 'same-window-regexps)
 			   same-window-regexps
@@ -417,20 +427,22 @@ the current window is switched to the new buffer."
 		       (if (eq obof-same-window-buffer-names 'same-window-buffer-names)
 			   same-window-buffer-names
 			 obof-same-window-buffer-names)))
-		  (if (or (not (visible-frame-list))
-			  (not (frame-visible-p (selected-frame)))
-			  (open-in-other-frame-p (car args) t))
-		      (progn
-			(setq ad-return-value (apply #'switch-to-buffer-other-frame args))
+		  (if (or (not (visible-frame-list))  ;; no visible frames
+			  (not (frame-visible-p (selected-frame))) ;; selected frame is invisible
+			  (open-in-other-frame-p (car args) t))  ;; this buf should open other frame
+		      ;; Use a new frame
+		      (let ((display-buffer--other-frame-action
+			     '(display-buffer-pop-up-frame . nil)))
+			(setq ad-return-value (funcall #'switch-to-buffer-other-frame (car args) (cadr args)))
 			;; store the frame/buffer information
 			(add-to-list 'aquamacs-newly-opened-windows 
 				     (cons (selected-window) (buffer-name)))) 
-		    ;; else : show in same frame
+		    ;; else : if window is dedictated, use a different window
 		    (if (window-dedicated-p (selected-window))
-			(setq ad-return-value   (apply #'switch-to-buffer-other-window args))
-		      ;; else: show in same frame
+			(setq ad-return-value (funcall #'switch-to-buffer-other-window (car args) (cadr args)))
+		      ;; else: show in current frame & window
 		      ad-do-it)))
-	      ;; else (don't switch, just activcate another frame)
+	      ;; else (don't switch, just activate another window)
 	      ;; we need to do it here, because raise-frame / select frame are
 	      ;; ineffective from within walk-windows
 	      (when window-to-select
@@ -443,9 +455,19 @@ the current window is switched to the new buffer."
 		;; we should do it manually.
 		(set-buffer (window-buffer window-to-select)))
 	      (unless ad-return-value (setq ad-return-value (current-buffer)))))
-	;; else: not one-buffer-one-frame   
-   	(setq ad-return-value 
-	      ad-do-it)
+	;; else: not one-buffer-one-frame
+	(if (or (visible-frame-list)
+		(string= (substring (get-bufname (car args)) 0 1) " "))
+	    ;; If frames are visible in current space, or buffer (like *empty*)
+	    ;; should not be displayed, call vanilla switch-buffer
+	    (setq ad-return-value ad-do-it)
+	  ;; else pop up a new frame, and avoid switching to a different space
+	  (let ((display-buffer--other-frame-action
+		 '(display-buffer-pop-up-frame .nil)))
+	    (setq ad-return-value (funcall #'switch-to-buffer-other-frame (car args) (cadr args)))
+	    ;; store the frame/buffer information
+	    (add-to-list 'aquamacs-newly-opened-windows 
+			 (cons (selected-window) (buffer-name)))))
 	(unless (frame-visible-p (selected-frame))
 	  ;; make sure we don't make *empty* visible
 	  (if (not (string= (substring (get-bufname (car args)) 0 1) " "))
@@ -623,8 +645,7 @@ even if it's the only visible frame."
   (select-window window)
   (if (one-window-p t)
       (aquamacs-delete-frame)
-    (old-delete-window (selected-window))))
-;; old-delete-window is the original emacs delete-window.
+    (delete-window (selected-window))))
 
 (defun delete-window-if-one-buffer-one-frame ()
   ;; only delete window when tabbar-mode is not on!
@@ -671,7 +692,7 @@ may be set to `nil' if such empty frames become visible inadvertently."
 	  parms)))
 	(if (and aquamacs-last-frame-empty-frame
 		 (frame-live-p aquamacs-last-frame-empty-frame)
-		 (not (frame-iconified-p aquamacs-last-frame-empty-frame)))
+		 (not (frcmds-frame-iconified-p aquamacs-last-frame-empty-frame)))
 	    (modify-frame-parameters aquamacs-last-frame-empty-frame
 				     (cons '(fullscreen . nil) parms))
 	  (setq aquamacs-last-frame-empty-frame (make-frame all-parms))))
@@ -706,12 +727,12 @@ may be set to `nil' if such empty frames become visible inadvertently."
 	;; do not delete the last visible frame if there are others hidden:
 	;; doing so prevents Aquamacs from receiving keyboard input (NS problem?)
 	(progn 
-	  (if (and aquamacs-keep-running-via-empty-frame (equal (ns-visible-frame-list)
+	  (if (and aquamacs-keep-running-via-empty-frame (equal (visible-frame-list)
 		     (list (or frame (selected-frame)))))
-	      (error) ;; create *empty* frame or hide current one
+	      (error "obof1 error") ;; create *empty* frame or hide current one
 	    (delete-frame (or frame (selected-frame))))
 	  (unless (visible-frame-list) ;; delete-frame may succeed if iconified frames are around
-	    (error)))
+	    (error "obof2 error")))
       (error
        ;; we're doing delete-frame later
        ;;(run-hook-with-args 'delete-frame-functions f)

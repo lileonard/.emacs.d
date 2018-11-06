@@ -62,7 +62,7 @@ The return value is the incremented value of PLACE."
   (memq initial-window-system '(mac ns)))
 
 
-(defun aquamacs-ask-for-confirmation (text long &optional yes-button no-button sheet no-cancel)
+(defun aquamacs-ask-for-confirmation (text long &optional yes-button no-button sheet)
     (let ((f (window-frame (minibuffer-window))))
       (make-frame-visible f)
       (raise-frame f)			; make sure frame is visible
@@ -88,11 +88,8 @@ The return value is the incremented value of PLACE."
 	(let ((ret (x-popup-dialog (or sheet (if (mouse-event-p last-command-event) last-command-event)
 				        `(mouse-1      (,(selected-window) 100 (0 . 50) -1)))
 				    (list text
-					  `((,(or yes-button "Yes") . ?\r) . t) ; use \r instead of y until we have multi-keyEquivs
-					  (if no-cancel 'no-cancel 'cancel)
-					  `((,(or no-button "No") . ?n) . nil)))))
-	  (if (eq ret 'cancel)
-	      (keyboard-quit))
+					  `(,(or yes-button "Yes") . t)
+					  `(,(or no-button "No") . nil)))))
 	  ret))))
 
 
@@ -305,7 +302,7 @@ Carbon Emacs instead of Aquamacs."
 Add the value to the customization group `Aquamacs-is-more-than-Emacs'."
 
   (mapc (lambda (elt)
-	  (custom-load-symbol (car elt))
+	  (custom-load-symbol (car elt)) ;; does nothing for non-custom variables
 	  (let* ((symbol (car elt))
 		 ;; we're accessing the doc property here so
 		 ;; if the symbol is an autoload symbol,
@@ -319,17 +316,30 @@ Add the value to the customization group `Aquamacs-is-more-than-Emacs'."
 		       'variable-documentation)
 		    (error "")))
 		(value (car (cdr elt)))
-		(s-value (get symbol 'standard-value)))
-	    (set symbol value)
+		(s-value (get symbol 'standard-value))
+                (setter (get symbol 'custom-set)))
+            
+            ;; if there's a setter, use it
+            ;; note: symbol must be loaded for this to work
+            (if setter ;; if customizable and there is a special setter
+                (funcall setter symbol value)
+              ;; otherwise, just set it
+              (set symbol value))
+
 	    (set-default symbol value) ;; new in post-0.9.5
- 
+
+            ;; To Do: consider calling `custom-theme-set-variables' for custom
+            ;; settings and create an Aquamacs theme.  This is not trivial,
+            ;; as we do not want to store a "saved variable" as opposed to a
+            ;; new default (as if it had been set with `defcustom').
+
 	    ;; make sure that user customizations get 
 	    ;; saved to customizations.el (.emacs)
 	    ;; and that this appears as the new default.
 
-	    (put symbol 'standard-value `((quote  ,(copy-tree (eval symbol)))))
 	    ;; since the standard-value changed, put it in the
 	    ;; group
+	    (put symbol 'standard-value `((quote  ,(copy-tree (eval symbol)))))
 
 	    (unless (or (eq s-value (get symbol 'standard-value))
 			(get symbol 'aquamacs-original-default))
@@ -377,7 +387,7 @@ Optional CODING is used for encoding coding-system."
 (defun load-post-sitestart-files ()
   "Load the Aquamacs plugins from site-start directories."
   (let (loaded)
-    (mapcar 
+    (mapc
      (lambda (p) (unless (file-exists-p (concat p "/.ignore"))
 		   (let ((infod (concat p "/info"))
 			 (file (expand-file-name (concat p "/site-start") "~/")))
@@ -397,7 +407,7 @@ Optional CODING is used for encoding coding-system."
 (defun load-pre-sitestart-files ()
   "Load the pre-start Aquamacs plugins from site-prestart directories."
   (let (loaded)
-    (mapcar 
+    (mapc
      (lambda (p) (unless (file-exists-p (concat p "/.ignore"))
 		   (let ((infod (concat p "/info"))
 			 (file (expand-file-name (concat p "/site-prestart") "~/")))
@@ -413,7 +423,7 @@ Optional CODING is used for encoding coding-system."
     t))
 ; (load-pre-sitestart-files)
 
-
+(defvar aq-timer nil)
 (defun aq-current-milliseconds ()
   (let ((ti (cdr (current-time)))
 	
@@ -574,7 +584,7 @@ Aquamacs only.
 	  (aquamacs-purge-directory (file-name-directory aquamacs-autosave-directory)
 			   ".*"
 			   days)))
-    (if (called-interactively-p) 
+    (if (called-interactively-p 'interactive)
 	(message "%s Session and %s Auto save files older than %s days purged." count1 count2 days))))
 
 (defun aquamacs-purge-directory (directory regexp days)
@@ -594,8 +604,40 @@ Aquamacs only.
 	count)
     (error 0)))
    
+(defun list2english (list &optional avoid-oxford-comma add-be)
+  "Converts a list of strings to a single string with an English-language list.
+Commas and \"and\" are inserted as necessary
+An Oxford comma is used by default if appropriate.
+Set AVOID-OXFORD-COMMA to non-nil to prevent an Oxford comma in any case."
+  (concat
+   (list2english-internal list (if avoid-oxford-comma 'avoid))
+   (if add-be
+       (if (or (not list) (cdr list))
+           " are" " is")
+     "")))
+(defun list2english-internal (list &optional avoid-oxford-comma)
+  (if (cddr list)
+      (list2english-internal (cons (concat (car list) ", " (cadr list)) (cddr list))
+                    (or avoid-oxford-comma 'force-on))
+    (if (cdr list)
+        (concat (car list) (if (equal avoid-oxford-comma 'force-on) ", and " " and ") (cadr list))
+      (car list))))
+;; test cases
+;; (list2english '("one" "two"))
+;; (list2english '("one" "two" "three") nil nil)
+;; (list2english '("one" "two" "three") t t)
+;; (list2english '("one"))
+;; (list2english '("one") t t)
+;; (list2english '("one") nil t)
+;; (list2english '("one" "two" "three") 'no)
+;; (list2english nil nil t)
 
- 
+(defun login-shell-command-to-string (command)
+  "Execute login shell command COMMAND and return its output as a string."
+  (with-output-to-string
+    (with-current-buffer
+      standard-output
+      (process-file shell-file-name nil t nil "-l" shell-command-switch command))))
 
 (provide 'aquamacs-tools)
 
