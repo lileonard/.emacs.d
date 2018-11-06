@@ -473,11 +473,12 @@ It is intended to use as a let-bound variable, DON'T set this globaly.")
                                   "i")))
          (helm-grep-default-command
           (concat helm-grep-default-command " %m")) ; `%m' like multi.
-         (patterns (helm-mm-split-pattern helm-pattern))
+         (patterns (helm-mm-split-pattern helm-pattern t))
          (pipe-switches (mapconcat 'identity helm-grep-pipe-cmd-switches " "))
          (pipes
           (helm-aif (cdr patterns)
-              (cl-loop with pipcom = (helm-grep--pipe-command-for-grep-command smartcase pipe-switches)
+              (cl-loop with pipcom = (helm-grep--pipe-command-for-grep-command
+                                      smartcase pipe-switches)
                        for p in it concat
                        (format " | %s %s" pipcom (shell-quote-argument p)))
             "")))
@@ -1431,7 +1432,7 @@ Ripgrep (rg) types are also supported if this backend is used."
   "Prepare AG command line to search PATTERN in DIRECTORY.
 When TYPE is specified it is one of what returns `helm-grep-ag-get-types'
 if available with current AG version."
-  (let* ((patterns (helm-mm-split-pattern pattern))
+  (let* ((patterns (helm-mm-split-pattern pattern t))
          (pipe-switches (mapconcat 'identity helm-grep-ag-pipe-cmd-switches " "))
          (pipe-cmd (pcase (helm-grep--ag-command)
                      ((and com (or "ag" "pt"))
@@ -1572,7 +1573,7 @@ When WITH-TYPES is non-nil provide completion on AG types."
 (defvar helm-source-grep-git nil)
 
 (defcustom helm-grep-git-grep-command
-  "git --no-pager grep -n%cH --color=always --exclude-standard --no-index --full-name -e %p -- %f"
+  "git --no-pager grep -n%cH --color=always --full-name -e %p -- %f"
   "The git grep default command line.
 The option \"--color=always\" can be used safely.
 The color of matched items can be customized in your .gitconfig
@@ -1580,7 +1581,8 @@ See `helm-grep-default-command' for more infos.
 
 The \"--exclude-standard\" and \"--no-index\" switches allow
 skipping unwanted files specified in ~/.gitignore_global
-and searching files not already staged.
+and searching files not already staged (not enabled by default).
+
 You have also to enable this in global \".gitconfig\" with
     \"git config --global core.excludesfile ~/.gitignore_global\"."
   :group 'helm-grep

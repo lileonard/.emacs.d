@@ -203,7 +203,7 @@ Note that this variable is buffer-local.")
     (define-key map (kbd "M-a")       'helm-mark-all)
     (define-key map (kbd "C-]")       'helm-toggle-buffers-details)
     (define-key map (kbd "C-c a")     'helm-buffers-toggle-show-hidden-buffers)
-    (define-key map (kbd "<C-M-SPC>") 'helm-buffers-mark-similar-buffers)
+    (define-key map (kbd "C-M-SPC")   'helm-buffers-mark-similar-buffers)
     map)
   "Keymap for buffer sources in helm.")
 
@@ -691,7 +691,7 @@ If REGEXP-FLAG is given use `query-replace-regexp'."
 
 (defun helm-buffer-toggle-diff (candidate)
   "Toggle diff buffer CANDIDATE with it's file."
-  (helm-aif (get-buffer-window "*Diff*")
+  (helm-aif (get-buffer-window "*Diff*" 'visible)
       (progn (kill-buffer "*Diff*")
              (set-window-buffer it helm-current-buffer))
     (diff-buffer-with-file (get-buffer candidate))))
@@ -907,7 +907,11 @@ If a prefix arg is given split windows vertically."
             (eql current (get-buffer helm-current-buffer))
             (not (eql current (get-buffer candidate))))
         (switch-to-buffer candidate)
-        (switch-to-buffer helm-current-buffer))))
+      (if (and helm-persistent-action-display-window
+               (window-dedicated-p
+                (next-window helm-persistent-action-display-window 1)))
+          (delete-window helm-persistent-action-display-window)
+        (switch-to-buffer helm-current-buffer)))))
 
 (defun helm-ediff-marked-buffers (_candidate &optional merge)
   "Ediff 2 marked buffers or CANDIDATE and `helm-current-buffer'.

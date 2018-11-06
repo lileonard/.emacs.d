@@ -14,7 +14,7 @@
 ;; c/c++
 (defun my-flycheck-c-setup ()
   (my-flycheck-setup)
-  ;;(setq flycheck-gcc-language-standard "c++11")
+  (setq flycheck-gcc-language-standard "c++11")
   (setq flycheck-gcc-include-path my-sys-c-include)
   (setq flycheck-gcc-openmp t))
 (add-hook 'c-mode-hook   'my-flycheck-c-setup)

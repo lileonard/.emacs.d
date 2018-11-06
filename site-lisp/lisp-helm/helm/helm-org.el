@@ -62,7 +62,7 @@ Note this have no effect in `helm-org-in-buffer-headings'."
 (defcustom helm-org-headings-actions
   '(("Go to heading" . helm-org-goto-marker)
     ("Open in indirect buffer `C-c i'" . helm-org--open-heading-in-indirect-buffer)
-    ("Refile heading(s) (multiple-marked-to-selected, or current-to-selected) `C-c w`" . helm-org--refile-heading-to)
+    ("Refile heading(s) (marked-to-selected|current-to-selected) `C-c w`" . helm-org--refile-heading-to)
     ("Insert link to this heading `C-c l`" . helm-org-insert-link-to-heading-at-marker))
   "Default actions alist for
   `helm-source-org-headings-for-files'."
@@ -221,7 +221,7 @@ nothing to CANDIDATES."
           (search-fn (lambda ()
                        (re-search-forward
                         org-complex-heading-regexp nil t)))
-          (file (unless nofname
+          (file (unless (or (bufferp filename) nofname)
                   (concat (helm-basename filename) ":"))))
       (when parents
         (add-function :around (var search-fn)

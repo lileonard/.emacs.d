@@ -8,7 +8,7 @@ TOP := $(dir $(lastword $(MAKEFILE_LIST)))
 # You might also want to set LOAD_PATH.  If you do, then it must
 # contain "-L .".
 #
-# If you don't do so then the default is set in the "Load-Path"
+# If you don't do so, then the default is set in the "Load-Path"
 # section below.  The default assumes that all dependencies are
 # installed either at "../<DEPENDENCY>", or when using package.el
 # at "ELPA_DIR/<DEPENDENCY>-<HIGHEST-VERSION>".
@@ -35,9 +35,8 @@ MANUAL_HTML_ARGS ?= --css-ref /assets/page.css
 
 ## Files #############################################################
 
-PKG              = magit
-PACKAGES         = magit magit-popup git-commit
-PACKAGE_VERSIONS = $(addsuffix -$(VERSION),$(PACKAGES))
+PKG       = magit
+PACKAGES  = magit git-commit
 
 TEXIPAGES = $(addsuffix .texi,$(filter-out git-commit,$(PACKAGES)))
 INFOPAGES = $(addsuffix .info,$(filter-out git-commit,$(PACKAGES)))
@@ -46,7 +45,6 @@ HTMLDIRS  = $(filter-out git-commit,$(PACKAGES))
 PDFFILES  = $(addsuffix .pdf,$(filter-out git-commit,$(PACKAGES)))
 
 ELS  = git-commit.el
-ELS += magit-popup.el
 ELS += magit-utils.el
 ELS += magit-section.el
 ELS += magit-git.el
@@ -64,7 +62,11 @@ ELS += magit.el
 ELS += magit-status.el
 ELS += magit-refs.el
 ELS += magit-files.el
+ELS += magit-collab.el
+ELS += magit-reset.el
 ELS += magit-branch.el
+ELS += magit-merge.el
+ELS += magit-tag.el
 ELS += magit-worktree.el
 ELS += magit-notes.el
 ELS += magit-obsolete.el
@@ -79,32 +81,30 @@ ELS += magit-subtree.el
 ELS += magit-ediff.el
 ELS += magit-extras.el
 ELS += git-rebase.el
+ELS += magit-imenu.el
+ELS += magit-bookmark.el
 ELCS = $(ELS:.el=.elc)
 ELMS = magit.el $(filter-out $(addsuffix .el,$(PACKAGES)),$(ELS))
 ELGS = magit-autoloads.el magit-version.el
 
 ## Versions ##########################################################
 
-VERSION := $(shell \
-  test -e $(TOP).git\
-  && git describe --tags --dirty 2> /dev/null\
-  || $(BATCH) --eval "(progn\
-  (fset 'message (lambda (&rest _)))\
-  (load-file \"magit-version.el\")\
-  (princ magit-version))")
+VERSION ?= $(shell test -e $(TOP).git && git describe --tags --abbrev=0)
 
-MAGIT_VERSION       = 2.10
-ASYNC_VERSION       = 1.9
-DASH_VERSION        = 2.13.0
-WITH_EDITOR_VERSION = 2.5.10
-GIT_COMMIT_VERSION  = 2.10.2
-MAGIT_POPUP_VERSION = 2.10.2
+ASYNC_VERSION       = 1.9.3
+DASH_VERSION        = 2.14.1
+GHUB_VERSION        = 2.0.1
+GIT_COMMIT_VERSION  = 2.12.1
+LET_ALIST_VERSION   = 1.0.5
+MAGIT_POPUP_VERSION = 2.12.3
+WITH_EDITOR_VERSION = 2.7.3
 
-ASYNC_MELPA_SNAPSHOT       = 20170219.942
-DASH_MELPA_SNAPSHOT        = 20170207.2056
-WITH_EDITOR_MELPA_SNAPSHOT = 20170111.609
-GIT_COMMIT_MELPA_SNAPSHOT  = 20170214.347
-MAGIT_POPUP_MELPA_SNAPSHOT = 20170214.347
+ASYNC_MELPA_SNAPSHOT       = 20180527
+DASH_MELPA_SNAPSHOT        = 20180413
+GHUB_MELPA_SNAPSHOT        = 20180417
+GIT_COMMIT_MELPA_SNAPSHOT  = 20180411
+MAGIT_POPUP_MELPA_SNAPSHOT = 20180509
+WITH_EDITOR_MELPA_SNAPSHOT = 20180414
 
 EMACS_VERSION = 24.4
 
@@ -127,6 +127,20 @@ ifeq "$(DASH_DIR)" ""
   DASH_DIR = $(TOP)../dash
 endif
 
+GHUB_DIR ?= $(shell \
+  find -L $(ELPA_DIR) -maxdepth 1 -regex '.*/ghub-[.0-9]*' 2> /dev/null | \
+  sort | tail -n 1)
+ifeq "$(GHUB_DIR)" ""
+  GHUB_DIR = $(TOP)../ghub
+endif
+
+MAGIT_POPUP_DIR ?= $(shell \
+  find -L $(ELPA_DIR) -maxdepth 1 -regex '.*/magit-popup-[.0-9]*' 2> /dev/null | \
+  sort | tail -n 1)
+ifeq "$(MAGIT_POPUP_DIR)" ""
+  MAGIT_POPUP_DIR = $(TOP)../magit-popup
+endif
+
 WITH_EDITOR_DIR ?= $(shell \
   find -L $(ELPA_DIR) -maxdepth 1 -regex '.*/with-editor-[.0-9]*' 2> /dev/null | \
   sort | tail -n 1)
@@ -143,13 +157,21 @@ LOAD_PATH = -L $(TOP)/lisp
 
 ifdef CYGPATH
   LOAD_PATH += -L $(shell cygpath --mixed $(DASH_DIR))
+  LOAD_PATH += -L $(shell cygpath --mixed $(GHUB_DIR))
+  LOAD_PATH += -L $(shell cygpath --mixed $(MAGIT_POPUP_DIR))
   LOAD_PATH += -L $(shell cygpath --mixed $(WITH_EDITOR_DIR))
 else
   LOAD_PATH += -L $(DASH_DIR)
+  LOAD_PATH += -L $(GHUB_DIR)
+  LOAD_PATH += -L $(MAGIT_POPUP_DIR)
   LOAD_PATH += -L $(WITH_EDITOR_DIR)
 endif
 
 endif # ifndef LOAD_PATH
 
-DOC_LOAD_PATH  ?= $(LOAD_PATH) \
--L ../../org/lisp -L ../../org/contrib/lisp -L ../../ox-texinfo+
+ifndef ORG_LOAD_PATH
+ORG_LOAD_PATH  = $(LOAD_PATH)
+ORG_LOAD_PATH += -L ../../org/lisp
+ORG_LOAD_PATH += -L ../../org/contrib/lisp
+ORG_LOAD_PATH += -L ../../ox-texinfo+
+endif

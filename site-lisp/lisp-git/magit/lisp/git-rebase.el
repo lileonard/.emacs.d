@@ -1,6 +1,6 @@
 ;;; git-rebase.el --- Edit Git rebase files  -*- lexical-binding: t -*-
 
-;; Copyright (C) 2010-2017  The Magit Project Contributors
+;; Copyright (C) 2010-2018  The Magit Project Contributors
 ;;
 ;; You should have received a copy of the AUTHORS.md file which
 ;; lists all contributors.  If not, see http://magit.vc/authors.
@@ -191,6 +191,7 @@
     ["Squash" git-rebase-squash t]
     ["Fixup" git-rebase-fixup t]
     ["Kill" git-rebase-kill-line t]
+    ["Noop" git-rebase-noop t]
     ["Execute" git-rebase-exec t]
     ["Move Down" git-rebase-move-line-down t]
     ["Move Up" git-rebase-move-line-up t]
@@ -210,6 +211,7 @@
      . "show the commit at point in another buffer and select its window")
     (undo                         . "undo last change")
     (git-rebase-kill-line         . "drop the commit at point")
+    (git-rebase-insert            . "insert a line for an arbitrary commit")
     (git-rebase-noop              . "add noop action at point")))
 
 ;;; Commands
@@ -333,7 +335,8 @@ current line."
   (when (and (looking-at git-rebase-line)
              (not (eq (char-after) (string-to-char comment-start))))
     (let ((inhibit-read-only t))
-      (insert comment-start))
+      (insert comment-start)
+      (insert " "))
     (when git-rebase-auto-advance
       (forward-line))))
 
@@ -449,7 +452,7 @@ buffer down."
   "Move N lines backward (forward if N is negative).
 Like `forward-line' but go into the opposite direction."
   (interactive "p")
-  (forward-line (- n)))
+  (forward-line (- (or n 1))))
 
 ;;; Mode
 
@@ -465,14 +468,16 @@ running 'man git-rebase' at the command line) for details."
   (setq comment-start (or (magit-get "core.commentChar") "#"))
   (setq git-rebase-comment-re (concat "^" (regexp-quote comment-start)))
   (setq git-rebase-line
-        (concat "^\\(" (regexp-quote comment-start) "?"
+        (concat "^\\(" (regexp-quote comment-start) "? *"
                 "\\(?:[fprse]\\|pick\\|reword\\|edit\\|squash\\|fixup\\|exec\\|noop\\)\\) "
                 "\\(?:\\([^ \n]+\\) \\(.*\\)\\)?"))
   (setq font-lock-defaults (list (git-rebase-mode-font-lock-keywords) t t))
   (unless git-rebase-show-instructions
     (let ((inhibit-read-only t))
       (flush-lines git-rebase-comment-re)))
-  (with-editor-mode 1)
+  (unless with-editor-mode
+    ;; Maybe already enabled when using `shell-command' or an Emacs shell.
+    (with-editor-mode 1))
   (when git-rebase-confirm-cancel
     (add-hook 'with-editor-cancel-query-functions
               'git-rebase-cancel-confirm nil t))
@@ -480,13 +485,17 @@ running 'man git-rebase' at the command line) for details."
   (setq-local redisplay-unhighlight-region-function 'git-rebase-unhighlight-region)
   (add-hook 'with-editor-pre-cancel-hook  'git-rebase-autostash-save  nil t)
   (add-hook 'with-editor-post-cancel-hook 'git-rebase-autostash-apply nil t)
+  (setq imenu-prev-index-position-function
+        #'magit-imenu--rebase-prev-index-position-function)
+  (setq imenu-extract-index-name-function
+        #'magit-imenu--rebase-extract-index-name-function)
   (when (boundp 'save-place)
     (setq save-place nil)))
 
 (defun git-rebase-cancel-confirm (force)
   (or (not (buffer-modified-p))
       force
-      (magit-confirm 'abort-rebase "Abort this rebase")))
+      (magit-confirm 'abort-rebase "Abort this rebase" nil 'noabort)))
 
 (defun git-rebase-autostash-save ()
   (--when-let (magit-file-line (magit-git-dir "rebase-merge/autostash"))
@@ -499,25 +508,29 @@ running 'man git-rebase' at the command line) for details."
 (defun git-rebase-match-comment-line (limit)
   (re-search-forward (concat git-rebase-comment-re ".*") limit t))
 
-(defun git-rebase-match-killed-action (limit)
-  (re-search-forward (concat git-rebase-comment-re "[^ \n].*") limit t))
-
 (defun git-rebase-mode-font-lock-keywords ()
   "Font lock keywords for Git-Rebase mode."
-  `(("^\\([efprs]\\|pick\\|reword\\|edit\\|squash\\|fixup\\) \\([^ \n]+\\) \\(.*\\)"
-     (1 'font-lock-keyword-face)
-     (2 'git-rebase-hash)
-     (3 'git-rebase-description))
-    ("^\\(exec\\) \\(.*\\)"
-     (1 'font-lock-keyword-face)
-     (2 'git-rebase-description))
-    (git-rebase-match-comment-line 0 'font-lock-comment-face)
-    (git-rebase-match-killed-action 0 'git-rebase-killed-action t)
-    (,(format "^%s Rebase \\([^ ]*\\) onto \\([^ ]*\\)" comment-start)
-     (1 'git-rebase-comment-hash t)
-     (2 'git-rebase-comment-hash t))
-    (,(format "^%s \\(Commands:\\)" comment-start)
-     (1 'git-rebase-comment-heading t))))
+  (let ((action-re "\
+\\([efprs]\\|pick\\|reword\\|edit\\|squash\\|fixup\\) \\([^ \n]+\\) \\(.*\\)"))
+    `((,(concat "^" action-re)
+       (1 'font-lock-keyword-face)
+       (2 'git-rebase-hash)
+       (3 'git-rebase-description))
+      ("^\\(exec\\) \\(.*\\)"
+       (1 'font-lock-keyword-face)
+       (2 'git-rebase-description))
+      ("^\\(noop\\)"
+       (1 'font-lock-keyword-face))
+      (git-rebase-match-comment-line 0 'font-lock-comment-face)
+      (,(concat git-rebase-comment-re " *" action-re)
+       0 'git-rebase-killed-action t)
+      ("\\[[^[]*\\]"
+       0 'magit-keyword t)
+      (,(format "^%s Rebase \\([^ ]*\\) onto \\([^ ]*\\)" comment-start)
+       (1 'git-rebase-comment-hash t)
+       (2 'git-rebase-comment-hash t))
+      (,(format "^%s \\(Commands:\\)" comment-start)
+       (1 'git-rebase-comment-heading t)))))
 
 (defun git-rebase-mode-show-keybindings ()
   "Modify the \"Commands:\" section of the comment Git generates
@@ -529,15 +542,17 @@ By default, this is the same except for the \"pick\" command."
       (goto-char (point-min))
       (when (and git-rebase-show-instructions
                  (re-search-forward
-                  (concat git-rebase-comment-re " Commands:\n")
+                  (concat git-rebase-comment-re "\\s-+p, pick")
                   nil t))
+        (goto-char (line-beginning-position))
         (--each git-rebase-command-descriptions
           (insert (format "%s %-8s %s\n"
                           comment-start
                           (substitute-command-keys (format "\\[%s]" (car it)))
                           (cdr it))))
         (while (re-search-forward (concat git-rebase-comment-re
-                                          "\\(  ?\\)\\([^,],\\) \\([^ ]+\\) = ")
+                                          "\\(  ?\\)\\([^\n,],\\) "
+                                          "\\([^\n ]+\\) ")
                                   nil t)
           (let ((cmd (intern (concat "git-rebase-" (match-string 3)))))
             (if (not (fboundp cmd))
@@ -546,7 +561,7 @@ By default, this is the same except for the \"pick\" command."
               (replace-match
                (format "%-8s"
                        (mapconcat #'key-description
-                                  (--filter (not (eq (elt it 0) 'menu-bar))
+                                  (--remove (eq (elt it 0) 'menu-bar)
                                             (reverse (where-is-internal cmd)))
                                   ", "))
                t t nil 2))))))))

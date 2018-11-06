@@ -351,6 +351,12 @@ Simply write the path in the prompt and press `RET', e.g.
 
 *** To create a new file, enter a filename not ending with \"/\"
 
+Note that when you enter a new name, this one is prefixed with
+\[?] if you are in a writable directory.  If you are in a directory
+where you have no write permission the new file name is not
+prefixed and is colored in red.  There is not such distinction
+when using tramp, new filename just appear on top of buffer.
+
 *** Recursive search from Helm-find-files
 
 **** You can use Helm-browse-project (see binding below)
@@ -707,10 +713,6 @@ Of course the alias command should support this.
 
 `helm-find-files' works fine with TRAMP despite some limitations.
 
-- By default filenames are not highlighted when working on remote directories,
-this is controled by `helm-ff-tramp-not-fancy' variable.  If you change this,
-expect Helm to be very slow unless your connection is super fast.
-
 - Grepping files is not very well supported when used incrementally.
 See [[Grepping on remote files]].
 
@@ -741,12 +743,22 @@ works with the ssh method), especially when copying large files.
 You need to hit `C-j' once on top of a directory on the first connection
 to complete the pattern in the minibuffer.
 
+**** Display color for directories, symlinks etc... with tramp
+
+Starting at helm version 2.9.7 it is somewhat possible to
+colorize fnames by listing files without loosing performances with
+external commands (ls and awk) if your system is compatible.
+For this you can use `helm-list-dir-external' as value
+for `helm-list-directory-function'.
+
+See `helm-list-directory-function' documentation for more infos.
+ 
 **** Completing host
 
-As soon as you enter the first \":\" after method e.g =/scp:\= you will
-have some completion about previously used hosts or from your =~/.ssh/config\=
+As soon as you enter the first \":\" after method e.g =/scp:= you will
+have some completion about previously used hosts or from your =~/.ssh/config=
 file, hitting `\\[helm-execute-persistent-action]' or `right' on a candidate will insert this host in minibuffer
-without addind the ending \":\".
+without addind the ending \":\", second hit insert the last \":\".
 As soon the last \":\" is entered TRAMP will kick in and you should see the list
 of candidates soon after.
 
@@ -809,6 +821,73 @@ To touch more than one new file, separate you filenames with a comma (\",\").
 If one wants to create (touch) a new file with comma inside the name use a prefix arg,
 this will prevent splitting the name and create multiple files.
 
+*** Delete files
+
+You can delete files without quitting helm with
+`\\<helm-find-files-map>\\[helm-ff-persistent-delete]' or delete files and quit helm with `\\[helm-ff-run-delete-file]'.
+
+In the second method you can choose to
+make this command asynchronous by customizing
+\`helm-ff-delete-files-function'.
+
+_WARNING_: When deleting files asynchronously you will NOT be
+WARNED if directories are not empty, that's mean non empty directories will
+be deleted in background without asking.
+
+A good compromise is to trash your files
+when using asynchronous method (see [[Trashing files][Trashing files]]).
+
+When choosing synchronous delete, you can allow recursive
+deletion of directories with `helm-ff-allow-recursive-deletes'.
+Note that when trashing (synchronous) you are not asked for recursive deletion.
+
+Note that `helm-ff-allow-recursive-deletes' have no effect when
+deleting asynchronously.
+
+First method (persistent delete) is always synchronous.
+
+Note that when a prefix arg is given, trashing behavior is inversed.
+See [[Trashing files][Trashing files]].
+
+**** Trashing files
+
+If you want to trash your files instead of deleting them you can
+set `delete-by-moving-to-trash' to non nil, like this your files
+will be moved to trash instead of beeing deleted.
+
+You can reverse at any time the behavior of `delete-by-moving-to-trash' by using
+a prefix arg with any of the delete files command.
+
+On GNULinux distribution, when navigating to a Trash directory you
+can restore any file in ..Trash/files directory with the 'Restore
+from trash' action you will find in action menu (needs the
+trash-cli package installed).
+You can as well delete files from Trash directories with the 'delete files from trash'
+action.
+
+Tip: Navigate to your Trash/files directories with `helm-find-files' and set a bookmark
+there with \\<helm-find-files-map>\\[helm-ff-bookmark-set] for fast access to Trash.
+
+_WARNING:_
+
+If you have an ENV var XDG_DATA_HOME in your .profile or .bash_profile
+and this var is set to something like $HOME/.local/share (like preconized)
+`move-file-to-trash' may try to create $HOME/.local/share/Trash (literally)
+and its subdirs in the directory where you are actually trying to trash files.
+because `move-file-to-trash' is interpreting XDG_DATA_HOME literally instead
+of evaling its value (with `substitute-in-file-name').
+
+***** Trashing remote files with tramp
+
+Trashing remote files (or local files with sudo method) is disabled by default
+because tramp is requiring the 'trash' command to be installed, if you want to
+trash your remote files, customize `helm-trash-remote-files'.
+The package on most GNU/Linux based distributions is trash-cli, it is available [[https://github.com/andreafrancia/trash-cli][here]].
+
+NOTE:
+When deleting your files with sudo method, your trashed files will not be listed
+with trash-list until you log in as root.
+
 ** Commands
 \\<helm-find-files-map>
 \\[helm-ff-run-locate]\t\tRun `locate' (`\\[universal-argument]' to specify locate database, `M-n' to insert basename of candidate).
@@ -828,6 +907,7 @@ this will prevent splitting the name and create multiple files.
 \\[helm-ff-run-load-file]\t\tLoad Files.
 \\[helm-ff-run-symlink-file]\t\tSymlink Files.
 \\[helm-ff-run-hardlink-file]\t\tHardlink files.
+\\[helm-ff-run-relsymlink-file]\t\tRelative symlink Files.
 \\[helm-ff-run-delete-file]\t\tDelete Files.
 \\[helm-ff-run-touch-files]\t\tTouch files.
 \\[helm-ff-run-kill-buffer-persistent]\t\tKill buffer candidate without leaving Helm.
@@ -840,6 +920,7 @@ this will prevent splitting the name and create multiple files.
 \\[helm-ff-run-switch-other-window]\t\tSwitch to other window.
 \\[helm-ff-run-switch-other-frame]\t\tSwitch to other frame.
 \\[helm-ff-run-open-file-externally]\t\tOpen file with external program (`\\[universal-argument]' to choose).
+\\[helm-ff-run-preview-file-externally]\t\tPreview file with external program.
 \\[helm-ff-run-open-file-with-default-tool]\t\tOpen file externally with default tool.
 \\[helm-ff-rotate-left-persistent]\t\tRotate image left.
 \\[helm-ff-rotate-right-persistent]\t\tRotate image right.
@@ -857,7 +938,9 @@ this will prevent splitting the name and create multiple files.
 \\[helm-ff-run-toggle-basename]\t\tToggle basename/fullpath.
 \\[helm-ff-run-find-file-as-root]\t\tFind file as root.
 \\[helm-ff-run-find-alternate-file]\t\tFind alternate file.
-\\[helm-ff-run-insert-org-link]\t\tInsert org link.")
+\\[helm-ff-run-insert-org-link]\t\tInsert org link.
+\\[helm-ff-bookmark-set]\t\tSet bookmark to current directory.
+\\[helm-find-files-toggle-to-bookmark]\t\tJump to bookmark list.")
 
 ;;; Help for `helm-read-file-name'
 ;;
@@ -1533,12 +1616,34 @@ You can refile one or more headings at a time.
 
 To refile one heading, move the point to the entry you want to refile and run
 \\[helm-org-in-buffer-headings].  Then select the heading you want to refile to
-and press \\[C-c w] or select the refile action from the actions menu.
+and press \\<helm-org-headings-map>\\[helm-org-run-refile-heading-to] or select the refile action from the actions menu.
 
 To refile multiple headings, run \\[helm-org-in-buffer-headings] and mark the
 headings you want to refile.  Then select the heading you want to refile to
-\(without marking it) and press \\[C-c w] or select the refile action from the
+\(without marking it) and press \\<helm-org-headings-map>\\[helm-org-run-refile-heading-to] or select the refile action from the
 actions menu.
+
+*** Tags completion
+
+Tags completion use `completing-read-multiple', perhaps have a
+look at its docstring.
+
+**** Single tag
+
+From an org heading hit C-c C-c which provide a
+\"Tags\" prompt, then hit TAB and RET if you want to enter an
+existing tag or write a new tag in prompt.  At this point you end
+up with an entry in your prompt, if you enter RET, the entry is
+added as tag in your org header.
+
+**** Multiple tags
+
+If you want to add more tag to your org header, add a separator[1] after
+your tag and write a new tag or hit TAB to find another existing
+tag, and so on until you have all the tags you want
+e.g \"foo,bar,baz\" then press RET to finally add the tags to your
+org header.
+Note: [1] A separator can be a comma, a colon i.e. [,:] or a space.
 
 ** Commands
 \\<helm-org-headings-map>

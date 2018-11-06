@@ -1,19 +1,24 @@
 ## Expected behavior
 
-
-## Actual behavior from `emacs-helm.sh` if possible (See note at bottom)
-
+## Actual behavior (from `emacs-helm.sh` if possible, see note at the bottom)
 
 ## Steps to reproduce (recipe)
 
+## Backtraces if any (`M-x toggle-debug-on-error`)
 
-## Backtraces if some (M-x toggle-debug-on-error)
+## Describe versions of Helm, Emacs, operating system, etc.
 
+## Are you using `emacs-helm.sh` to reproduce this bug (yes/no):
 
-## Describe versions of helm, emacs, operating system etc.
+## IMPORTANT NOTE
 
+Helm provides a script named `emacs-helm.sh` which runs Helm in a neutral
+environment: no other packages and only minimal settings.
 
-## IMPORTANT NOTE:
+When possible, use it to reproduce your Helm issue to ensure no other package is
+interfering.
 
-If you are using a Unix or GNU-Linux system there is no excuses 
-to not use `emacs-helm.sh` to reproduce your bug in 99% of the cases.
+To run it, simply switch to the directory where Helm is installed and call `./emacs-helm.sh`.
+If necessary you can specify emacs executable path on command line with "-P" option.
+
+Thanks.

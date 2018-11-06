@@ -35,6 +35,10 @@
 (declare-function org-content "org.el")
 (declare-function org-mark-ring-goto "org.el")
 (declare-function org-mark-ring-push "org.el")
+(declare-function helm-interpret-value "helm.el")
+(declare-function helm-get-current-source "helm.el")
+(defvar helm-sources)
+(defvar helm-initial-frame)
 (defvar helm-current-position)
 (defvar wdired-old-marks)
 (defvar helm-persistent-action-display-window)
@@ -893,6 +897,34 @@ of this function is really needed."
       ;; Restart from beginning until string is completely decoded.
       (goto-char (point-min)))
     (decode-coding-string (buffer-string) 'utf-8)))
+
+(defun helm-read-answer (prompt answer-list)
+  "Prompt user for an answer.
+Arg PROMPT is the prompt to present user the different possible
+answers, ANSWER-LIST is a list of strings.
+If user enter an answer which is one of ANSWER-LIST return this
+answer, otherwise keep prompting for a valid answer.
+Note that answer should be a single char, only short answer are
+accepted.
+
+Example:
+
+    (let ((answer (helm-read-answer
+                    \"answer [y,n,!,q]: \"
+                    '(\"y\" \"n\" \"!\" \"q\"))))
+      (pcase answer
+          (\"y\" \"yes\")
+          (\"n\" \"no\")
+          (\"!\" \"all\")
+          (\"q\" \"quit\")))
+
+"
+  (helm-awhile (string
+                (read-key (propertize prompt 'face 'minibuffer-prompt)))
+    (if (member it answer-list)
+        (cl-return it)
+      (message "Please answer by %s" (mapconcat 'identity answer-list ", "))
+      (sit-for 1))))
 
 ;;; Symbols routines
 ;;

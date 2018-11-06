@@ -223,30 +223,36 @@ Info files are made available."
   (helm-build-sync-source "Info Pages"
     :init #'helm-info-pages-init
     :candidates (lambda () helm-info--pages-cache)
-    :action '(("Show with Info" .(lambda (node-str)
-                                  (info (replace-regexp-in-string
-                                         "^[^:]+: " "" node-str)))))
+    :action '(("Show with Info" .
+               (lambda (node-str)
+                 (info (replace-regexp-in-string
+                        "^[^:]+: " "" node-str)))))
     :requires-pattern 2)
   "Helm source for Info pages.")
 
 (defun helm-info-pages-init ()
   "Collect candidates for initial Info node Top."
-  (if helm-info--pages-cache
-      helm-info--pages-cache
-    (let ((info-topic-regexp "\\* +\\([^:]+: ([^)]+)[^.]*\\)\\.")
-          topics)
-      (with-temp-buffer
-        (Info-find-node "dir" "top")
-        (goto-char (point-min))
-        (while (re-search-forward info-topic-regexp nil t)
-          (push (match-string-no-properties 1) topics))
-        (kill-buffer))
-      (setq helm-info--pages-cache topics))))
+  (or helm-info--pages-cache
+      (let ((info-topic-regexp "\\* +\\([^:]+: ([^)]+)[^.]*\\)\\."))
+        (save-selected-window
+          (info "dir" " *helm info temp buffer*")
+          (Info-find-node "dir" "top")
+          (goto-char (point-min))
+          (while (re-search-forward info-topic-regexp nil t)
+            (push (match-string-no-properties 1)
+                  helm-info--pages-cache))
+          (kill-buffer)))))
 
 ;;;###autoload
 (defun helm-info-at-point ()
   "Preconfigured `helm' for searching info at point."
   (interactive)
+  (cl-loop for src in helm-info-default-sources
+           for name = (if (symbolp src)
+                          (assoc 'name (symbol-value src))
+                        (assoc 'name src))
+           unless name
+           do (warn "Couldn't build source `%S' without its info file" src))
   (helm :sources helm-info-default-sources
         :buffer "*helm info*"))
 

@@ -47,7 +47,12 @@
     (find-file . nil)
     (find-file-at-point . helm-completing-read-sync-default-handler)
     (ffap . helm-completing-read-sync-default-handler)
-    (execute-extended-command . nil))
+    (execute-extended-command . nil)
+    (dired-do-rename . helm-read-file-name-handler-1)
+    (dired-do-copy . helm-read-file-name-handler-1)
+    (dired-do-symlink . helm-read-file-name-handler-1)
+    (dired-do-relsymlink . helm-read-file-name-handler-1)
+    (dired-do-hardlink . helm-read-file-name-handler-1))
   "Completing read functions for specific Emacs commands.
 
 By default `helm-mode' use `helm-completing-read-default-handler' to
@@ -208,7 +213,7 @@ know what you are doing."
   (let ((map (make-sparse-keymap)))
     (set-keymap-parent map helm-map)
     (define-key map (kbd "<C-return>") 'helm-cr-empty-string)
-    (define-key map (kbd "<M-RET>") 'helm-cr-empty-string)
+    (define-key map (kbd "M-RET")      'helm-cr-empty-string)
     map)
   "Keymap for `helm-comp-read'.")
 
@@ -797,6 +802,13 @@ It should be used when candidate list don't need to rebuild dynamically."
                                   name buffer
                                   (null helm-completing-read-dynamic-complete)))
 
+(defun helm--generic-read-buffer (prompt &optional default require-match predicate)
+  "The `read-buffer-function' for `helm-mode'.
+Affects `switch-to-buffer' and related."
+  (let ((collection (helm-buffer-list)))
+    (helm--completing-read-default
+     prompt collection predicate require-match nil nil default)))
+
 (cl-defun helm--completing-read-default
     (prompt collection &optional
                          predicate require-match
@@ -842,7 +854,16 @@ See documentation of `completing-read' and `all-completions' for details."
                    collect h))
          ;; Disable hack that could be used before `completing-read'.
          ;; i.e (push ?\t unread-command-events).
-         unread-command-events)
+         unread-command-events
+         (default-handler
+          ;; Typically when COLLECTION is a function, we can assume
+          ;; the intention is completing dynamically according to
+          ;; input; If one want to use in-buffer handler for specific
+          ;; usage with a function as collection he can specify it in
+          ;; helm-completing-read-handlers-alist.
+          (if (functionp collection)
+              #'helm-completing-read-sync-default-handler
+            #'helm-completing-read-default-handler)))
     (when (eq def-com 'ido) (setq def-com 'ido-completing-read))
     (unless (or (not entry) def-com)
       ;; An entry in *read-handlers-alist exists but have
@@ -877,13 +898,13 @@ See documentation of `completing-read' and `all-completions' for details."
                 ;; If we are here `helm-mode' is now disabled.
                 def-com
                 (apply def-com def-args))
-               (;; Use by default a cands-in-buffer handler which
-                ;; should work everywhere, it is much faster. 
+               (;; Use by default a in-buffer handler unless
+                ;; COLLECTION is a function. 
                 t
-                (helm-completing-read-default-handler
-                 prompt collection predicate require-match
-                 initial-input hist def inherit-input-method
-                 str-command buf-name)))
+                (funcall default-handler
+                         prompt collection predicate require-match
+                         initial-input hist def inherit-input-method
+                         str-command buf-name)))
       (helm-mode 1)
       ;; When exiting minibuffer, `this-command' is set to
       ;; `helm-exit-minibuffer', which is unwanted when starting
@@ -1030,6 +1051,7 @@ Keys description:
              :candidates
              (lambda ()
                (append (and (not (file-exists-p helm-pattern))
+                            (not (helm-ff--invalid-tramp-name-p helm-pattern))
                             (list helm-pattern))
                        (if test
                            (cl-loop with hn = (helm-ff--tramp-hostnames)
@@ -1105,6 +1127,7 @@ Don't use it directly, use instead `helm-read-file-name' in your programs."
                       helm-completing-read-handlers-alist))
          (def-com  (cdr-safe entry))
          (str-defcom (and def-com (helm-symbol-name def-com)))
+         ;; Don't modify the original args list for emacs generic functions.
          (def-args (list prompt dir default-filename mustmatch initial predicate))
          ;; Append the two extra args needed to set the buffer and source name
          ;; in helm specialized functions.
@@ -1145,7 +1168,11 @@ Don't use it directly, use instead `helm-read-file-name' in your programs."
     (unwind-protect
          (setq fname
                (cond (;; A specialized function exists, run it
-                      ;; with the two extra args specific to helm..
+                      ;; with the two extra args specific to helm.
+                      ;; Note that the helm handler should ensure
+                      ;; :initial-input is not nil i.e. Use init
+                      ;; which fallback to default-directory instead
+                      ;; of INITIAL.
                       (and def-com helm-mode
                            (not (eq def-com 'ido-read-file-name))
                            (not (eq def-com 'incompatible)))
@@ -1165,6 +1192,7 @@ Don't use it directly, use instead `helm-read-file-name' in your programs."
                        :name str-command
                        :buffer buf-name
                        :default default-filename
+                       ;; Helm handlers should always have a non nil INITIAL arg.
                        :initial-input (expand-file-name init dir)
                        :alistp nil
                        :must-match mustmatch
@@ -1189,16 +1217,24 @@ Don't use it directly, use instead `helm-read-file-name' in your programs."
 Can be added to `helm-completing-read-handlers-alist' for functions
 that need a `read-file-name' function with directory history.
 The `helm-find-files' history `helm-ff-history' is used here."
-  (helm-read-file-name
-   prompt
-   :name name
-   :history helm-ff-history
-   :buffer buffer
-   :default default-filename
-   :initial-input (expand-file-name initial dir)
-   :alistp nil
-   :must-match mustmatch
-   :test predicate))
+  (let ((helm-always-two-windows t)
+        (helm-split-window-default-side
+         (if (eq helm-split-window-default-side 'same)
+             'below helm-split-window-default-side))
+        helm-split-window-inside-p
+        helm-reuse-last-window-split-state
+        ;; Helm handlers should always have a non nil INITIAL arg.
+        (init (or initial dir default-directory)))
+    (helm-read-file-name
+     prompt
+     :name name
+     :history helm-ff-history
+     :buffer buffer
+     :default default-filename
+     :initial-input (expand-file-name init dir)
+     :alistp nil
+     :must-match mustmatch
+     :test predicate)))
 
 
 ;;; Completion in region
@@ -1353,8 +1389,13 @@ Can be used as value for `completion-in-region-function'."
 All functions in Emacs that use `completing-read'
 or `read-file-name' and friends will use helm interface
 when this mode is turned on.
+
 However you can modify this behavior for functions of your choice
 with `helm-completing-read-handlers-alist'.
+
+Also commands using `completion-in-region' will be helmized when
+`helm-mode-handle-completion-in-region' is non nil, you can modify
+this behavior with `helm-mode-no-completion-in-region-in-modes'.
 
 Called with a positive arg, turn on unconditionally, with a
 negative arg turn off.
@@ -1367,8 +1408,8 @@ with a nil value.
 
 About `ido-mode':
 When you are using `helm-mode', DO NOT use `ido-mode', instead if you
-want some commands use `ido' add these commands to
-`helm-completing-read-handlers-alist' with ido as value.
+want some commands use `ido', add these commands to
+`helm-completing-read-handlers-alist' with `ido' as value.
 
 Note: This mode is incompatible with Emacs23."
   :group 'helm-mode
@@ -1383,11 +1424,14 @@ Note: This mode is incompatible with Emacs23."
                           #'helm--completing-read-default)
             (add-function :override read-file-name-function
                           #'helm--generic-read-file-name)
+            (add-function :override read-buffer-function
+                          #'helm--generic-read-buffer)
             (when helm-mode-handle-completion-in-region
               (add-function :override completion-in-region-function
                             #'helm--completion-in-region)))
           (setq completing-read-function 'helm--completing-read-default
-                read-file-name-function  'helm--generic-read-file-name)
+                read-file-name-function  'helm--generic-read-file-name
+                read-buffer-function     'helm--generic-read-buffer)
           (when (and (boundp 'completion-in-region-function)
                      helm-mode-handle-completion-in-region)
             (setq completion-in-region-function #'helm--completion-in-region))
@@ -1396,11 +1440,13 @@ Note: This mode is incompatible with Emacs23."
           (progn
             (remove-function completing-read-function #'helm--completing-read-default)
             (remove-function read-file-name-function #'helm--generic-read-file-name)
+            (remove-function read-buffer-function #'helm--generic-read-buffer)
             (remove-function completion-in-region-function #'helm--completion-in-region))
           (setq completing-read-function (and (fboundp 'completing-read-default)
                                         'completing-read-default)
                 read-file-name-function  (and (fboundp 'read-file-name-default)
-                                              'read-file-name-default))
+                                              'read-file-name-default)
+                read-buffer-function     (and (fboundp 'read-buffer) 'read-buffer))
           (when (and (boundp 'completion-in-region-function)
                      (boundp 'helm--old-completion-in-region-function))
             (setq completion-in-region-function helm--old-completion-in-region-function))
