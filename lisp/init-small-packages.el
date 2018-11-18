@@ -229,6 +229,18 @@
 (electric-operator-add-rules-for-mode 'emacs-lisp-mode
                                       (cons "-" nil))
 
+(electric-operator-add-rules-for-mode 'python-mode
+                                      (cons "+" " + ")
+                                      (cons "-" " - ")
+                                      (cons "=" " = ")
+                                      (cons "==" "==")
+                                      (cons "+1" "+1")
+                                      (cons "-1" "-1")
+                                      (cons "+2" "+2")
+                                      (cons "-2" "-2")
+                                      (cons "+i" "+i")
+                                      (cons "-i" "-i"))
+
 (electric-operator-add-rules-for-mode 'matlab-mode
                                       (cons "+" " + ")
                                       (cons "-" " - ")
@@ -240,6 +252,8 @@
                                       (cons "-2" "-2")
                                       (cons "+i" "+i")
                                       (cons "-i" "-i"))
+
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (autoload 'qt-pro-mode "qt-pro-mode.el" "qt-pro-mode" t)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
