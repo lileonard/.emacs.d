@@ -193,6 +193,20 @@ attention to case differences."
     (should (string= (yas--buffer-contents)
                      "bla from another BLA"))))
 
+(ert-deftest yas-mirror-many-fields ()
+  (with-temp-buffer
+    (yas-minor-mode 1)
+    (yas-expand-snippet "${1:brother} and ${2:brother} are${1:$(if (string= (yas-field-value 1) (yas-field-value 2)) \" \" \" not \")}the same word")
+    (should (string= (yas--buffer-contents)
+                     "brother and brother are the same word"))
+    (yas-mock-insert "bla")
+    (should (string= (yas--buffer-contents)
+                     "bla and brother are not the same word"))
+    (ert-simulate-command '(yas-next-field-or-maybe-expand))
+    (yas-mock-insert "bla")
+    (should (string= (yas--buffer-contents)
+                     "bla and bla are the same word"))))
+
 (ert-deftest mirror-with-transformation-and-autofill ()
   "Test interaction of autofill with mirror transforms"
   (let ((words "one two three four five")
@@ -556,6 +570,22 @@ int foo()
   }
 }" (buffer-string)))))
 
+(ert-deftest indent-cc-mode-2 ()
+  "Handling of cc-mode's preprocessor indentation."
+  (with-temp-buffer
+    (c-mode)
+    (yas-minor-mode +1)
+    (yas-expand-snippet "\
+#ifndef `\"FOO\"`
+#define FOO
+#endif
+")
+    (should (string= "\
+#ifndef FOO
+#define FOO
+#endif
+" (buffer-substring-no-properties (point-min) (point-max))))))
+
 (ert-deftest indent-snippet-mode ()
   "Handling of snippet-mode indentation."
   ;; This is an interesting case because newlines match [[:space:]] in
@@ -602,6 +632,30 @@ mapconcat #'(lambda (arg)
       (ert-simulate-command '(yas-prev-field))
       (ert-simulate-command '(yas-next-field))
       (should (looking-at (concat "blo" expected))))))
+
+(defmacro yas-saving-variables (&rest body)
+  (declare (debug t))
+  `(yas-call-with-saving-variables #'(lambda () ,@body)))
+
+(ert-deftest auto-next-field ()
+  "Automatically exit a field after evaluating its transform."
+  (with-temp-buffer
+    (yas-saving-variables
+     (yas-with-snippet-dirs
+      `((".emacs.d/snippets"
+         ("ruby-mode" ("snip" . ,(concat "foo ${1:$$"
+                                         (prin1-to-string '(yas-auto-next
+                                                            (yas-choose-value
+                                                             "bar" "foo")))
+                                         "} baz ${2:quinn} quinn")))))
+      (yas-reload-all)
+      (ruby-mode)
+      (yas-minor-mode 1)
+      (set (make-local-variable 'yas-prompt-functions) `(yas-no-prompt))
+      (yas-mock-insert "snip")
+      (ert-simulate-command '(yas-expand))
+      (yas-mock-insert "quux")
+      (should (equal "foo bar baz quux quinn" (buffer-string)))))))
 
 
 ;;; Snippet expansion and character escaping
@@ -753,10 +807,6 @@ mapconcat #'(lambda (arg)
                       ,@body)
              (and (buffer-name ,temp-buffer)
                   (kill-buffer ,temp-buffer))))))))
-
-(defmacro yas-saving-variables (&rest body)
-  (declare (debug t))
-  `(yas-call-with-saving-variables #'(lambda () ,@body)))
 
 (ert-deftest example-for-issue-474 ()
   (yas--with-font-locked-temp-buffer
@@ -1030,6 +1080,26 @@ hello ${1:$(when (stringp yas-text) (funcall func yas-text))} foo${1:$$(concat \
       (ert-simulate-command '(yas-next-field-or-maybe-expand))
       (should (string= (buffer-string) "\\sqrt[3]{\\sqrt[5]{2}}")))))
 
+(ert-deftest nested-snippet-expansion-4 ()
+  "See Github #959."
+  (let ((yas-triggers-in-field t))
+    (yas-with-snippet-dirs
+     '((".emacs.d/snippets"
+        ("text-mode"
+         ("ch" . "<-${1:ch}"))))
+     (yas-reload-all)
+     (text-mode)
+     (yas-minor-mode +1)
+     (yas-expand-snippet "ch$0\n")
+     (ert-simulate-command '(yas-expand))
+     (ert-simulate-command '(forward-char 2))
+     (ert-simulate-command '(yas-expand))
+     (yas-mock-insert "abc")
+     (ert-simulate-command '(yas-next-field-or-maybe-expand))
+     (yas-mock-insert "def")
+     (ert-simulate-command '(yas-next-field-or-maybe-expand))
+     (should (string= (buffer-string) "<-<-abcdef\n")))))
+
 
 ;;; Loading
 ;;;
@@ -1190,7 +1260,8 @@ hello ${1:$(when (stringp yas-text) (funcall func yas-text))} foo${1:$$(concat \
      (yas-reload-all)
      (with-temp-buffer
        (let* ((major-mode 'c-mode)
-              (expected `(c-mode
+              (expected `(fundamental-mode
+                          c-mode
                           cc-mode
                           yet-another-c-mode
                           and-also-this-one
@@ -1243,7 +1314,8 @@ hello ${1:$(when (stringp yas-text) (funcall func yas-text))} foo${1:$$(concat \
                          (yas-reload-all)
                          (with-temp-buffer
                            (let* ((major-mode 'yas--test-mode)
-                                  (expected `(c-mode
+                                  (expected `(fundamental-mode
+                                              c-mode
                                               ,@(if (fboundp 'prog-mode)
                                                     '(prog-mode))
                                               yas--phony-c-mode

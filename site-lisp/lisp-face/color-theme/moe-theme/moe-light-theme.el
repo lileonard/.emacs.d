@@ -47,7 +47,9 @@ Moe, moe, kyun!")
    ;; Highlighting faces
    `(fringe ((,class (:foreground ,black-1 :background ,linum-light))))
    `(linum ((,class (:foreground ,linum-dark :background ,linum-light))))
+   `(line-number ((,class (:foreground ,linum-dark :background ,linum-light))))
    `(linum-highlight-face ((,class (:background ,linum-dark :foreground ,linum-light))))
+   `(line-number-current-line ((,class (:background ,linum-dark :foreground ,linum-light))))
    `(highlight ((,class (:background ,green-0))))
    `(hl-line ((,class (:background ,green-00)))) ; Embedded strings of IM (e.g. fcitx) would be very unreadable... orz
    `(highlight-symbol-face ((,class (:background ,green-00))))
@@ -890,7 +892,7 @@ Moe, moe, kyun!")
    `(tuareg-font-lock-interactive-error-face ((,class (:foreground ,red-3 :background ,red-00 :bold t))))
    `(tuareg-font-lock-interactive-output-face ((,class (:foreground ,blue-3))))
    `(tuareg-font-lock-multistage-face ((,class (:foreground ,blue-3 :background ,blue-0))))
-   `(tuareg-font-lock-operator-face ((,class (:foreground ,green-3 :background ,yellow-00 :bold t))))
+   `(tuareg-font-lock-operator-face ((,class (:foreground ,green-3 :bold t))))
 
    ;; CPerl
    `(cperl-array-face ((,class (:foreground ,blue-3 :background ,blue-00))))

@@ -1,6 +1,6 @@
 ;; style settings
 ;; avoid default "gnu" style, use more popular one
-(setq c-default-style "linux")
+;;(setq c-default-style "linux")
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; google-c-style settings
 ;; I made a change on c-basic-offset c-comment-only-line-offset

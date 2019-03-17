@@ -48,7 +48,9 @@ Moe, moe, kyun!")
    ;; Highlighting faces
    `(fringe ((,class (:foreground ,black-1 :background ,black-3))))
    `(linum ((,class (:foreground ,white-3 :background ,black-3))))
+   `(line-number ((,class (:foreground ,white-3 :background ,black-3))))
    `(linum-highlight-face ((,class (:background ,green-0 :foreground ,black-4))))
+   `(line-number-current-line ((,class (:background ,green-0 :foreground ,black-4))))
    `(highlight ((,class (:background ,black-3))))
    `(hl-line ((,class (:background ,black-4))))
    `(highlight-symbol-face ((,class (:background ,green-5))))
@@ -884,7 +886,7 @@ Moe, moe, kyun!")
    `(tuareg-font-lock-interactive-error-face ((,class (:foreground ,red-3 :background ,red-00 :bold t))))
    `(tuareg-font-lock-interactive-output-face ((,class (:foreground ,blue-3))))
    `(tuareg-font-lock-multistage-face ((,class (:foreground ,blue-3 :background ,blue-0))))
-   `(tuareg-font-lock-operator-face ((,class (:foreground ,green-2 :background ,black-3 :bold t))))
+   `(tuareg-font-lock-operator-face ((,class (:foreground ,green-2 :bold t))))
 
    ;; CPerl
    `(cperl-array-face ((,class (:foreground ,blue-01 :background ,blue-3))))

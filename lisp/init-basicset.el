@@ -122,9 +122,12 @@
    "/home/lyh/Soft/CUDA/include/CL"
    "/home/lyh/Soft/CUDA/include/crt"
    "/home/lyh/Soft/CUDA/include/thrust"
-   "/home/lyh/Soft/fftw/include"
+   "/home/lyh/Soft/FFTW3/include"
    "/home/lyh/Soft/mpich/include"
-   "/home/lyh/Soft/mpich/include/primitives"))
+   "/home/lyh/Soft/mpich/include/primitives"
+   "/home/lyh/Soft/Qt/Qt5.12.1/5.12.1/gcc_64/include"
+   "/home/lyh/Soft/Qt/Qt5.12.1/5.12.1/gcc_64/include/QtWidgets/"
+   ))
 
 (defvar my-custom-include-dirs
   (list
