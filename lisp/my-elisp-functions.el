@@ -335,7 +335,7 @@ original buffer content
   (goto-char (point-max))
   (insert guard-end)
   (goto-char (+ position (length guard-begin))))
-(global-set-key (kbd "<C-f6>")  'my-insert-include-guard)
+(global-set-key (kbd "<C-f4>")  'my-insert-include-guard)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;Alt+-Note selested words(if selected) or current line(if unselected)
 (defun qiang-comment-dwim-line (&optional arg)

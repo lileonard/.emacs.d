@@ -38,7 +38,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;ource pair
 (autoload 'sourcepair-load "sourcepair.el" "source pair for c/c++ and h" t)
-(global-set-key (kbd "<f6>") 'sourcepair-load)
+(global-set-key (kbd "<f4>") 'sourcepair-load)
 (defun sourcepair-settings ()
   "Settings for `sourcepair'."
   (setq sourcepair-recurse-igno '("CVS" "bin" "lib" "Obj" "Debug" "Release" ".svn"))
