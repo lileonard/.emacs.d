@@ -129,7 +129,7 @@
    "/home/lyh/Soft/Qt/Qt5.12.1/5.12.1/gcc_64/include/QtWidgets/"
    ))
 
-(defvar my-custom-include-dirs
+(defvar my-custom-include-dirs 
   (list
    "./" "../" "../include" "../inc" "../common"
    "../public" "." "../config"

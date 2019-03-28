@@ -270,7 +270,7 @@ Suitable for inclusion in `c-offsets-alist'."
 (defun c-includes-settings ()
   "Settings for `c-includes'."
   (setq c-includes-binding t)
-  (setq c-includes-path my-sys-c-include))
+  (setq c-includes-path 'my-sys-c-include))
 (eval-after-load "c-includes"
   `(c-includes-settings))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

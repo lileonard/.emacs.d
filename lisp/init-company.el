@@ -15,8 +15,8 @@
 (company-statistics-mode)
 (add-to-list 'company-backends 'company-cmake)
 (add-to-list 'company-backends 'company-c-headers)
-(add-to-list 'company-c-headers-path-system "/usr/lib/gcc/x86_64-redhat-linux/4.8.5/../../../../include/c++/4.8.5")
-;; (add-to-list 'company-c-headers-path-user   'my-custom-include-dirs)
+(setq company-c-headers-path-system my-sys-c-include)
+(setq company-c-headers-path-user   my-custom-include-dirs)
 ;; don`t need it beacuse I have ac keywords
 ;;(add-to-list 'company-backends 'company-keywords)
 
