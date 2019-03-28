@@ -1,5 +1,6 @@
-#contributor: Xah Lee (XahLee.org)
-#name: when
-#key: when
+# -*- mode: snippet -*-
+# contributor: Xah Lee (XahLee.org)
+# name: when
+# key: w
 # --
 (when $0)

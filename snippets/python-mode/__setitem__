@@ -1,7 +1,7 @@
 # -*- mode: snippet -*-
 # name: __setitem__
-# key: __setitem__
-# group: Special methods
+# key: setit
+# group: dunder methods
 # --
-def __setitem__(self, key, value):
+def __setitem__(self, ${1:key}, ${2:val}):
     $0

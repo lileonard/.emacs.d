@@ -1,7 +1,7 @@
 # -*- mode: snippet -*-
-# name: super()
+# name: super
 # key: super
-# group: Definitions
+# group: object oriented
 # --
-super`(elpy-snippet-super-form)`(${1:`(elpy-snippet-super-arguments)`})
+super(`(replace-regexp-in-string "\\([.]\\)[^.]+$" ", self)." (python-info-current-defun) nil nil 1)`($1)
 $0

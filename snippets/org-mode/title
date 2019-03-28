@@ -1,4 +1,5 @@
-#name : Title Block
-#contributor : Rick Moynihan <rick@sourcesmouth.co.uk>
+# -*- mode: snippet -*-
+# name: Title
+# key: <ti
 # --
-#+TITLE: $0
+#+TITLE: ${1:What the hell}
