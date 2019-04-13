@@ -584,7 +584,6 @@ The prefix still has to satisfy `company-minimum-prefix-length' before that
 happens.  The value of nil means no idle completion."
   :type '(choice (const :tag "never (nil)" nil)
                  (const :tag "immediate (0)" 0)
-                 (function :tag "Predicate function")
                  (number :tag "seconds")))
 
 (defcustom company-tooltip-idle-delay .5
@@ -632,14 +631,6 @@ commands in the `company-' namespace, abort completion."
   "If enabled, show quick-access numbers for the first ten candidates."
   :type '(choice (const :tag "off" nil)
                  (const :tag "on" t)))
-
-(defcustom company-show-numbers-function #'company--show-numbers
-  "Function called to get custom quick-access numbers for the first then candidates.
-
-If nil falls back to default function that generates 1...8, 9, 0. The function get
-the number of candidates (from 1 to 10 means 1st to 10th candidate) and should
-return a string prefixed with one space."
-  :type 'function)
 
 (defcustom company-selection-wrap-around nil
   "If enabled, selecting item before first or after last wraps around."
@@ -841,7 +832,7 @@ means that `company-mode' is always turned on except in `message-mode' buffers."
 (defun company--company-command-p (keys)
   "Checks if the keys are part of company's overriding keymap"
   (or (equal [company-dummy-event] keys)
-      (commandp (lookup-key company-my-keymap keys))))
+      (lookup-key company-my-keymap keys)))
 
 ;; Hack:
 ;; Emacs calculates the active keymaps before reading the event.  That means we
@@ -1216,8 +1207,9 @@ can retrieve meta-data for them."
                   common))
             (car company-candidates)))))
 
-(defun company-calculate-candidates (prefix ignore-case)
-  (let ((candidates (cdr (assoc prefix company-candidates-cache))))
+(defun company-calculate-candidates (prefix)
+  (let ((candidates (cdr (assoc prefix company-candidates-cache)))
+        (ignore-case (company-call-backend 'ignore-case)))
     (or candidates
         (when company-candidates-cache
           (let ((len (length prefix))
@@ -1235,17 +1227,17 @@ can retrieve meta-data for them."
           ;; Save in cache.
           (push (cons prefix candidates) company-candidates-cache)))
     ;; Only now apply the predicate and transformers.
-    (company--postprocess-candidates candidates)))
-
-(defun company--unique-match-p (candidates prefix ignore-case)
-  (and candidates
-       (not (cdr candidates))
-       (eq t (compare-strings (car candidates) nil nil
-                              prefix nil nil ignore-case))))
+    (setq candidates (company--postprocess-candidates candidates))
+    (when candidates
+      (if (or (cdr candidates)
+              (not (eq t (compare-strings (car candidates) nil nil
+                                          prefix nil nil ignore-case))))
+          candidates
+        ;; Already completed and unique; don't start.
+        t))))
 
 (defun company--fetch-candidates (prefix)
   (let* ((non-essential (not (company-explicit-action-p)))
-         (inhibit-redisplay t)
          (c (if (or company-selection-changed
                     ;; FIXME: This is not ideal, but we have not managed to deal
                     ;; with these situations in a better way yet.
@@ -1254,7 +1246,8 @@ can retrieve meta-data for them."
               (company-call-backend-raw 'candidates prefix))))
     (if (not (eq (car c) :async))
         c
-      (let ((res 'none))
+      (let ((res 'none)
+            (inhibit-redisplay t))
         (funcall
          (cdr c)
          (lambda (candidates)
@@ -1545,14 +1538,14 @@ prefix match (same case) will be prioritized."
     ;; Don't complete existing candidates, fetch new ones.
     (setq company-candidates-cache nil))
   (let* ((new-prefix (company-call-backend 'prefix))
-         (ignore-case (company-call-backend 'ignore-case))
          (c (when (and (company--good-prefix-p new-prefix)
                        (setq new-prefix (company--prefix-str new-prefix))
                        (= (- (point) (length new-prefix))
                           (- company-point (length company-prefix))))
-              (company-calculate-candidates new-prefix ignore-case))))
+              (company-calculate-candidates new-prefix))))
     (cond
-     ((company--unique-match-p c new-prefix ignore-case)
+     ((eq c t)
+      ;; t means complete/unique.
       ;; Handle it like completion was aborted, to differentiate from user
       ;; calling one of Company's commands to insert the candidate,
       ;; not to trigger template expansion, etc.
@@ -1590,29 +1583,23 @@ prefix match (same case) will be prioritized."
               (company--multi-backend-adapter backend 'prefix)))
       (when prefix
         (when (company--good-prefix-p prefix)
-          (let ((ignore-case (company-call-backend 'ignore-case)))
-            (setq company-prefix (company--prefix-str prefix)
-                  company-backend backend
-                  c (company-calculate-candidates company-prefix ignore-case))
-            (cond
-             ((and (company--unique-match-p c company-prefix ignore-case)
-                   (if company--manual-action
-                       ;; If `company-manual-begin' was called, the user
-                       ;; really wants something to happen.  Otherwise...
-                       (ignore (message "Sole completion"))
-                     t))
-              ;; ...abort and run the hooks, e.g. to clear the cache.
-              (company-cancel 'unique))
-             ((null c)
-              (when company--manual-action
-                (message "No completion found")))
-             (t ;; We got completions!
-              (when company--manual-action
-                (setq company--manual-prefix prefix))
-              (company-update-candidates c)
-              (run-hook-with-args 'company-completion-started-hook
-                                  (company-explicit-action-p))
-              (company-call-frontends 'show)))))
+          (setq company-prefix (company--prefix-str prefix)
+                company-backend backend
+                c (company-calculate-candidates company-prefix))
+          (if (not (consp c))
+              (progn
+                (when company--manual-action
+                  (message "No completion found"))
+                (when (eq c t)
+                  ;; t means complete/unique.
+                  ;; Run the hooks anyway, to e.g. clear the cache.
+                  (company-cancel 'unique)))
+            (when company--manual-action
+              (setq company--manual-prefix prefix))
+            (company-update-candidates c)
+            (run-hook-with-args 'company-completion-started-hook
+                                (company-explicit-action-p))
+            (company-call-frontends 'show)))
         (cl-return c)))))
 
 (defun company--perform ()
@@ -1649,6 +1636,8 @@ prefix match (same case) will be prioritized."
     (company-call-frontends 'hide)
     (company-enable-overriding-keymap nil)
     (when prefix
+      ;; FIXME: RESULT can also be e.g. `unique'.  We should call
+      ;; `company-completion-finished-hook' in that case, with right argument.
       (if (stringp result)
           (let ((company-backend backend))
             (run-hook-with-args 'company-completion-finished-hook result)
@@ -1703,28 +1692,25 @@ prefix match (same case) will be prioritized."
               (company--perform)))
           (if company-candidates
               (company-call-frontends 'post-command)
-            (let ((delay (company--idle-delay)))
-             (and (numberp delay)
-                  (not defining-kbd-macro)
-                  (company--should-begin)
-                  (setq company-timer
-                        (run-with-timer delay nil
-                                        'company-idle-begin
-                                        (current-buffer) (selected-window)
-                                        (buffer-chars-modified-tick) (point)))))))
+            (and (or (numberp company-idle-delay)
+                     ;; Deprecated.
+                     (eq company-idle-delay t))
+                 (not defining-kbd-macro)
+                 (company--should-begin)
+                 (setq company-timer
+                       (run-with-timer (company--idle-delay) nil
+                                       'company-idle-begin
+                                       (current-buffer) (selected-window)
+                                       (buffer-chars-modified-tick) (point))))))
       (error (message "Company: An error occurred in post-command")
              (message "%s" (error-message-string err))
              (company-cancel))))
   (company-install-map))
 
 (defun company--idle-delay ()
-  (let ((delay
-          (if (functionp company-idle-delay)
-              (funcall company-idle-delay)
-            company-idle-delay)))
-    (if (memql delay '(t 0 0.0))
-        0.01
-      delay)))
+  (if (memql company-idle-delay '(t 0 0.0))
+      0.01
+    company-idle-delay))
 
 (defvar company--begin-inhibit-commands '(company-abort
                                           company-complete-mouse
@@ -1831,8 +1817,7 @@ each one wraps a part of the input string."
           (and (not (string= re ""))
                company-search-filtering
                (lambda (candidate) (string-match re candidate))))
-         (cc (company-calculate-candidates company-prefix
-                                           (company-call-backend 'ignore-case))))
+         (cc (company-calculate-candidates company-prefix)))
     (unless cc (user-error "No match"))
     (company-update-candidates cc)))
 
@@ -2188,12 +2173,10 @@ inserted."
   (interactive)
   (when (company-manual-begin)
     (if (or company-selection-changed
-            (and (eq real-last-command 'company-complete)
-                 (eq last-command 'company-complete-common)))
+            (eq last-command 'company-complete-common))
         (call-interactively 'company-complete-selection)
       (call-interactively 'company-complete-common)
-      (when company-candidates
-        (setq this-command 'company-complete-common)))))
+      (setq this-command 'company-complete-common))))
 
 (defun company-complete-number (n)
   "Insert the Nth candidate visible in the tooltip.
@@ -2649,9 +2632,6 @@ If SHOW-VERSION is non-nil, show the version in the echo area."
           new
           (company-safe-substring old (+ offset (length new)))))
 
-(defun company--show-numbers (numbered)
-  (format " %d" (mod numbered 10)))
-
 (defsubst company--window-height ()
   (if (fboundp 'window-screen-lines)
       (floor (window-screen-lines))
@@ -2804,7 +2784,7 @@ If SHOW-VERSION is non-nil, show the version in the echo area."
           (when (< numbered 10)
             (cl-decf width 2)
             (cl-incf numbered)
-            (setq right (concat (funcall company-show-numbers-function numbered) right)))
+            (setq right (concat (format " %d" (mod numbered 10)) right)))
           (push (concat
                  (company-fill-propertize str annotation
                                           width (equal i selection)
@@ -3067,9 +3047,6 @@ Delay is determined by `company-tooltip-idle-delay'."
 (defun company--show-inline-p ()
   (and (not (cdr company-candidates))
        company-common
-       (not (eq t (compare-strings company-prefix nil nil
-                                   (car company-candidates) nil nil
-                                   t)))
        (or (eq (company-call-backend 'ignore-case) 'keep-prefix)
            (string-prefix-p company-prefix company-common))))
 

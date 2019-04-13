@@ -2213,4 +2213,3 @@ which is used to fix issue #209.
 
 (provide 'neotree)
 ;;; neotree.el ends here
-

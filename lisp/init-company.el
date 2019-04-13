@@ -3,25 +3,25 @@
 (require 'company-etags)
 (require 'company-dabbrev)
 
-(add-hook 'c++-mode-hook           #'company-mode)
-(add-hook 'c-mode-hook             #'company-mode)
-(add-hook 'python-mode-hook        #'company-mode)
-(add-hook 'matlab-mode-hook        #'company-mode)
+(add-hook 'c++-mode-hook      #'company-mode)
+(add-hook 'c-mode-hook        #'company-mode)
+(add-hook 'python-mode-hook   #'company-mode)
+(add-hook 'matlab-mode-hook   #'company-mode)
 ;;(add-hook 'after-init-hook 'global-company-mode)
 
 (require 'company-c-headers)
 (setq company-c-headers-path-system my-sys-c-include)
 (setq company-c-headers-path-user   my-custom-include-dirs)
+(add-to-list 'company-backends 'company-c-headers)
 
 ;; @see https://github.com/company-mode/company-mode/issues/348
 (require 'company-statistics)
 (company-statistics-mode)
 (add-to-list 'company-backends 'company-cmake)
-(add-to-list 'company-backends 'company-c-headers)
 (add-to-list 'company-backends 'company-keywords)
 
 ;; can't work with TRAMP
-(setq company-backends (delete 'company-ropemacs company-backends))
+;; (setq company-backends (delete 'company-ropemacs company-backends))
 ;; (setq company-backends (delete 'company-capf company-backends))
 
 ;; I don't like the downcase word in company-dabbrev!
