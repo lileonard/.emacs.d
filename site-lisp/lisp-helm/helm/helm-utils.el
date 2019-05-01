@@ -1,6 +1,6 @@
 ;;; helm-utils.el --- Utilities Functions for helm. -*- lexical-binding: t -*-
 
-;; Copyright (C) 2012 ~ 2018 Thierry Volpiatto <thierry.volpiatto@gmail.com>
+;; Copyright (C) 2012 ~ 2019 Thierry Volpiatto <thierry.volpiatto@gmail.com>
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -422,8 +422,9 @@ Default is `helm-current-buffer'."
 Animation is used unless NOANIM is non--nil."
   (helm-log-run-hook 'helm-goto-line-before-hook)
   (helm-match-line-cleanup)
-  (with-helm-current-buffer
-    (unless helm-yank-point (setq helm-yank-point (point))))
+  (unless helm-alive-p
+    (with-helm-current-buffer
+      (unless helm-yank-point (setq helm-yank-point (point)))))
   (goto-char (point-min))
   (helm-goto-char (point-at-bol lineno))
   (unless noanim
@@ -444,17 +445,24 @@ To use this add it to `helm-goto-line-before-hook'."
       (set-marker (mark-marker) (point))
       (push-mark (point) 'nomsg))))
 
-(defun helm-show-all-in-this-source-only (arg)
-  "Show only current source of this helm session with all its candidates.
-With a numeric prefix arg show only the ARG number of candidates."
+(defun helm-show-all-candidates-in-source (arg)
+  "Toggle all or only candidate-number-limit cands in current source.
+With a numeric prefix arg show only the ARG number of candidates.
+The prefix arg have no effect when toggling to only
+candidate-number-limit."
   (interactive "p")
   (with-helm-alive-p
-    (with-helm-window
-      (with-helm-default-directory (helm-default-directory)
-          (let ((helm-candidate-number-limit (and (> arg 1) arg)))
-            (helm-set-source-filter
-             (list (assoc-default 'name (helm-get-current-source)))))))))
-(put 'helm-show-all-in-this-source-only 'helm-only t)
+    (with-helm-buffer
+      (if helm-source-filter
+          (progn
+            (setq-local helm-candidate-number-limit
+                        (default-value 'helm-candidate-number-limit))
+            (helm-set-source-filter nil))
+        (with-helm-default-directory (helm-default-directory)
+          (setq-local helm-candidate-number-limit (and (> arg 1) arg))
+          (helm-set-source-filter
+           (list (helm-get-current-source))))))))
+(put 'helm-show-all-candidates-in-source 'helm-only t)
 
 (defun helm-display-all-sources ()
   "Display all sources previously hidden by `helm-set-source-filter'."
@@ -513,6 +521,8 @@ from its directory."
             (bmk       (and bmk-name (assoc bmk-name bookmark-alist)))
             (buf       (helm-aif (and (bufferp sel) (get-buffer sel))
                            (buffer-name it)))
+            (pkg       (and (stringp sel)
+                            (get-text-property 0 'tabulated-list-id sel)))
             (default-preselection (or (buffer-file-name helm-current-buffer)
                                       default-directory)))
        (cond
@@ -545,6 +555,9 @@ from its directory."
          (grep-line
           (with-current-buffer (get-buffer (car grep-line))
             (expand-file-name (or (buffer-file-name) default-directory))))
+         ;; Package (installed).
+         ((and pkg (package-installed-p pkg))
+          (expand-file-name (package-desc-dir pkg)))
          ;; Url.
          ((and (stringp sel) helm--url-regexp (string-match helm--url-regexp sel)) sel)
          ;; Exit brutally from a `with-helm-show-completion'
@@ -601,9 +614,9 @@ KBSIZE is a floating point number, defaulting to `helm-default-kbsize'."
            while (>= (cdr result) kbsize)
            do (setq result (cons i (/ (cdr result) kbsize)))
            finally return
-           (pcase (car result)
-             (`"B" (format "%s" size))
-             (suffix (format "%.1f%s" (cdr result) suffix)))))
+           (helm-acase (car result)
+             ("B" (format "%s" size))
+             (t (format "%.1f%s" (cdr result) it)))))
 
 (cl-defun helm-file-attributes
     (file &key type links uid gid access-time modif-time
@@ -755,7 +768,9 @@ Inlined here for compatibility."
          (end (or end (1+ (line-end-position))))
          start-match end-match
          (args (list start end buf))
-         (case-fold-search (helm-set-case-fold-search)))
+         (case-fold-search (if helm-alive-p
+                               (helm-set-case-fold-search)
+                             case-fold-search)))
     ;; Highlight the current line.
     (if (not helm-match-line-overlay)
         (setq helm-match-line-overlay (apply 'make-overlay args))

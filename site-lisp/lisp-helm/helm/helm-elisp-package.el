@@ -1,6 +1,6 @@
 ;;; helm-elisp-package.el --- helm interface for package.el -*- lexical-binding: t -*-
 
-;; Copyright (C) 2012 ~ 2018 Thierry Volpiatto <thierry.volpiatto@gmail.com>
+;; Copyright (C) 2012 ~ 2019 Thierry Volpiatto <thierry.volpiatto@gmail.com>
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -69,7 +69,7 @@
                  ;; properly (empty buffer) when called from lisp
                  ;; with 'no-fetch (emacs-25 WA).
                  (package-show-package-list)
-               (when helm--force-updating-p (message "Refreshing packages list..."))  
+               (when helm--force-updating-p (message "Refreshing packages list..."))
                (list-packages helm-el-package--initialized-p))
              (setq helm-el-package--initialized-p t)
              (message nil))
@@ -116,14 +116,25 @@
     (helm-exit-and-execute-action 'helm-el-package-visit-homepage)))
 (put 'helm-el-run-visit-homepage 'helm-only t)
 
+(defun helm-elisp-package--pkg-name (pkg)
+  (if (package-desc-p pkg)
+      (package-desc-name pkg)
+    pkg))
+
 (defun helm-el-package-install-1 (pkg-list)
   (cl-loop with mkd = pkg-list
            for p in mkd
            for id = (get-text-property 0 'tabulated-list-id p)
-           do (package-install
-               (if (fboundp 'package-desc-name) id (car id)))
-           collect (if (fboundp 'package-desc-full-name) id (car id))
-           into installed-list
+           for pkg = (if (fboundp 'package-desc-name) id (car id))
+           for name = (helm-elisp-package--pkg-name pkg)
+           do (package-install pkg t)
+           when (helm-aand (assq name package-alist)
+                           (package-desc-dir (cadr it))
+                           (file-exists-p it))
+           collect pkg into installed-list and
+           do (unless (package--user-selected-p name)
+                (package--save-selected-packages
+                 (cons name package-selected-packages)))
            finally do (if (fboundp 'package-desc-full-name)
                           (message (format "%d packages installed:\n(%s)"
                                            (length installed-list)
@@ -405,7 +416,7 @@
 (defun helm-el-package-recompile (_pkg)
   (cl-loop for p in (helm-marked-candidates)
            for pkg-desc = (get-text-property 0 'tabulated-list-id p)
-           for name = (package-desc-name pkg-desc) 
+           for name = (package-desc-name pkg-desc)
            for dir = (package-desc-dir pkg-desc)
            do (if (fboundp 'async-byte-recompile-directory)
                   (async-byte-recompile-directory dir)

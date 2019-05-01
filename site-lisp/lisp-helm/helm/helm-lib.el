@@ -1,6 +1,6 @@
 ;;; helm-lib.el --- Helm routines. -*- lexical-binding: t -*-
 
-;; Copyright (C) 2015 ~ 2018  Thierry Volpiatto <thierry.volpiatto@gmail.com>
+;; Copyright (C) 2015 ~ 2019  Thierry Volpiatto <thierry.volpiatto@gmail.com>
 
 ;; Author: Thierry Volpiatto <thierry.volpiatto@gmail.com>
 ;; URL: http://github.com/emacs-helm/helm
@@ -447,12 +447,30 @@ The usage is the same as `cond'."
              (helm-acond ,@(cdr clauses))))))))
 
 (defmacro helm-aand (&rest conditions)
-  "Anaphoric version of `and'."
+  "Anaphoric version of `and'.
+Each condition is bound to a temporary variable called `it' which is
+usable in next condition."
   (declare (debug (&rest form)))
   (cond ((null conditions) t)
         ((null (cdr conditions)) (car conditions))
         (t `(helm-aif ,(car conditions)
                 (helm-aand ,@(cdr conditions))))))
+
+(defmacro helm-acase (expr &rest clauses)
+  "A simple anaphoric `cl-case' implementation handling strings.
+EXPR is bound to a temporary variable called `it' which is usable in
+CLAUSES to refer to EXPR.
+NOTE: Duplicate keys in CLAUSES are deliberately not handled."
+  (declare (indent 1) (debug t))
+  (unless (null clauses)
+    (let ((clause1 (car clauses)))
+      `(let ((key ',(car clause1))
+             (it ,expr))
+         (if (or (equal it key)
+                 (and (listp key) (member it key))
+                 (eq key t))
+             (progn ,@(cdr clause1))
+           (helm-acase it ,@(cdr clauses)))))))
 
 ;;; Fuzzy matching routines
 ;;
@@ -1014,7 +1032,7 @@ Argument ALIST is an alist of associated major modes."
   ;; to determine if its `major-mode' is:
   ;; - same as the `cur-maj-mode'
   ;; - derived from `cur-maj-mode' and from
-  ;;   START-BUFFER if its mode is derived from the one in START-BUFFER. 
+  ;;   START-BUFFER if its mode is derived from the one in START-BUFFER.
   ;; - have an assoc entry (major-mode . cur-maj-mode)
   ;; - have an rassoc entry (cur-maj-mode . major-mode)
   ;; - check if one of these entries inherit from another one in
@@ -1135,22 +1153,25 @@ other candidate transformers."
   (char-equal (aref str (1- (length str))) ?/))
 
 (cl-defun helm-walk-directory (directory &key (path 'basename)
-                                         directories
-                                         match skip-subdirs)
+                                           directories
+                                           match skip-subdirs
+                                           noerror)
   "Walk through DIRECTORY tree.
 
 Argument PATH can be one of basename, relative, full, or a function
 called on file name, default to basename.
 
-Argument DIRECTORIES when non--nil (default) return also directories names,
-otherwise skip directories names, with a value of 'only returns
+Argument DIRECTORIES when `t' return also directories names,
+otherwise skip directories names, with a value of `only' returns
 only subdirectories, i.e files are skipped.
 
 Argument MATCH is a regexp matching files or directories.
 
 Argument SKIP-SUBDIRS when `t' will skip `helm-walk-ignore-directories'
 otherwise if it is given as a list of directories, this list will be used
-instead of `helm-walk-ignore-directories'."
+instead of `helm-walk-ignore-directories'.
+
+Argument NOERROR when `t' will skip directories which are not accessible."
   (let ((fn (cl-case path
                (basename 'file-name-nondirectory)
                (relative 'file-relative-name)
@@ -1170,7 +1191,9 @@ instead of `helm-walk-ignore-directories'."
                              if (and (helm--dir-name-p f)
                                      (helm--dir-file-name f dir))
                              nconc
-                             (unless (member f skip-subdirs)
+                             (unless (or (member f skip-subdirs)
+                                         (and noerror
+                                              (not (file-accessible-directory-p it))))
                                (if (and directories
                                         (or (null match)
                                             (string-match match f)))

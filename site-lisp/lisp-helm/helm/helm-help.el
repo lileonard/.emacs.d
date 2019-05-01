@@ -1,6 +1,6 @@
 ;;; helm-help.el --- Help messages for Helm. -*- lexical-binding: t -*-
 
-;; Copyright (C) 2012 ~ 2018 Thierry Volpiatto <thierry.volpiatto@gmail.com>
+;; Copyright (C) 2012 ~ 2019 Thierry Volpiatto <thierry.volpiatto@gmail.com>
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -243,10 +243,17 @@ The tree is reinitialized each time you browse a new tree with
 
 It behaves differently depending on `helm-selection' (current candidate in helm-buffer):
 
-- candidate basename is \".\"   => Open it in dired.
+- candidate basename is \".\" => Open it in dired.
 - candidate is a directory    => Expand it.
 - candidate is a file         => Open it.
-- marked candidates (1+)      => Open them with default action.
+
+If you have marked candidates and you press RET on a directory,
+helm will navigate to this directory, if you want to exit with
+RET with default action with these marked candidates, press RET
+on a second time while you are on the root of this directory
+e.g. \"/home/you/dir/.\" or press RET on any file which is not a
+directory.  You can also exit with default action at any moment
+with `f1'.
 
 Note that when copying, renaming, etc. from `helm-find-files' the
 destination file is selected with `helm-read-file-name'.
@@ -377,7 +384,7 @@ Same but the cache is refreshed.
 
 **** You can start a recursive search with \"locate\" or \"find\"
 
-See \"Note\" in the [[Recusive completion on subdirectories][section on subdirectories]].
+See \"Note\" in the [[Recursive completion on subdirectories][section on subdirectories]].
 
 Using \"locate\", you can enable the local database with a prefix argument. If the
 local database doesn't already exists, you will be prompted for its creation.
@@ -422,6 +429,7 @@ On insertion (not on completion, i.e. there is nothing at point):
 - `\\[helm-ff-run-complete-fn-at-point]': insert absolute file name.
 - `\\[universal-argument] \\[helm-ff-run-complete-fn-at-point]': insert abbreviated file name.
 - `\\[universal-argument] \\[universal-argument] \\[helm-ff-run-complete-fn-at-point]': insert relative file name.
+- `\\[universal-argument] \\[universal-argument] \\[universal-argument] \\[helm-ff-run-complete-fn-at-point]': insert basename.
 
 On completion:
 
@@ -504,7 +512,7 @@ are available as`%u', `%d' and `%c' respectively.
 
 ***** Recursively rename all files with \".JPG\" extension to \".jpg\"
 
-Use the `helm-file-globstar' feature described in [[Using wildcard to select multiple files][recursive globbing]]
+Use the `helm-file-globstar' feature described in [[Use the wildcard to select multiple files][recursive globbing]]
 by entering \"**.JPG\" at the end of the Helm-find-files pattern, then hit
 \\<helm-map>\\[helm-ff-query-replace-on-filenames]: First \"JPG\", then \"jpg\"
 and hit `RET'.
@@ -603,7 +611,7 @@ the current directory.  As such, using \"\\#\" to serial-rename files only makes
 sense for files inside the same directory.  It even keeps renaming files
 with an incremental number in the next directories.
 
-*** Serial-rename
+*** Serial renaming
 
 You can use the serial-rename actions to rename, copy or symlink marked files to
 a specific directory or in the current directory with all the files numbered
@@ -679,7 +687,9 @@ On remote files grep is not well supported by TRAMP unless you suspend updates b
 entering the pattern and re-enable it once your pattern is ready.
 To toggle suspend-update, use `\\<helm-map>\\[helm-toggle-suspend-update]'.
 
-*** Setting up aliases in Eshell allows you to set up powerful customized commands
+*** Execute Eshell commands on files
+
+Setting up aliases in Eshell allows you to set up powerful customized commands.
 
 Adding Eshell aliases to your `eshell-aliases-file' or using the
 `alias' command from Eshell allows you to create personalized
@@ -708,6 +718,10 @@ With a prefix argument however it will apply `example' on all files at once:
 $ example foo bar baz
 
 Of course the alias command should support this.
+
+If you add %s to the command line %s will be replaced with the candidate, this mean you can
+add extra argument to your command e.g. command -extra-arg %s or command %s -extra-arg.
+If you want to pass many files inside %s, don't forget to use a prefix arg.
 
 *** Using TRAMP with `helm-find-files' to read remote directories
 
@@ -752,7 +766,7 @@ For this you can use `helm-list-dir-external' as value
 for `helm-list-directory-function'.
 
 See `helm-list-directory-function' documentation for more infos.
- 
+
 **** Completing host
 
 As soon as you enter the first \":\" after method e.g =/scp:= you will
@@ -858,15 +872,19 @@ will be moved to trash instead of beeing deleted.
 You can reverse at any time the behavior of `delete-by-moving-to-trash' by using
 a prefix arg with any of the delete files command.
 
-On GNULinux distribution, when navigating to a Trash directory you
+On GNULinux distributions, when navigating to a Trash directory you
 can restore any file in ..Trash/files directory with the 'Restore
 from trash' action you will find in action menu (needs the
-trash-cli package installed).
+trash-cli package installed for remote files, see [[Trashing remote files with tramp][Here]]).
 You can as well delete files from Trash directories with the 'delete files from trash'
 action.
+If you want to know where a file will be restored, hit `M-i', you will find a trash info.
 
 Tip: Navigate to your Trash/files directories with `helm-find-files' and set a bookmark
 there with \\<helm-find-files-map>\\[helm-ff-bookmark-set] for fast access to Trash.
+
+NOTE: Restoring files from trash is working only on system using
+the [[http://freedesktop.org/wiki/Specifications/trash-spec][freedesktop trash specifications]].
 
 _WARNING:_
 
@@ -931,7 +949,7 @@ with trash-list until you log in as root.
 \\[helm-mark-all]\t\tMark all visible candidates.
 \\[helm-ff-run-toggle-auto-update]\t\tToggle auto-expansion of directories.
 \\[helm-unmark-all]\t\tUnmark all candidates, visible and invisible ones.
-\\[helm-ff-run-gnus-attach-files]\t\tGnus' attach files to message buffer.
+\\[helm-ff-run-mail-attach-files]\t\tAttach files to message buffer.
 \\[helm-ff-run-print-file]\t\tPrint file, (`\\[universal-argument]' to refresh printer list).
 \\[helm-enlarge-window]\t\tEnlarge Helm window.
 \\[helm-narrow-window]\t\tNarrow Helm window.
@@ -940,7 +958,26 @@ with trash-list until you log in as root.
 \\[helm-ff-run-find-alternate-file]\t\tFind alternate file.
 \\[helm-ff-run-insert-org-link]\t\tInsert org link.
 \\[helm-ff-bookmark-set]\t\tSet bookmark to current directory.
-\\[helm-find-files-toggle-to-bookmark]\t\tJump to bookmark list.")
+\\[helm-find-files-toggle-to-bookmark]\t\tJump to bookmark list.
+\\[helm-ff-sort-alpha]\t\tSort alphabetically
+\\[helm-ff-sort-by-newest]\t\tSort by newest
+\\[helm-ff-sort-by-size]\t\tSort by size")
+
+;;; Help for file-name-history
+;;
+;;
+(defvar helm-file-name-history-help-message
+  "* Helm file name history
+
+** Tips
+You can open directly the selected file and exit helm or preselect the file in helm-find-files,
+see actions in action menu.
+
+You can toggle the view of deleted files, see commands below.
+
+** Commands
+\\<helm-file-name-history-map>
+\\[helm-file-name-history-show-or-hide-deleted]\t\tToggle deleted files view.")
 
 ;;; Help for `helm-read-file-name'
 ;;
@@ -949,13 +986,13 @@ with trash-list until you log in as root.
   (let ((name (if helm-alive-p
                   (assoc-default 'name (helm-get-current-source))
                 "generic")))
-    (format 
+    (format
      "* Helm `%s' read file name completion
 
 This is `%s' read file name completion that have been \"helmized\"
 because you have enabled [[Helm mode][helm-mode]]'.
 Don't confuse this with `helm-find-files' which is a native helm command,
-see [[Helm functions vs helmized emacs functions]].
+see [[Helm functions vs helmized Emacs functions]].
 
 ** Tips
 
@@ -1145,7 +1182,7 @@ M-x helm-popup-tip-mode.
 
 The command \\<helm-grep-map>\\[helm-grep-run-other-window-action] allow you to open file
 in other window horizontally or vertically if a prefix arg is supplied.
- 
+
 *** Performance over TRAMP
 
 Grepping works but it is badly supported as TRAMP doesn't support multiple
@@ -1358,6 +1395,7 @@ enable this you need to add `helm-source-occur' and `helm-source-moccur' to
 
 You can do this with `\\<helm-map>\\[helm-execute-persistent-action]' (persistent-action), to do it repeatedly
 you can use `\\<helm-map>\\[helm-follow-action-forward]' and `\\<helm-map>\\[helm-follow-action-backward]' or enable `helm-follow-mode' with `\\<helm-map>\\[helm-follow-mode]'.
+Follow mode is enabled by default in helm-occur.
 
 *** Switch to buffer in other window
 
@@ -1366,7 +1404,7 @@ in other window horizontally or vertically if a prefix arg is supplied.
 
 *** Save the results
 
-Similarly to Helm-grep, you can save the results with `\\<helm-map>\\[helm-moccur-run-save-buffer]'.
+Similarly to Helm-grep, you can save the results with `\\<helm-occur-map>\\[helm-occur-run-save-buffer]'.
 Once in the saved buffer, you can edit it, see [[Edit a saved buffer][below]].
 
 Of course if you don't save the results, you can resume the Helm session with
@@ -1400,13 +1438,14 @@ this region with `mark-defun' the symbol that was at point before
 marking defun will be used when `helm-source-occur' is member of
 `helm-sources-using-default-as-input'.
 
+*** Switch to next or previous source
+
+See [[Moving in `helm-buffer'][Moving in `helm-buffer']].
+
 ** Commands
 \\<helm-moccur-map>
-\\[helm-goto-next-file]\t\tNext buffer.
-\\[helm-goto-precedent-file]\t\tPrevious buffer.
-\\[helm-yank-text-at-point]\t\tYank text at point in minibuffer.
-\\[helm-moccur-run-goto-line-ow]\t\tGo to line in other window.
-\\[helm-moccur-run-goto-line-of]\t\tGo to line in new frame.")
+\\[helm-occur-run-goto-line-ow]\t\tGo to line in other window.
+\\[helm-occur-run-goto-line-of]\t\tGo to line in new frame.")
 
 ;;; Helm Top
 ;;

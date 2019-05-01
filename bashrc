@@ -91,7 +91,7 @@ export MALLOC_TRACE=~/mtrace.out
 alias memCheck='valgrind --tool=memcheck --leak-check=full --error-limit=no --show-reachable=no --log-file=/home/liyuanheng/memlog.org  '
 
 #terminal macro
-alias backup='mkdir ~/backup && cp -rf /mnt/D/李沅衡/实验结果相关报告论文等/ ~/backup/docs && cp ~/.bashrc ~/backup/bashrc.bak && cp -rf ~/.emacs.d ~/backup/emacs.d.bak && cp -rf ~/work ~/backup/work.bak  && tar -czvf /mnt/D/home/back/backup.tar ~/backup --exclude *.o --exclude build --exclude *.a --exclude *.out && rm -rf ~/backup'
+alias backup='mkdir ~/backup && cp -rf /mnt/E/李沅衡/实验结果相关报告论文等/ ~/backup/docs && cp -rf /mnt/E/work ~/backup/work_win.bak && cp ~/.bashrc ~/backup/bashrc.bak && cp -rf ~/.emacs.d ~/backup/emacs.d.bak && cp -rf ~/work ~/backup/work.bak  && tar -czvf /mnt/E/backup.tar ~/backup --exclude *.o --exclude build --exclude *.a --exclude *.out && rm -rf ~/backup'
 
 alias backup_Cluster='mkdir ~/backup && cp ~/.bashrc ~/backup/bashrc.bak && cp -rf ~/.emacs.d ~/backup/emacs.d.bak && cp -rf ~/programming ~/backup/programming.bak  && tar -czvf ~/lyh_backups/backup.tar ~/backup --exclude *.o --exclude build --exclude LeSeis --exclude LeSeis_back --exclude *.a --exclude *.out && rm -rf ~/backup'
 
@@ -108,3 +108,6 @@ alias cp3DGBM='rm -rf $SOFTPATH/LeSeis/bin/mpi/L_GBM3D && rm -rf $SOFTPATH/LeSei
 # a macro by lyh to copy exe quickly on les_01
 alias cluster_cpGBMbin="tar -zxvf /soft/les_01/putGBM.tar && mv -f /soft/les_01/GBKHM /soft/les_01/LeSeis/bin/GBKHM && mv -f /soft/les_01/L_GBKHM /soft/les_01/LeSeis/bin/mpi/L_GBKHM && rm -rf /soft/les_01/putGBM.tar"
 alias cluster_cp3DGBMbin="tar -zxvf /soft/les_01/put3DGBM.tar && mv -f /soft/les_01/GBM3D /soft/les_01/LeSeis/bin/GBM3D && mv -f /soft/les_01/L_GBM3D /soft/les_01/LeSeis/bin/mpi/L_GBM3D && rm -rf /soft/les_01/put3DGBM.tar"
+
+alias broser="setsid firefox 2>&1 > broser.log"
+

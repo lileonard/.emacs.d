@@ -1,9 +1,9 @@
 ;;; cmake-mode.el --- major-mode for editing CMake sources
 
-; Distributed under the OSI-approved BSD 3-Clause License.  See accompanying
-; file Copyright.txt or https://cmake.org/licensing for details.
+                                        ; Distributed under the OSI-approved BSD 3-Clause License.  See accompanying
+                                        ; file Copyright.txt or https://cmake.org/licensing for details.
 
-;------------------------------------------------------------------------------
+                                        ;------------------------------------------------------------------------------
 
 ;;; Commentary:
 
@@ -15,7 +15,7 @@
 ;;  (setq load-path (cons (expand-file-name "/dir/with/cmake-mode") load-path))
 ;;  (require 'cmake-mode)
 
-;------------------------------------------------------------------------------
+                                        ;------------------------------------------------------------------------------
 
 ;;; Code:
 ;;
@@ -27,7 +27,6 @@
 
 (defcustom cmake-mode-cmake-executable "cmake"
   "*The name of the cmake executable.
-
 This can be either absolute or looked up in $PATH.  You can also
 set the path with these commands:
  (setenv \"PATH\" (concat (getenv \"PATH\") \";C:\\\\Program Files\\\\CMake 2.8\\\\bin\"))
@@ -55,22 +54,22 @@ set the path with these commands:
       (* (or (not (any space "()#\\\n")) (and ?\\ nonl)))))
 (defconst cmake-regex-token
   (rx-to-string `(group (or (regexp ,cmake-regex-comment)
-                            ?( ?)
+                            ?\( ?\)
                             (regexp ,cmake-regex-argument-unquoted)
                             (regexp ,cmake-regex-argument-quoted)))))
 (defconst cmake-regex-indented
   (rx-to-string `(and bol (* (group (or (regexp ,cmake-regex-token) (any space ?\n)))))))
 (defconst cmake-regex-block-open
   (rx-to-string `(and symbol-start (or ,@(append cmake-keywords-block-open
-                                        (mapcar 'downcase cmake-keywords-block-open))) symbol-end)))
+                                                 (mapcar 'downcase cmake-keywords-block-open))) symbol-end)))
 (defconst cmake-regex-block-close
   (rx-to-string `(and symbol-start (or ,@(append cmake-keywords-block-close
-                                        (mapcar 'downcase cmake-keywords-block-close))) symbol-end)))
+                                                 (mapcar 'downcase cmake-keywords-block-close))) symbol-end)))
 (defconst cmake-regex-close
   (rx-to-string `(and bol (* space) (regexp ,cmake-regex-block-close)
                       (* space) (regexp ,cmake-regex-paren-left))))
 
-;------------------------------------------------------------------------------
+                                        ;------------------------------------------------------------------------------
 
 ;; Line indentation helper functions
 
@@ -102,7 +101,7 @@ set the path with these commands:
     )
   )
 
-;------------------------------------------------------------------------------
+                                        ;------------------------------------------------------------------------------
 
 ;;
 ;; Indentation increment.
@@ -127,11 +126,11 @@ set the path with these commands:
           (let ((point-start (point))
                 (case-fold-search t)  ;; case-insensitive
                 token)
-            ; Search back for the last indented line.
+                                        ; Search back for the last indented line.
             (cmake-find-last-indented-line)
-            ; Start with the indentation on this line.
+                                        ; Start with the indentation on this line.
             (setq cur-indent (current-indentation))
-            ; Search forward counting tokens that adjust indentation.
+                                        ; Search forward counting tokens that adjust indentation.
             (while (re-search-forward cmake-regex-token point-start t)
               (setq token (match-string 0))
               (when (or (string-match (concat "^" cmake-regex-paren-left "$") token)
@@ -148,7 +147,7 @@ set the path with these commands:
               )
             )
           )
-        ; Indent this line by the amount selected.
+                                        ; Indent this line by the amount selected.
         (cmake-indent-line-to (max cur-indent 0))
         )
       )
@@ -166,7 +165,7 @@ the indentation.  Otherwise it retains the same position on the line"
       (indent-line-to column)
     (save-excursion (indent-line-to column))))
 
-;------------------------------------------------------------------------------
+                                        ;------------------------------------------------------------------------------
 
 ;;
 ;; Helper functions for buffer
@@ -186,7 +185,7 @@ the indentation.  Otherwise it retains the same position on the line"
     )
   )
 
-;------------------------------------------------------------------------------
+                                        ;------------------------------------------------------------------------------
 
 ;;
 ;; Keyword highlighting regex-to-face map.
@@ -204,7 +203,7 @@ the indentation.  Otherwise it retains the same position on the line"
     )
   "Highlighting expressions for CMake mode.")
 
-;------------------------------------------------------------------------------
+                                        ;------------------------------------------------------------------------------
 
 ;; Syntax table for this mode.
 (defvar cmake-mode-syntax-table nil
@@ -224,7 +223,7 @@ the indentation.  Otherwise it retains the same position on the line"
 ;;
 (defvar cmake-mode-hook nil)
 
-;------------------------------------------------------------------------------
+                                        ;------------------------------------------------------------------------------
 
 ;; For compatibility with Emacs < 24
 (defalias 'cmake--parent-mode
@@ -237,14 +236,14 @@ the indentation.  Otherwise it retains the same position on the line"
 (define-derived-mode cmake-mode cmake--parent-mode "CMake"
   "Major mode for editing CMake source files."
 
-  ; Setup font-lock mode.
+                                        ; Setup font-lock mode.
   (set (make-local-variable 'font-lock-defaults) '(cmake-font-lock-keywords))
-  ; Setup indentation function.
+                                        ; Setup indentation function.
   (set (make-local-variable 'indent-line-function) 'cmake-indent)
-  ; Setup comment syntax.
+                                        ; Setup comment syntax.
   (set (make-local-variable 'comment-start) "#"))
 
-; Help mode starts here
+                                        ; Help mode starts here
 
 
 ;;;###autoload
@@ -298,7 +297,7 @@ and store the result as a list in LISTVAR."
           (save-window-excursion
             (cmake-command-run (concat "--help-" listname "-list") nil temp-buffer-name)
             (with-current-buffer temp-buffer-name
-              ; FIXME: Ignore first line if it is "cmake version ..." from CMake < 3.0.
+                                        ; FIXME: Ignore first line if it is "cmake version ..." from CMake < 3.0.
               (set listvar (split-string (buffer-substring-no-properties (point-min) (point-max)) "\n" t)))))
       (symbol-value listvar)
       ))
@@ -352,7 +351,7 @@ and store the result as a list in LISTVAR."
 
 ;;;###autoload
 (defun cmake-help ()
-  "Queries for any of the four available help topics and prints out the approriate page."
+  "Queries for any of the four available help topics and prints out the appropriate page."
   (interactive)
   (let* ((default-entry (cmake-symbol-at-point))
          (command-list (cmake-get-list "command"))
@@ -390,4 +389,4 @@ and store the result as a list in LISTVAR."
 ; This file provides cmake-mode.
 (provide 'cmake-mode)
 
-;;; cmake-mode.el ends here
+;;; cmake-mode.el ends here    

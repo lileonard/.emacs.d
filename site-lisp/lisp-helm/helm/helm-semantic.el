@@ -1,7 +1,7 @@
 ;;; helm-semantic.el --- Helm interface for Semantic -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2012 ~ 2017 Daniel Hackney <dan@haxney.org>
-;;               2012 ~ 2018  Thierry Volpiatto<thierry.volpiatto@gmail.com>
+;;               2012 ~ 2019  Thierry Volpiatto<thierry.volpiatto@gmail.com>
 
 ;; Author: Daniel Hackney <dan@haxney.org>
 
@@ -118,7 +118,7 @@ you have completion on these functions with `C-M i' in the customize interface."
   (with-current-buffer helm-buffer
     (when (looking-at " ")
       (goto-char (next-single-property-change
-                  (point-at-bol) 'semantic-tag nil (point-at-eol)))) 
+                  (point-at-bol) 'semantic-tag nil (point-at-eol))))
     (let ((tag (get-text-property (point) 'semantic-tag)))
       (semantic-go-to-tag tag)
       (unless persistent

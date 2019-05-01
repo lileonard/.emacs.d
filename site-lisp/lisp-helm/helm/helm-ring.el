@@ -1,6 +1,6 @@
 ;;; helm-ring.el --- kill-ring, mark-ring, and register browsers for helm. -*- lexical-binding: t -*-
 
-;; Copyright (C) 2012 ~ 2018 Thierry Volpiatto <thierry.volpiatto@gmail.com>
+;; Copyright (C) 2012 ~ 2019 Thierry Volpiatto <thierry.volpiatto@gmail.com>
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -95,10 +95,13 @@ will not have anymore separators between candidates."
   "Source for browse and insert contents of kill-ring.")
 
 (defun helm-kill-ring-candidates ()
-  (cl-loop for kill in (helm-fast-remove-dups kill-ring :test 'equal)
-        unless (or (< (length kill) helm-kill-ring-threshold)
-                   (string-match "\\`[\n[:blank:]]+\\'" kill))
-        collect kill))
+  (cl-loop with cands = (helm-fast-remove-dups kill-ring :test 'equal)
+           for kill in (if (eq (helm-attr 'last-command) 'yank)
+                            (cdr cands)
+                          cands)
+           unless (or (< (length kill) helm-kill-ring-threshold)
+                      (string-match "\\`[\n[:blank:]]+\\'" kill))
+           collect kill))
 
 (defun helm-kill-ring-transformer (candidates _source)
   "Ensure CANDIDATES are not read-only."

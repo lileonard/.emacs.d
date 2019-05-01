@@ -95,6 +95,7 @@ Sample definition:
     cppcm-compile-in-root-build-dir)
   "The list of compile commands.
 The sequence is the calling sequence when give prefix argument.
+
 For example:
   If you use the default sequence, such as
   '(cppcm-compile-in-current-exe-dir

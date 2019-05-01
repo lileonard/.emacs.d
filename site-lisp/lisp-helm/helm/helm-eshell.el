@@ -1,6 +1,6 @@
 ;;; helm-eshell.el --- pcomplete and eshell completion for helm. -*- lexical-binding: t -*-
 
-;; Copyright (C) 2012 ~ 2018 Thierry Volpiatto <thierry.volpiatto@gmail.com>
+;; Copyright (C) 2012 ~ 2019 Thierry Volpiatto <thierry.volpiatto@gmail.com>
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -335,7 +335,8 @@ The function that call this should set `helm-ec-target' to thing at point."
     (unwind-protect
          (with-helm-show-completion beg end
            (helm :sources (helm-make-source "Eshell history"
-                              'helm-eshell-history-source)
+                              'helm-eshell-history-source
+                            :fuzzy-match helm-eshell-fuzzy-match)
                  :buffer "*helm eshell history*"
                  :resume 'noresume
                  :input input))
