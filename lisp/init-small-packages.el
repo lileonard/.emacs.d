@@ -200,10 +200,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'electric-operator)
 (add-hook 'c++-mode-hook           #'electric-operator-mode)
-(add-hook 'c-mode-hook             #'electric-operator-mode)
+(add-hook 'c-mode-common-hook      #'electric-operator-mode)
 (add-hook 'emacs-lisp-mode-hook    #'electric-operator-mode)
 (add-hook 'python-mode-hook        #'electric-operator-mode)
 (add-hook 'matlab-mode-hook        #'electric-operator-mode)
+
 (electric-operator-add-rules-for-mode 'c++-mode
                                       (cons "*" nil)
                                       (cons "**" nil)

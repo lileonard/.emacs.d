@@ -112,10 +112,13 @@
 ;; and do NOT forget CUDA & MPI &FFTW
 (defvar my-sys-c-include
   (list
-   "/usr/lib/gcc/x86_64-redhat-linux/4.8.5/../../../../include/c++/4.8.5"
-   "/usr/lib/gcc/x86_64-redhat-linux/4.8.5/../../../../include/c++/4.8.5/x86_64-redhat-linux"
-   "/usr/lib/gcc/x86_64-redhat-linux/4.8.5/../../../../include/c++/4.8.5/backward"
-   "/usr/lib/gcc/x86_64-redhat-linux/4.8.5/include"
+   "/home/lyh/Soft/FFTW3/include"
+   "/home/lyh/Soft/LeSeis/include"
+   "./"
+   "/usr/lib/gcc/x86_64-redhat-linux/9/../../../../include/c++/9"
+   "/usr/lib/gcc/x86_64-redhat-linux/9/../../../../include/c++/9/x86_64-redhat-linux"
+   "/usr/lib/gcc/x86_64-redhat-linux/9/../../../../include/c++/9/backward"
+   "/usr/lib/gcc/x86_64-redhat-linux/9/include"
    "/usr/local/include"
    "/usr/include"
    "/home/lyh/Soft/CUDA/include"
