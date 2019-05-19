@@ -1,7 +1,7 @@
 #+TITLE: My emacs settings
 
 * works on
-| OS            | Linux X-11 (CentOS_7 Fedora_20+)    |
+| OS            | Linux X-11 (CentOS_7 Fedora_30)   |
 | emacs version | 25+                                 |
 | Language      | C/C++, python, elisp, matlab, latex |
 | parallel tool | MPI OpenMP CUDA                     |
