@@ -52,13 +52,13 @@ If set/leave chinese-font-size to nil, it will follow english-font-size"
    "DejaVu LGC Sans Mono"
    "Monospace"
    "Courier New")
- ":pixelsize=21"
+ ":pixelsize=27"
  '("XTXINWEI"
    "STXinwei"
    "Microsoft Yahei"
    "AR PL KaitiM GB"
    "SIMSONG"
    "ZYSong18030")
- ":pixelsize=24")
+ ":pixelsize=30")
 
 (provide 'init-font)
