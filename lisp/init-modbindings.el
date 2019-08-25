@@ -28,6 +28,7 @@
    ("\\.idl$"       .          idl-mode)    
    ("\\.m$"         .          matlab-mode) 
    ("\\.py$"        .          python-mode)
+   ("\\.python$"    .          python-mode)
    ("CMakeLists\\.txt\\'"   .  cmake-mode)
    ("\\.pr[io]$"            .  qt-pro-mode)
    ("\\.cmake\\'"           .  cmake-mode)

@@ -4,8 +4,12 @@
 ;; just comment it out by adding a semicolon to the start of the line.
 ;; You may delete these explanatory comments.
   ;; (setq garbage-collection-messages t) ; for debug
-(setq gc-cons-threshold (* 64 1024 1024) )
+(setq gc-cons-threshold (* 4 1024 1024) )
+;; don't GC during startup to save time
+(setq gc-cons-threshold most-positive-fixnum)
+
 (setq gc-cons-percentage 0.5)
+
 (run-with-idle-timer 5 t #'garbage-collect)
 (package-initialize)
 ;; add all path under .emacs.d to loadpath

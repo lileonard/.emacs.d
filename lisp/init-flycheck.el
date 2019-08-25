@@ -1,6 +1,8 @@
+
 (require 'flycheck)
 ;; flycheck common settings
 (defun my-flycheck-setup ()
+  (flymake-mode 0)
   (flycheck-mode 1)
   (autoload 'helm-flycheck "helm-flycheck" "show flycheck in helm-mode" t)
   (require 'flycheck-tip)
@@ -25,5 +27,12 @@
   (setq-default flycheck-disabled-checkers '(emacs-lisp-checkdoc))
   (setq-default flycheck-emacs-lisp-load-path 'inherit))
 (add-hook 'emacs-lisp-mode-hook 'my-flycheck-elisp-setup)
+
+;; python
+(defun my-flycheck-python-setup ()
+  (my-flycheck-setup)
+  (setq elpy-modules(delq 'elpy-module-flymake elpy-modules)))
+(add-hook 'elpy-mode-hook 'flycheck-mode)
+
 
 (provide 'init-flycheck)
