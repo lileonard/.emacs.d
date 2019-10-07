@@ -24,6 +24,12 @@
 
 (declare-function helm-find-files-1 "helm-files.el" (fname &optional preselect))
 (declare-function popup-tip "ext:popup")
+(declare-function markdown-show-subtree "outline.el")
+(declare-function outline-show-subtree "outline.el")
+(declare-function org-reveal "org.el")
+(declare-function tab-bar-tabs "tab-bar.el")
+(declare-function tab-bar-select-tab "tab-bar.el")
+(defvar org-directory)
 (defvar winner-boring-buffers)
 (defvar helm-show-completion-overlay)
 
@@ -264,7 +270,37 @@ If a prefix arg is given split windows vertically."
                  (and other-window initial-ow-fn))
       (if other-window
           (funcall initial-ow-fn (car buffers))
-        (switch-to-buffer (car buffers))))))
+        (helm-buffers-switch-to-buffer-or-tab (car buffers))))))
+
+(defun helm-buffers-switch-to-buffer-or-tab (buffer)
+  "Switch to BUFFER in its tab if some."
+  (if (and (fboundp 'tab-bar-mode)
+           helm-buffers-maybe-switch-to-tab)
+      (let* ((tabs (tab-bar-tabs))
+             (tab-names (mapcar (lambda (tab)
+                                  (cdr (assq 'name tab)))
+                                (tab-bar-tabs)))
+             (bname (buffer-name (get-buffer buffer)))
+             (tab (helm-buffers--get-tab-from-name bname tabs)))
+        (if (helm-buffers--buffer-in-tab-p bname tab-names)
+            (progn
+              (tab-bar-select-tab tab)
+              (select-window (get-buffer-window bname)))
+          (switch-to-buffer buffer)))
+    (switch-to-buffer buffer)))
+
+(defun helm-buffers--get-tab-from-name (tab-name tabs)
+  "Return tab from TABS when it contains TAB-NAME."
+  (cl-loop for tab in tabs
+           when (member tab-name (split-string (cdr (assq 'name tab)) ", " t))
+           return tab))
+
+(defun helm-buffers--buffer-in-tab-p (buffer-name tab-names)
+  "Check if BUFFER-NAME is in TAB-NAMES list."
+  (cl-loop for name in tab-names
+           ;; Buf names are separated with "," in TAB-NAMES
+           ;; e.g. '("tab-bar.el" "*scratch*, helm-buffers.el").
+           thereis (member buffer-name (split-string name ", " t))))
 
 (defun helm-window-default-split-fn (candidates &optional other-window-fn)
   "Split windows in one direction and balance them.
@@ -405,12 +441,17 @@ Default is `helm-current-buffer'."
 
 (defun helm-goto-char (loc)
   "Go to char, revealing if necessary."
-  (require 'org) ; On some old Emacs versions org may not be loaded.
   (goto-char loc)
-  (let ((fn (cond ((eq major-mode 'org-mode) #'org-reveal)
+  (let ((fn (cond ((eq major-mode 'org-mode)
+                   ;; On some old Emacs versions org may not be loaded.
+                   (require 'org)
+                   #'org-reveal)
                   ((and (boundp 'outline-minor-mode)
                         outline-minor-mode)
-                   (lambda () (outline-flag-subtree nil))))))
+                   #'outline-show-subtree)
+                  ((and (boundp 'markdown-mode-map)
+                        (derived-mode-p 'markdown-mode))
+                   #'markdown-show-subtree))))
     ;; outline may fail in some conditions e.g. with markdown enabled
     ;; (issue #1919).
     (condition-case nil

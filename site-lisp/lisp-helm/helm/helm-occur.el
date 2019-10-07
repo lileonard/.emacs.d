@@ -34,6 +34,17 @@ Don't set it to any value, it will have no effect.")
 (defvar helm-occur-history nil)
 (defvar helm-occur--search-buffer-regexp "\\`\\([0-9]*\\)\\s-\\{1\\}\\(.*\\)\\'"
   "The regexp matching candidates in helm-occur candidate buffer.")
+(defvar helm-occur-mode--last-pattern nil)
+
+
+(defvar helm-occur-map
+  (let ((map (make-sparse-keymap)))
+    (set-keymap-parent map helm-map)
+    (define-key map (kbd "C-c o")    'helm-occur-run-goto-line-ow)
+    (define-key map (kbd "C-c C-o")  'helm-occur-run-goto-line-of)
+    (define-key map (kbd "C-x C-s")  'helm-occur-run-save-buffer)
+    map)
+  "Keymap used in occur source.")
 
 (defgroup helm-occur nil
   "Regexp related Applications and libraries for Helm."
@@ -50,9 +61,20 @@ Don't set it to any value, it will have no effect.")
   :type '(alist :key-type string :value-type function))
 
 (defcustom helm-occur-use-ioccur-style-keys nil
-  "Similar to `helm-grep-use-ioccur-style-keys' but for multi occur."
+  "Similar to `helm-grep-use-ioccur-style-keys' but for multi occur.
+
+Note that if you define this variable with `setq' your change will
+have no effect, use customize instead."
   :group 'helm-occur
-  :type 'boolean)
+  :type 'boolean
+  :set (lambda (var val)
+         (set var val)
+         (if val
+             (progn
+               (define-key helm-occur-map (kbd "<right>")  'helm-occur-right)
+               (define-key helm-occur-map (kbd "<left>")   'helm-occur-run-default-action))
+           (define-key helm-occur-map (kbd "<right>") nil)
+           (define-key helm-occur-map (kbd "<left>")  nil))))
 
 (defcustom helm-occur-always-search-in-current nil
   "Helm multi occur always search in current buffer when non--nil."
@@ -81,19 +103,20 @@ Any other non--nil value update after confirmation."
   "Value of `helm-candidate-number-limit' for helm-occur."
   :group 'helm-occur
   :type 'integer)
-
-(defvar helm-occur-map
-  (let ((map (make-sparse-keymap)))
-    (set-keymap-parent map helm-map)
-    (define-key map (kbd "C-c o")    'helm-occur-run-goto-line-ow)
-    (define-key map (kbd "C-c C-o")  'helm-occur-run-goto-line-of)
-    (define-key map (kbd "C-x C-s")  'helm-occur-run-save-buffer)
-    (when helm-occur-use-ioccur-style-keys
-      (define-key map (kbd "<right>")  'helm-execute-persistent-action)
-      (define-key map (kbd "<left>")   'helm-occur-run-default-action))
-    (delq nil map))
-  "Keymap used in occur source.")
 
+(defcustom helm-occur-buffer-substring-fn-for-modes
+  '((mu4e-headers-mode . buffer-substring))
+  "Function to use to display buffer contents for major-mode.
+
+Can be one of `buffer-substring' or `buffer-substring-no-properties'.
+
+Note that when using `buffer-substring' initialization will be slower."
+  :group 'helm-regexp
+  :type '(alist :key-type (symbol :tag "Mode")
+                :value-type (radio (const :tag "With text properties" buffer-substring)
+                                   (const :tag "Without text properties" buffer-substring-no-properties))))
+
+
 (defface helm-moccur-buffer
     '((t (:foreground "DarkTurquoise" :underline t)))
   "Face used to highlight occur buffer names."
@@ -142,6 +165,7 @@ engine beeing completely different and also much faster."
       (unwind-protect
            (helm :sources 'helm-source-occur
                  :buffer "*helm occur*"
+                 :history 'helm-occur-history
                  :default (or def (helm-aif (thing-at-point 'symbol)
                                       (regexp-quote it)))
                  :preselect (and (memq 'helm-source-occur
@@ -189,10 +213,20 @@ engine beeing completely different and also much faster."
                (when (string-match helm-occur--search-buffer-regexp
                                    candidate)
                  (match-string 2 candidate)))
+             :search (lambda (pattern)
+                       (when (string-match "\\`\\^\\([^ ]*\\)" pattern)
+                         (setq pattern (concat "^[0-9]* \\{1\\}" (match-string 1 pattern))))
+                       (condition-case _err
+                           (re-search-forward pattern nil t)
+                         (invalid-regexp nil)))
              :init `(lambda ()
                       (with-current-buffer ,buf
-                        (let ((contents (buffer-substring-no-properties
-                                         (point-min) (point-max))))
+                        (let* ((bsfn (or (cdr (assq
+                                               major-mode
+                                               helm-occur-buffer-substring-fn-for-modes))
+                                         #'buffer-substring-no-properties))
+                               (contents (funcall bsfn (point-min) (point-max))))
+                          (helm-attrset 'get-line bsfn)
                           (with-current-buffer (helm-candidate-buffer 'local)
                             (insert contents)
                             (goto-char (point-min))
@@ -205,6 +239,7 @@ engine beeing completely different and also much faster."
              :help-message 'helm-moccur-help-message
              :nomark t
              :migemo t
+             ;; Needed for resume.
              :history 'helm-occur-history
              :candidate-number-limit helm-occur-candidate-number-limit
              :action 'helm-occur-actions
@@ -233,6 +268,7 @@ Each buffer's result is displayed in a separated source."
                                        (get-buffer b))))
     (helm :sources sources
           :buffer "*helm moccur*"
+          :history 'helm-occur-history
           :default (helm-aif (thing-at-point 'symbol) (regexp-quote it))
           :input input
           :truncate-lines helm-occur-truncate-lines)))
@@ -309,6 +345,17 @@ Same as `helm-occur-goto-line' but go in new frame."
     (helm-exit-and-execute-action 'helm-occur-save-results)))
 (put 'helm-moccur-run-save-buffer 'helm-only t)
 
+(defun helm-occur-right ()
+  "helm-occur action for right arrow.
+This is used when `helm-occur-use-ioccur-style-keys' is enabled.
+If follow is enabled (default) go to next source, otherwise execute
+persistent action."
+  (interactive)
+  (if (helm-aand (helm-attr 'follow) (> it 0))
+      (helm-next-source)
+    (helm-execute-persistent-action)))
+(put 'helm-occur-right 'helm-only t)
+
 
 ;;; helm-occur-mode
 ;;
@@ -325,6 +372,7 @@ Same as `helm-occur-goto-line' but go in new frame."
     (define-key map (kbd "M-p")      'helm-occur-mode-goto-line-ow-backward)
     (define-key map (kbd "M-N")      'helm-gm-next-file)
     (define-key map (kbd "M-P")      'helm-gm-precedent-file)
+    (define-key map (kbd "C-c b")    'helm-occur-mode-resume-session)
     map))
 
 (defun helm-occur-mode-goto-line ()
@@ -340,19 +388,21 @@ Same as `helm-occur-goto-line' but go in new frame."
 (defun helm-occur-mode-goto-line-ow-forward-1 (arg)
   (condition-case nil
       (progn
+        (when (or (eq last-command 'helm-occur-mode-goto-line-ow-forward)
+                  (eq last-command 'helm-occur-mode-goto-line-ow-backward))
+          (forward-line arg))
         (save-selected-window
           (helm-occur-mode-goto-line-ow)
-          (recenter))
-        (forward-line arg))
+          (recenter)))
     (error nil)))
 
-(defun helm-occur-mode-goto-line-ow-forward ()
-  (interactive)
-  (helm-occur-mode-goto-line-ow-forward-1 1))
+(defun helm-occur-mode-goto-line-ow-forward (arg)
+  (interactive "p")
+  (helm-occur-mode-goto-line-ow-forward-1 arg))
 
-(defun helm-occur-mode-goto-line-ow-backward ()
-  (interactive)
-  (helm-occur-mode-goto-line-ow-forward-1 -1))
+(defun helm-occur-mode-goto-line-ow-backward (arg)
+  (interactive "p")
+  (helm-occur-mode-goto-line-ow-forward-1 (- arg)))
 
 (defun helm-occur-save-results (_candidate)
   "Save helm moccur results in a `helm-moccur-mode' buffer."
@@ -369,6 +419,7 @@ Same as `helm-occur-goto-line' but go in new frame."
                                  "OccurBufferName: " "*hmoccur ")))
       (setq buf new-buf))
     (with-current-buffer (get-buffer-create buf)
+      (kill-all-local-variables)
       (setq buffer-read-only t)
       (buffer-disable-undo)
       (let ((inhibit-read-only t)
@@ -427,6 +478,11 @@ Same as `helm-occur-goto-line' but go in new frame."
         (goto-char pos)
         (helm-occur-mode-goto-line)))))
 (put 'helm-moccur-mode-mouse-goto-line 'helm-only t)
+
+(defun helm-occur-mode-resume-session ()
+  (interactive)
+  (cl-assert (eq major-mode 'helm-occur-mode) nil "Helm command called in wrong context")
+  (helm-multi-occur-1 helm-occur--buffer-list helm-occur-mode--last-pattern))
 
 (defun helm-occur-buffer-substring-with-linums ()
   "Returns current-buffer contents as a string with all lines
@@ -497,6 +553,8 @@ numbered.  The property 'buffer-name is added to the whole string."
                             (car (helm-occur-filter-one-by-one line))
                             'helm-realvalue linum)
                            "\n"))))
+          (when (fboundp 'wgrep-cleanup-overlays)
+            (wgrep-cleanup-overlays (point-min) (point-max)))
           (message "Reverting buffer done"))))))
 
 (defun helm-occur-filter-one-by-one (candidate)
@@ -528,7 +586,9 @@ Special commands:
     (set (make-local-variable 'helm-occur--buffer-list)
          (with-helm-buffer helm-occur--buffer-list))
     (set (make-local-variable 'revert-buffer-function)
-         #'helm-occur-mode--revert-buffer-function))
+         #'helm-occur-mode--revert-buffer-function)
+    (set (make-local-variable 'helm-occur-mode--last-pattern)
+         helm-input))
 (put 'helm-moccur-mode 'helm-only t)
 
 

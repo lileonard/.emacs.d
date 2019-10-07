@@ -70,14 +70,16 @@ clean:
 
 # Make autoloads file
 autoloads:
-	$(EVAL) "(let ((generated-autoload-file (expand-file-name \"helm-autoloads.el\" \"$(PKGDIR)\")) \
-(backup-inhibited t)) (update-directory-autoloads \"$(PKGDIR)\"))"
+	$(EVAL) "(progn (setq generated-autoload-file (expand-file-name \"helm-autoloads.el\" \"$(PKGDIR)\")) \
+(setq backup-inhibited t) (update-directory-autoloads \"$(PKGDIR)\"))"
 
 PREFIX=/usr/local/
 BIN=${PREFIX}bin/
 DESTDIR=${PREFIX}share/emacs/site-lisp/helm/
 install:
 	test -d ${DESTDIR} || mkdir ${DESTDIR}
+	rm -vf ${DESTDIR}*.el
+	rm -vf ${DESTDIR}*.elc
 	cp -vf *.el $(DESTDIR)
 	cp -vf *.elc $(DESTDIR)
 	cp -vf helm-autoloads.el $(DESTDIR)
