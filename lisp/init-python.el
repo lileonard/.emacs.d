@@ -9,7 +9,8 @@
      (elpy-enable)
      (require 'anaconda-mode)
      (add-hook 'python-mode-hook 'anaconda-mode)
-  
+     (add-hook 'python-mode-hook 'anaconda-eldoc-mode)
+     (setq python-shell-interpreter "/mnt/Soft/LinuxSoft/anaconda3/bin/python3")
      ))
 
 (provide 'init-python)
