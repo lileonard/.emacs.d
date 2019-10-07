@@ -112,8 +112,8 @@
 ;; and do NOT forget CUDA & MPI &FFTW
 (defvar my-sys-c-include
   (list
-   "/home/lyh/Soft/FFTW3/include"
-   "/home/lyh/Soft/LeSeis/include"
+   "/home/lyh/LinuxSoft/FFTW3/include"
+   "/mnt/Soft/LinuxSoft/LeSeis/include"
    "./"
    "/usr/lib/gcc/x86_64-redhat-linux/4.8.5/../../../../include/c++/4.8.5"
    "/usr/lib/gcc/x86_64-redhat-linux/4.8.5/../../../../include/c++/4.8.5/x86_64-redhat-linux"
@@ -121,15 +121,15 @@
    "/usr/lib/gcc/x86_64-redhat-linux/4.8.5/include"
    "/usr/local/include"
    "/usr/include"
-   "/home/lyh/Soft/CUDA/include"
-   "/home/lyh/Soft/CUDA/include/CL"
-   "/home/lyh/Soft/CUDA/include/crt"
-   "/home/lyh/Soft/CUDA/include/thrust"
-   "/home/lyh/Soft/FFTW3/include"
-   "/home/lyh/Soft/mpich/include"
-   "/home/lyh/Soft/mpich/include/primitives"
-   "/home/lyh/Soft/Qt/Qt5.12.1/5.12.1/gcc_64/include"
-   "/home/lyh/Soft/Qt/Qt5.12.1/5.12.1/gcc_64/include/QtWidgets/"
+   "/mnt/Soft/LinuxSoft/CUDA/include"
+   "/mnt/Soft/LinuxSoft/CUDA/include/CL"
+   "/mnt/Soft/LinuxSoft/CUDA/include/crt"
+   "/mnt/Soft/LinuxSoft/CUDA/include/thrust"
+   "/mnt/Soft/LinuxSoft/FFTW3/include"
+   "/mnt/Soft/LinuxSoft/mpich/include"
+   "/mnt/Soft/LinuxSoft/mpich/include/primitives"
+   "/mnt/Soft/LinuxSoft/Qt/Qt5.12.2/5.12.2/gcc_64/include"
+   "/mnt/Soft/LinuxSoft/Qt/Qt5.12.2/5.12.2/gcc_64/include/QtWidgets/"
    ))
 
 (defvar my-custom-include-dirs 
