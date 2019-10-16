@@ -1,14 +1,13 @@
 ;;; ggtags.el --- emacs frontend to GNU Global source code tagging system  -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2013-2019  Free Software Foundation, Inc.
+;; Copyright (C) 2013-2018  Free Software Foundation, Inc.
 
 ;; Author: Leo Liu <sdl.web@gmail.com>
-;; Version: 0.9.0
-;; Package-Version: 20190320.2208
+;; Version: 0.8.13
 ;; Keywords: tools, convenience
 ;; Created: 2013-01-29
 ;; URL: https://github.com/leoliu/ggtags
-;; Package-Requires: ((emacs "25"))
+;; Package-Requires: ((emacs "24") (cl-lib "0.5"))
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -55,8 +54,22 @@
 (require 'ewoc)
 (require 'compile)
 (require 'etags)
+(require 'tabulated-list)               ;preloaded since 24.3
 
 (eval-when-compile
+  (unless (fboundp 'setq-local)
+    (defmacro setq-local (var val)
+      (list 'set (list 'make-local-variable (list 'quote var)) val)))
+
+  (unless (fboundp 'defvar-local)
+    (defmacro defvar-local (var val &optional docstring)
+      (declare (debug defvar) (doc-string 3))
+      (list 'progn (list 'defvar var val docstring)
+            (list 'make-variable-buffer-local (list 'quote var)))))
+
+  (or (fboundp 'add-function) (defmacro add-function (&rest _))) ;24.4
+  (or (fboundp 'remove-function) (defmacro remove-function (&rest _)))
+
   (defmacro ignore-errors-unless-debug (&rest body)
     "Ignore all errors while executing BODY unless debug is on."
     (declare (debug t) (indent 0))
@@ -66,10 +79,27 @@
     (declare (debug t) (indent 0))
     ;; See http://debbugs.gnu.org/13594
     `(let ((display-buffer-overriding-action
-            (if ggtags-auto-jump-to-match
+            (if (and ggtags-auto-jump-to-match
+                     ;; Appeared in emacs 24.4.
+                     (fboundp 'display-buffer-no-window))
                 (list #'display-buffer-no-window)
               display-buffer-overriding-action)))
        ,@body)))
+
+(eval-and-compile
+  (or (fboundp 'user-error)             ;24.3
+      (defalias 'user-error 'error))
+  (or (fboundp 'read-only-mode)         ;24.3
+      (defalias 'read-only-mode 'toggle-read-only))
+  (or (fboundp 'register-read-with-preview) ;24.4
+      (defalias 'register-read-with-preview 'read-char))
+  (or (boundp 'xref--marker-ring)       ;25.1
+      (defvaralias 'xref--marker-ring 'find-tag-marker-ring))
+  (or (fboundp 'xref-push-marker-stack) ;25.1
+      (defun xref-push-marker-stack (&optional m)
+        (ring-insert xref--marker-ring (or m (point-marker)))))
+  (or (fboundp 'xref-pop-marker-stack)
+      (defalias 'xref-pop-marker-stack 'pop-tag-mark)))
 
 (defgroup ggtags nil
   "GNU Global source code tagging system."
@@ -535,12 +565,14 @@ Value is new modtime if updated."
                 ;; GTAGS file which could cause issues such as
                 ;; https://github.com/leoliu/ggtags/issues/22, so
                 ;; let's help it out.
-                (let ((dir (locate-dominating-file
-                            default-directory
-                            (lambda (dir) (file-regular-p (expand-file-name "GTAGS" dir))))))
+                ;;
+                ;; Note: `locate-dominating-file' doesn't accept
+                ;; function for NAME before 24.3.
+                (let ((dir (locate-dominating-file default-directory "GTAGS")))
                   ;; `file-truename' may strip the trailing '/' on
                   ;; remote hosts, see http://debbugs.gnu.org/16851
-                  (and dir (file-name-as-directory (file-truename dir))))))
+                  (and dir (file-regular-p (expand-file-name "GTAGS" dir))
+                       (file-name-as-directory (file-truename dir))))))
       (when ggtags-project-root
         (if (gethash ggtags-project-root ggtags-projects)
             (ggtags-find-project)
@@ -559,6 +591,8 @@ Value is new modtime if updated."
              ;; Need checking because `ggtags-create-tags' can create
              ;; tags in any directory.
              (ggtags-check-project))))
+
+(defvar delete-trailing-lines)          ;new in 24.3
 
 (defun ggtags-save-project-settings (&optional noconfirm)
   "Save Gnu Global's specific environment variables."
@@ -590,10 +624,11 @@ Value is new modtime if updated."
         (while (pcase (read-char-choice
                        (format "Save `%s'? (y/n/=/?) " buffer-file-name)
                        '(?y ?n ?= ??))
-                 (?n (user-error "Aborted"))
-                 (?y nil)
-                 (?= (diff-buffer-with-file) 'loop)
-                 (?? (help-form-show) 'loop))))
+                 ;; ` required for 24.1 and 24.2
+                 (`?n (user-error "Aborted"))
+                 (`?y nil)
+                 (`?= (diff-buffer-with-file) 'loop)
+                 (`?? (help-form-show) 'loop))))
     (save-buffer)
     (kill-buffer)))
 
@@ -864,11 +899,9 @@ blocking emacs."
                 (default (substring-no-properties default))
                 (t (ggtags-read-tag type t prompt require-match default))))))
 
-(defun ggtags-sort-by-nearness-p (&optional start-location)
+(defun ggtags-sort-by-nearness-p ()
   (and ggtags-sort-by-nearness
-       (ggtags-process-succeed-p "global" "--nearness=." "--help")
-       (concat "--nearness="
-               (or start-location buffer-file-name default-directory))))
+       (ggtags-process-succeed-p "global" "--nearness=." "--help")))
 
 (defun ggtags-global-build-command (cmd &rest args)
   ;; CMD can be definition, reference, symbol, grep, idutils
@@ -880,6 +913,7 @@ blocking emacs."
                                (ggtags-find-project)
                                (ggtags-project-has-color (ggtags-find-project))
                                "--color=always")
+                          (and (ggtags-sort-by-nearness-p) "--nearness=.")
                           (and (ggtags-find-project)
                                (ggtags-project-has-path-style (ggtags-find-project))
                                "--path-style=shorter")
@@ -942,11 +976,7 @@ blocking emacs."
 
 (defun ggtags-find-tag (cmd &rest args)
   (ggtags-check-project)
-  (let ((nearness (ggtags-sort-by-nearness-p
-                   (ggtags-project-relative-file
-                    (or buffer-file-name default-directory)))))
-    (ggtags-global-start
-     (apply #'ggtags-global-build-command cmd nearness args))))
+  (ggtags-global-start (apply #'ggtags-global-build-command cmd args)))
 
 (defun ggtags-include-file ()
   "Calculate the include file based on `ggtags-include-pattern'."
@@ -1012,16 +1042,16 @@ definition tags."
               (ggtags-get-libpath))
     ((and libs (guard libs))
      (cl-labels ((cont (buf how)
-                       (pcase ggtags-global-exit-info
-                         (`(0 0 ,_)
-                          (with-temp-buffer
-                            (setq default-directory
-                                  (file-name-as-directory (pop libs)))
-                            (and libs (setq ggtags-global-continuation #'cont))
-                            (if (ggtags-find-project)
-                                (ggtags-find-tag type (shell-quote-argument name))
-                              (cont buf how))))
-                         (_ (ggtags-global-handle-exit buf how)))))
+                   (pcase ggtags-global-exit-info
+                     (`(0 0 ,_)
+                      (with-temp-buffer
+                        (setq default-directory
+                              (file-name-as-directory (pop libs)))
+                        (and libs (setq ggtags-global-continuation #'cont))
+                        (if (ggtags-find-project)
+                            (ggtags-find-tag type (shell-quote-argument name))
+                          (cont buf how))))
+                     (_ (ggtags-global-handle-exit buf how)))))
        (setq ggtags-global-continuation #'cont)))))
 
 (defun ggtags-find-reference (name)
@@ -1268,24 +1298,24 @@ Global and Emacs."
     (erase-buffer)
     (ggtags-view-search-history-mode)
     (cl-labels ((prop (s)
-                      (propertize s 'face 'minibuffer-prompt))
+                  (propertize s 'face 'minibuffer-prompt))
                 (prop-tag (cmd)
-                          (with-temp-buffer
-                            (insert cmd)
-                            (forward-sexp -1)
-                            (if (eobp)
-                                cmd
-                              (put-text-property (point) (point-max)
-                                                 'face font-lock-constant-face)
-                              (buffer-string))))
+                  (with-temp-buffer
+                    (insert cmd)
+                    (forward-sexp -1)
+                    (if (eobp)
+                        cmd
+                      (put-text-property (point) (point-max)
+                                         'face font-lock-constant-face)
+                      (buffer-string))))
                 (pp (data)
-                    (pcase data
-                      (`(,_id ,cmd ,dir ,_env ,line ,text)
-                       (insert (prop " cmd: ") (prop-tag cmd) "\n"
-                               (prop " dir: ") dir "\n"
-                               (prop "line: ") (number-to-string line) "\n"
-                               (prop "text: ") text "\n"
-                               (propertize (make-string 32 ?-) 'face 'shadow))))))
+                  (pcase data
+                    (`(,_id ,cmd ,dir ,_env ,line ,text)
+                     (insert (prop " cmd: ") (prop-tag cmd) "\n"
+                             (prop " dir: ") dir "\n"
+                             (prop "line: ") (number-to-string line) "\n"
+                             (prop "text: ") text "\n"
+                             (propertize (make-string 32 ?-) 'face 'shadow))))))
       (setq ggtags-global-search-ewoc
             (ewoc-create #'pp "Global search history keys:  n:next  p:prev  r:register  RET:choose\n")))
     (dolist (data ggtags-global-search-history)
@@ -1299,10 +1329,10 @@ Global and Emacs."
 Use \\[jump-to-register] to restore the search session."
   (interactive (list (register-read-with-preview "Save search to register: ")))
   (cl-labels ((prn (data)
-                   (pcase data
-                     (`(,command ,root ,_env ,line ,_)
-                      (princ (format "a ggtags search session `%s' in directory `%s' at line %d."
-                                     command root line))))))
+                (pcase data
+                  (`(,command ,root ,_env ,line ,_)
+                   (princ (format "a ggtags search session `%s' in directory `%s' at line %d."
+                                  command root line))))))
     (set-register r (registerv-make
                      (if ggtags-global-search-ewoc
                          (cdr (ewoc-data (ewoc-locate ggtags-global-search-ewoc)))
@@ -1359,9 +1389,10 @@ Use \\[jump-to-register] to restore the search session."
   (let ((m (ring-ref xref--marker-ring ggtags-tag-ring-index))
         (i (- (ring-length xref--marker-ring) ggtags-tag-ring-index)))
     (ggtags-echo "%d%s marker%s" i (pcase (mod i 10)
-                                     (1 "st")
-                                     (2 "nd")
-                                     (3 "rd")
+                                     ;; ` required for 24.1 and 24.2
+                                     (`1 "st")
+                                     (`2 "nd")
+                                     (`3 "rd")
                                      (_ "th"))
                  (if (marker-buffer m) "" " (dead)"))
     (if (not (marker-buffer m))
@@ -1498,11 +1529,12 @@ commands `next-error' and `previous-error'.
              (format "found %d %s" count
                      (funcall (if (= count 1) #'car #'cadr)
                               (pcase db
-                                ("GTAGS"  '("definition" "definitions"))
-                                ("GSYMS"  '("symbol"     "symbols"))
-                                ("GRTAGS" '("reference"  "references"))
-                                ("GPATH"  '("file"       "files"))
-                                ("ID"     '("identifier" "identifiers"))
+                                ;; ` required for 24.1 and 24.2
+                                (`"GTAGS"  '("definition" "definitions"))
+                                (`"GSYMS"  '("symbol"     "symbols"))
+                                (`"GRTAGS" '("reference"  "references"))
+                                (`"GPATH"  '("file"       "files"))
+                                (`"ID"     '("identifier" "identifiers"))
                                 (_         '("match"      "matches"))))))
            exit-status))))
 
@@ -1679,6 +1711,8 @@ ggtags: history match invalid, jump to first match instead")
      (2 'compilation-error nil t))
     ("^Global found \\([0-9]+\\)" (1 compilation-info-face))))
 
+(defvar compilation-always-kill)        ;new in 24.3
+
 (define-compilation-mode ggtags-global-mode "Global"
   "A mode for showing outputs from gnu global."
   ;; Note: Place `ggtags-global-output-format' as first element for
@@ -1737,6 +1771,7 @@ ggtags: history match invalid, jump to first match instead")
     (define-key map "\M-o" 'ggtags-navigation-visible-mode)
     (define-key map [return] 'ggtags-navigation-mode-done)
     (define-key map "\r" 'ggtags-navigation-mode-done)
+    (define-key map [remap pop-tag-mark] 'ggtags-navigation-mode-abort) ;Emacs 24
     (define-key map [remap xref-pop-marker-stack] 'ggtags-navigation-mode-abort)
     map))
 
@@ -1977,10 +2012,9 @@ ggtags: history match invalid, jump to first match instead")
     (and buffer-file-name ggtags-update-on-save
          (ggtags-update-tags-single buffer-file-name 'nowait))))
 
-(defun ggtags-global-output (buffer cmds callback &optional cutoff sync)
+(defun ggtags-global-output (buffer cmds callback &optional cutoff)
   "Asynchronously pipe the output of running CMDS to BUFFER.
-When finished invoke CALLBACK in BUFFER with process exit status.
-If SYNC is non-nil, synchronously run CMDS and call CALLBACK."
+When finished invoke CALLBACK in BUFFER with process exit status."
   (or buffer (error "Output buffer required"))
   (when (get-buffer-process (get-buffer buffer))
     ;; Notice running multiple processes in the same buffer so that we
@@ -2000,9 +2034,6 @@ If SYNC is non-nil, synchronously run CMDS and call CALLBACK."
                         (with-current-buffer (process-buffer proc)
                           (goto-char (process-mark proc))
                           (insert string)
-                          (cl-incf (process-get proc :nlines)
-                                   (count-lines (process-mark proc) (point)))
-                          (set-marker (process-mark proc) (point))
                           (when (and (> (line-number-at-pos (point-max)) cutoff)
                                      (process-live-p proc))
                             (interrupt-process (current-buffer)))))))
@@ -2010,27 +2041,31 @@ If SYNC is non-nil, synchronously run CMDS and call CALLBACK."
                      (when (memq (process-status proc) '(exit signal))
                        (with-current-buffer (process-buffer proc)
                          (set-process-buffer proc nil)
-                         (unwind-protect
-                             (funcall callback (process-exit-status proc))
-                           (process-put proc :callback-done t)))))))
+                         (funcall callback (process-exit-status proc)))))))
     (set-process-query-on-exit-flag proc nil)
     (and cutoff (set-process-filter proc filter))
     (set-process-sentinel proc sentinel)
-    (process-put proc :callback-done nil)
-    (process-put proc :nlines 0)
-    (if sync (while (not (process-get proc :callback-done))
-               (accept-process-output proc 1))
-      proc)))
+    proc))
 
 (cl-defun ggtags-fontify-code (code &optional (mode major-mode))
   (cl-check-type mode function)
-  (if (stringp code)
-      (with-temp-buffer
-        (insert code)
-        (funcall mode)
-        (font-lock-ensure)
-        (buffer-string))
-    code))
+  (cl-typecase code
+    ((not string) code)
+    (string (cl-labels ((prepare-buffer ()
+                          (with-current-buffer
+                              (get-buffer-create " *Code-Fontify*")
+                            (let ((inhibit-read-only t))
+                              (erase-buffer))
+                            (funcall mode)
+                            (setq font-lock-mode t)
+                            (funcall font-lock-function font-lock-mode)
+                            (setq jit-lock-mode nil)
+                            (current-buffer))))
+              (with-current-buffer (prepare-buffer)
+                (let ((inhibit-read-only t))
+                  (insert code)
+                  (font-lock-default-fontify-region (point-min) (point-max) nil))
+                (buffer-string))))))
 
 (defun ggtags-get-definition-default (defs)
   (and (caar defs)
@@ -2043,10 +2078,7 @@ If SYNC is non-nil, synchronously run CMDS and call CALLBACK."
   (let* ((re (cadr (assq 'grep ggtags-global-error-regexp-alist-alist)))
          (current (current-buffer))
          (buffer (get-buffer-create " *ggtags-definition*"))
-         ;; `.' works here because ggtags-global-output doesn't set
-         ;; default-directory to project root.
-         (args (delq nil (list (ggtags-sort-by-nearness-p ".")
-                               "--result=grep" "--path-style=absolute" name)))
+         (args (list "--result=grep" "--path-style=absolute" name))
          ;; Need these bindings so that let-binding
          ;; `ggtags-print-definition-function' can work see
          ;; `ggtags-eldoc-function'.
@@ -2065,8 +2097,11 @@ If SYNC is non-nil, synchronously run CMDS and call CALLBACK."
                    (with-current-buffer current
                      (funcall print-fn (funcall get-fn defs)))))))
     (ggtags-with-current-project
-      (ggtags-global-output buffer (cons (ggtags-program-path "global") args)
-                            show 100))))
+      (ggtags-global-output
+       buffer
+       (cons (ggtags-program-path "global")
+             (if (ggtags-sort-by-nearness-p) (cons "--nearness=." args) args))
+       show 100))))
 
 (defvar ggtags-mode-prefix-map
   (let ((m (make-sparse-keymap)))
@@ -2207,7 +2242,6 @@ to nil disables displaying this information.")
   (if ggtags-mode
       (progn
         (add-hook 'after-save-hook 'ggtags-after-save-function nil t)
-        (add-hook 'xref-backend-functions 'ggtags--xref-backend nil t)
         ;; Append to serve as a fallback method.
         (add-hook 'completion-at-point-functions
                   #'ggtags-completion-at-point t t)
@@ -2223,7 +2257,6 @@ to nil disables displaying this information.")
                 (append mode-line-buffer-identification
                         '(ggtags-mode-line-project-name)))))
     (remove-hook 'after-save-hook 'ggtags-after-save-function t)
-    (remove-hook 'xref-backend-functions 'ggtags--xref-backend t)
     (remove-hook 'completion-at-point-functions #'ggtags-completion-at-point t)
     (remove-function (local 'eldoc-documentation-function) 'ggtags-eldoc-function)
     (setq mode-line-buffer-identification
@@ -2365,97 +2398,6 @@ Function `ggtags-eldoc-function' disabled for eldoc in current buffer: %S" err))
     (he-substitute-string (car he-expand-list))
     (setq he-expand-list (cdr he-expand-list))
     t))
-
-;;; Xref
-
-(defconst ggtags--xref-limit 1000)
-
-(defclass ggtags-xref-location (xref-file-location)
-  ((project-root :type string :initarg :project-root)))
-
-(cl-defmethod xref-location-group ((l ggtags-xref-location))
-  (with-slots (file project-root) l
-    (file-relative-name file project-root)))
-
-(defun ggtags--xref-backend ()
-  (and (ggtags-find-project)
-       (let ((tag (ggtags-tag-at-point)))
-         ;; Try to use this backend if there is no tag at
-         ;; point, since we may still want to when asking
-         ;; the user for a tag.
-         (or (null tag)
-             (test-completion tag ggtags-completion-table)))
-       'ggtags))
-
-(cl-defmethod xref-backend-identifier-at-point ((_backend (eql ggtags)))
-  (ggtags-tag-at-point))
-
-(cl-defmethod xref-backend-identifier-completion-table ((_backend (eql ggtags)))
-  ggtags-completion-table)
-
-(defun ggtags--xref-collect-tags (tag root colored)
-  "Collect xrefs for TAG from Global output in the `current-buffer'.
-Return the list of xrefs for TAG. Global output is assumed to
-have grep format.
-
-ROOT is the project root directory to associate with the xrefs.
-
-If COLORED is non-nil, convert ANSI color codes to font lock text
-properties in the summary text of each xref."
-  (cl-loop
-   with re = (cadr (assq 'grep ggtags-global-error-regexp-alist-alist))
-   while (re-search-forward re nil t)
-   for summary = (buffer-substring (1+ (match-end 2)) (line-end-position))
-   for file = (expand-file-name (match-string 1))
-   for line = (string-to-number (match-string 2))
-   for column = (string-match-p tag summary)
-   if colored do (setq summary (ansi-color-apply summary)) end
-   ;; Sometimes there are false positives, depending on the
-   ;; parser used so only collect lines that actually
-   ;; contain TAG.
-   and when column
-   collect (xref-make
-            summary
-            (make-instance
-             'ggtags-xref-location
-             :file file
-             :line line
-             :column column
-             :project-root root))))
-
-(defun ggtags--xref-find-tags (tag cmd)
-  "Find xrefs of TAG using Global CMD.
-CMD has the same meaning as in `ggtags-global-build-command'.
-Return the list of xrefs for TAG."
-  (let* ((ggtags-global-output-format 'grep)
-         (project (ggtags-find-project))
-         (xrefs nil)
-         (collect
-          (lambda (_status)
-            (goto-char (point-min))
-            (setq xrefs (ggtags--xref-collect-tags
-                         tag
-                         (ggtags-project-root project)
-                         (and ggtags-global-use-color
-                              (ggtags-project-has-color project))))
-            (kill-buffer (current-buffer)))))
-    (ggtags-with-current-project
-      (ggtags-global-output
-       (get-buffer-create " *ggtags-xref*")
-       (append
-        (split-string (ggtags-global-build-command cmd))
-        (list "--" (shell-quote-argument tag)))
-       collect ggtags--xref-limit 'sync)
-      xrefs)))
-
-(cl-defmethod xref-backend-definitions ((_backend (eql ggtags)) tag)
-  (ggtags--xref-find-tags tag 'definition))
-
-(cl-defmethod xref-backend-references ((_backend (eql ggtags)) tag)
-  (ggtags--xref-find-tags tag 'reference))
-
-(cl-defmethod xref-backend-apropos ((_backend (eql ggtags)) tag)
-  (ggtags--xref-find-tags tag 'grep))
 
 (defun ggtags-reload (&optional force)
   (interactive "P")
