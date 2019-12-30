@@ -34,7 +34,7 @@
 (require 'init-lisp)
 (require 'init-latex)
 (require 'init-python)
-;; ;; minor mode and plugin settings
+;; minor mode and plugin settings
 (require 'init-sessions)
 (require 'init-ido)
 (require 'init-yasnippet)

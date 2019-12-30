@@ -2,8 +2,12 @@
 
 ;; https://github.com/leoliu/ggtags
 (require 'ggtags)
-(add-hook 'c-mode-hook    (lambda () (ggtags-mode 1)))
-(add-hook 'c++-mode-hook  (lambda () (ggtags-mode 1)))
+
+(add-hook 'c-mode-common-hook
+          (lambda ()
+            (when (derived-mode-p 'c-mode 'c++-mode 'java-mode)
+              (ggtags-mode 1))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;  Chen Bin`s init-gtags begins here
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -46,6 +50,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; ChenBin`s init-gtags ends here
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (global-set-key (kbd "<f7>") 'ggtags-find-tag-dwim)
 (global-set-key (kbd "<M-f7>") 'ggtags-update-tags)
 (global-set-key (kbd "<C-f7>") 'ggtags-find-definition)
