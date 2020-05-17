@@ -44,7 +44,7 @@ If set/leave chinese-font-size to nil, it will follow english-font-size"
     (dolist (charset '(kana han symbol cjk-misc bopomofo))
       (set-fontset-font (frame-parameter nil 'font)
                         charset zh-font))))
-;; this is on the cluster
+;; this is on the 4k screen
 (qiang-set-font
  '("Consolas"
    "Monaco"
@@ -60,5 +60,22 @@ If set/leave chinese-font-size to nil, it will follow english-font-size"
    "SIMSONG"
    "ZYSong18030")
  ":pixelsize=36")
+
+;; ;; this is on the 1080p screen
+;; (qiang-set-font
+;;  '("Consolas"
+;;    "Monaco"
+;;    "DejaVu Sans Mono"
+;;    "DejaVu LGC Sans Mono"
+;;    "Monospace"
+;;    "Courier New")
+;;  ":pixelsize=22"
+;;  '("XTXINWEI"
+;;    "STXinwei"
+;;    "Microsoft Yahei"
+;;    "AR PL KaitiM GB"
+;;    "SIMSONG"
+;;    "ZYSong18030")
+;; ":pixelsize=24")
 
 (provide 'init-font)

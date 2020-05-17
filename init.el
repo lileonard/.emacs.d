@@ -3,14 +3,14 @@
 ;; installed packages.  Don't delete this line.  If you don't want it,
 ;; just comment it out by adding a semicolon to the start of the line.
 ;; You may delete these explanatory comments.
-  ;; (setq garbage-collection-messages t) ; for debug
-(setq gc-cons-threshold (* 4 1024 1024) )
+(let* ((minver "25.1"))
+  (when (version< emacs-version minver)
+    (error "Emacs v%s or higher is required." minver)))
+;; (setq garbage-collection-messages t) ; for debug
+
 ;; don't GC during startup to save time
 (setq gc-cons-threshold most-positive-fixnum)
 
-(setq gc-cons-percentage 0.5)
-
-(run-with-idle-timer 5 t #'garbage-collect)
 (package-initialize)
 ;; add all path under .emacs.d to loadpath
 (let ((default-directory  "~/.emacs.d/"))
