@@ -1,8 +1,9 @@
 # -*- mode: snippet -*-
 # name: operator+
 # key: +
+# group: operator overloading
 # --
-${1:MyClass} $1::operator+(const $1 &other)
+${1:Name} $1::operator+(const $1 &other)
 {
     $1 result = *this;
     result += other;
