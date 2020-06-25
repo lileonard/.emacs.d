@@ -3,15 +3,14 @@
 (eval-after-load 'python
   '(progn
      (require 'elpy)
-     (defconst python3-path "~/Soft/anaconda3/bin/python3")
-     (setq elpy-rpc-python-command python3-path
-           pyvenv-virtualenvwrapper-python python3-path
-           python-shell-interpreter python3-path)
+     (setq elpy-rpc-python-command "/mnt/Soft/LinuxSoft/anaconda3/bin/python3"
+           pyvenv-virtualenvwrapper-python "/mnt/Soft/LinuxSoft/anaconda3/bin/python3"
+           python-shell-interpreter "/mnt/Soft/LinuxSoft/anaconda3/bin/python3")
      (elpy-enable)
      (require 'anaconda-mode)
      (add-hook 'python-mode-hook 'anaconda-mode)
      (add-hook 'python-mode-hook 'anaconda-eldoc-mode)
-     (setq python-shell-interpreter python3-path)
+     (setq python-shell-interpreter "/mnt/Soft/LinuxSoft/anaconda3/bin/python3")
      ))
 
 (provide 'init-python)

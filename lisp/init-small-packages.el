@@ -147,7 +147,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'hungry-delete)
 (add-hook 'emacs-lisp-mode-hook  #'(lambda () (hungry-keyboard emacs-lisp-mode-map)))
-(add-hook 'python-mode-hook  #'(lambda () (hungry-keyboard python-mode-map)))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'diff)
 ;; show whitespace in diff-mode
@@ -234,6 +233,7 @@
 (electric-operator-add-rules-for-mode 'python-mode
                                       (cons "+" " + ")
                                       (cons "-" " - ")
+                                      (cons "=" " = ")
                                       (cons "==" "==")
                                       (cons "+1" "+1")
                                       (cons "-1" "-1")
