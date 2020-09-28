@@ -28,6 +28,14 @@
 (require 'cl-lib)
 (require 'auto-complete)
 
+(declare-function semantic-analyze-current-context "semantic/analyze")
+(declare-function semantic-tag-class "semantic/tag")
+(declare-function semantic-tag-function-arguments "semantic/tag")
+(declare-function semantic-format-tag-type "semantic/format")
+(declare-function semantic-format-tag-name "semantic/format")
+(declare-function yas-expand-snippet "yasnippet")
+(declare-function oref "eieio" (obj slot))
+
 
 
 ;;;; Additional sources
@@ -519,15 +527,22 @@
   )
 
 (defun ac-emacs-lisp-mode-setup ()
-  (setq ac-sources (append '(ac-source-features ac-source-functions ac-source-yasnippet ac-source-variables ac-source-symbols) ac-sources)))
+  (setq ac-sources (cl-union '(ac-source-features
+                               ac-source-functions
+                               ac-source-yasnippet
+                               ac-source-variables
+                               ac-source-symbols)
+                             ac-sources)))
 
 (defun ac-cc-mode-setup ()
-  (setq ac-sources (append '(ac-source-yasnippet ac-source-gtags) ac-sources)))
+  (setq ac-sources (cl-union '(ac-source-yasnippet ac-source-gtags)
+                             ac-sources)))
 
 (defun ac-ruby-mode-setup ())
 
 (defun ac-css-mode-setup ()
-  (setq ac-sources (append '(ac-source-css-property) ac-sources)))
+  (setq ac-sources (cl-union '(ac-source-css-property)
+                             ac-sources)))
 
 ;;;###autoload
 (defun ac-config-default ()

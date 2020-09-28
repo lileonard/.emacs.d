@@ -54,9 +54,10 @@ class ElpyRPCServer(JSONRPCServer):
 
     def rpc_init(self, options):
         self.project_root = options["project_root"]
+        self.env = options["environment"]
 
         if jedibackend:
-            self.backend = jedibackend.JediBackend(self.project_root)
+            self.backend = jedibackend.JediBackend(self.project_root, self.env)
         else:
             self.backend = None
 
@@ -76,6 +77,14 @@ class ElpyRPCServer(JSONRPCServer):
 
         """
         return self._call_backend("rpc_get_oneline_docstring", None, filename,
+                                  get_source(source), offset)
+
+    def rpc_get_calltip_or_oneline_docstring(self, filename, source, offset):
+        """Get a calltip or a oneline docstring for the symbol at the offset.
+
+        """
+        return self._call_backend("rpc_get_calltip_or_oneline_docstring",
+                                  None, filename,
                                   get_source(source), offset)
 
     def rpc_get_completions(self, filename, source, offset):

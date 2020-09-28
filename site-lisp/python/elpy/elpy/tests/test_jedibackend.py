@@ -5,6 +5,7 @@ import unittest
 
 import jedi
 import mock
+import re
 
 from elpy import jedibackend
 from elpy import rpc
@@ -14,6 +15,7 @@ from elpy.tests.support import RPCGetCompletionsTests
 from elpy.tests.support import RPCGetCompletionDocstringTests
 from elpy.tests.support import RPCGetCompletionLocationTests
 from elpy.tests.support import RPCGetDocstringTests
+from elpy.tests.support import RPCGetOnelineDocstringTests
 from elpy.tests.support import RPCGetDefinitionTests
 from elpy.tests.support import RPCGetAssignmentTests
 from elpy.tests.support import RPCGetCalltipTests
@@ -24,7 +26,8 @@ from elpy.tests.support import RPCGetNamesTests
 class JediBackendTestCase(BackendTestCase):
     def setUp(self):
         super(JediBackendTestCase, self).setUp()
-        self.backend = jedibackend.JediBackend(self.project_root)
+        env = jedi.get_default_environment().path
+        self.backend = jedibackend.JediBackend(self.project_root, env)
 
 
 class TestInit(JediBackendTestCase):
@@ -50,20 +53,18 @@ class TestRPCGetCompletionLocation(RPCGetCompletionLocationTests,
 class TestRPCGetDocstring(RPCGetDocstringTests,
                           JediBackendTestCase):
 
+    def __init__(self, *args, **kwargs):
+        super(TestRPCGetDocstring, self).__init__(*args, **kwargs)
+        self.JSON_LOADS_REGEX = (
+            r'loads\(s.*, encoding.*, cls.*, object_hook.*, parse_float.*, '
+            r'parse_int.*, .*\)'
+            )
+
     def check_docstring(self, docstring):
-        if sys.version_info >= (3, 6):
-            JSON_LOADS_DOCSTRING = (
-                'loads(s, *, encoding=None, cls=None, '
-                'object_hook=None, parse_float=None,'
-            )
-        else:
-            JSON_LOADS_DOCSTRING = (
-                'loads(s, encoding=None, cls=None, '
-                'object_hook=None, parse_float=None,'
-            )
         lines = docstring.splitlines()
         self.assertEqual(lines[0], 'Documentation for json.loads:')
-        self.assertEqual(lines[2], JSON_LOADS_DOCSTRING)
+        match = re.match(self.JSON_LOADS_REGEX, lines[2])
+        self.assertIsNotNone(match)
 
     @mock.patch("elpy.jedibackend.run_with_debug")
     def test_should_not_return_empty_docstring(self, run_with_debug):
@@ -73,6 +74,51 @@ class TestRPCGetDocstring(RPCGetDocstringTests,
         run_with_debug.return_value = [location]
         filename = self.project_file("test.py", "print")
         docstring = self.backend.rpc_get_docstring(filename, "print", 0)
+        self.assertIsNone(docstring)
+
+
+class TestRPCGetOnelineDocstring(RPCGetOnelineDocstringTests,
+                                 JediBackendTestCase):
+
+    def __init__(self, *args, **kwargs):
+        super(TestRPCGetOnelineDocstring, self).__init__(*args, **kwargs)
+        if sys.version_info >= (3, 6):
+            self.JSON_LOADS_DOCSTRING = (
+                'Deserialize ``s`` (a ``str``, ``bytes`` or'
+                ' ``bytearray`` instance containing a JSON'
+                ' document) to a Python object.'
+            )
+            self.JSON_DOCSTRING = (
+                "JSON (JavaScript Object Notation) <http://json.org>"
+                " is a subset of JavaScript syntax (ECMA-262"
+                " 3rd edition) used as a lightweight data interchange format.")
+        elif sys.version_info >= (3, 0):
+            self.JSON_LOADS_DOCSTRING = (
+                'Deserialize ``s`` (a ``str`` instance '
+                'containing a JSON document) to a Python object.'
+            )
+            self.JSON_DOCSTRING = (
+                "JSON (JavaScript Object Notation) <http://json.org>"
+                " is a subset of JavaScript syntax (ECMA-262"
+                " 3rd edition) used as a lightweight data interchange format.")
+        else:
+            self.JSON_LOADS_DOCSTRING = (
+                'Deserialize ``s`` (a ``str`` or ``unicode`` '
+                'instance containing a JSON document) to a Python object.'
+            )
+            self.JSON_DOCSTRING = (
+                "JSON (JavaScript Object Notation) <http://json.org>"
+                " is a subset of JavaScript syntax (ECMA-262"
+                " 3rd edition) used as a lightweight data interchange format.")
+
+    @mock.patch("elpy.jedibackend.run_with_debug")
+    def test_should_not_return_empty_docstring(self, run_with_debug):
+        location = mock.MagicMock()
+        location.full_name = "testthing"
+        location.docstring.return_value = ""
+        run_with_debug.return_value = [location]
+        filename = self.project_file("test.py", "print")
+        docstring = self.backend.rpc_get_oneline_docstring(filename, "print", 0)
         self.assertIsNone(docstring)
 
 
@@ -119,8 +165,8 @@ class TestRPCGetAssignment(RPCGetAssignmentTests,
 
 class TestRPCGetCalltip(RPCGetCalltipTests,
                         JediBackendTestCase):
-    KEYS_CALLTIP = {'index': 0,
-                    'params': [''],
+    KEYS_CALLTIP = {'index': None,
+                    'params': [],
                     'name': u'keys'}
     RADIX_CALLTIP = {'index': None,
                      'params': [],
@@ -129,23 +175,23 @@ class TestRPCGetCalltip(RPCGetCalltipTests,
                    'params': [u'a', u'b'],
                    'name': u'add'}
     if compat.PYTHON3:
-        THREAD_CALLTIP = {"name": "Thread",
-                          "params": ["group=None",
-                                     "target=None",
-                                     "name=None",
-                                     "args=()",
-                                     "kwargs=None",
-                                     "daemon=None"],
-                          "index": 0}
+        THREAD_CALLTIP = {'name': 'Thread',
+                          'index': 0,
+                          'params': ['group: None=...',
+                                     'target: Optional[Callable[..., Any]]=...',
+                                     'name: Optional[str]=...',
+                                     'args: Iterable[Any]=...',
+                                     'kwargs: Mapping[str, Any]=...',
+                                     'daemon: Optional[bool]=...']}
+
     else:
-        THREAD_CALLTIP = {"name": "Thread",
-                          "params": ["group=None",
-                                     "target=None",
-                                     "name=None",
-                                     "args=()",
-                                     "kwargs=None",
-                                     "verbose=None"],
-                          "index": 0}
+        THREAD_CALLTIP = {'index': 0,
+                          'name': u'Thread',
+                          'params': [u'group: None=...',
+                                     u'target: Optional[Callable[..., Any]]=...',
+                                     u'name: Optional[str]=...',
+                                     u'args: Iterable[Any]=...',
+                                     u'kwargs: Mapping[str, Any]=...']}
 
     def test_should_not_fail_with_get_subscope_by_name(self):
         # Bug #677 / jedi#628

@@ -24,7 +24,8 @@
   :group 'helm)
 
 (defface helm-helper
-  '((t :inherit helm-header))
+  `((t ,@(and (>= emacs-major-version 27) '(:extend t))
+       :inherit helm-header))
   "Face for Helm help string in minibuffer."
   :group 'helm-help)
 
@@ -47,13 +48,15 @@
                                  helm-imenu-help-message
                                  helm-colors-help-message
                                  helm-semantic-help-message
-                                 helm-kmacro-help-message))
+                                 helm-kmacro-help-message
+                                 helm-kill-ring-help-message)
+  "A list of help messages (strings) used by `helm-documentation'.")
 
 (defvar helm-documentation-buffer-name "*helm documentation*")
 
 ;;;###autoload
 (defun helm-documentation ()
-  "Preconfigured Helm for Helm documentation.
+  "Preconfigured `helm' for Helm documentation.
 With a prefix arg refresh the documentation.
 
 Find here the documentation of all documented sources."
@@ -101,7 +104,16 @@ pattern.
 **** Search inside buffers
 
 If you enter a space and a pattern prefixed by \"@\", Helm searches for text
-matching this pattern \*inside* the buffer (i.e. not in the name of the buffer).
+matching this pattern *inside* the buffer (i.e. not in the name of the buffer).
+
+Negation are supported i.e. \"!\".
+
+When you specify more than one of such patterns, it will match
+buffers with contents matching each of these patterns i.e. AND,
+not OR.  That's mean that if you specify \"@foo @bar\" the
+contents of buffer will have to be matched by foo AND bar.  If
+you specify \"@foo @!bar\" it means the contents of buffer have
+to be matched by foo but NOT bar.
 
 If you enter a pattern prefixed with an escaped \"@\", Helm searches for a
 buffer matching \"@pattern\" but does not search inside.
@@ -234,9 +246,8 @@ enabled by default to not confuse new users.
 
 **** Navigate with arrow keys
 
-You can use <right> and <left> arrows to go down or up one level, to enable
+You can use <right> and <left> arrows to go down or up one level, to disable
 this customize `helm-ff-lynx-style-map'.
-This is disabled by default.
 Note that using `setq' will NOT work.
 
 **** Use `\\<helm-find-files-map>\\[helm-execute-persistent-action]' (persistent action) on a directory to go down one level
@@ -249,16 +260,16 @@ On a symlinked directory a prefix argument expands to its true name.
 
 `DEL' by default is deleting char backward.
 
-But when `helm-ff-DEL-up-one-level-maybe' is non nil `DEL' behave
-differently depending of helm-pattern contents, it go up one
-level if pattern is a directory endings with \"/\" or disable HFF
-auto update and delete char backward if pattern is a filename or
-refer to a non existing path.  Going up one level can be disabled
-if necessary by deleting \"/\" at end of pattern using
+But when `helm-ff-DEL-up-one-level-maybe' is non nil `DEL' behaves
+differently depending on the contents of helm-pattern. It goes up one
+level if the pattern is a directory ending with \"/\" or disables HFF
+auto update and delete char backward if the pattern is a filename or
+refers to a non existing path.  Going up one level can be disabled
+if necessary by deleting \"/\" at the end of the pattern using
 \\<helm-map>\\[backward-char] and \\[helm-delete-minibuffer-contents].
 
 Note that when deleting char backward, helm takes care of
-disabling update letting you the time to edit your pattern for
+disabling update giving you the opportunity to edit your pattern for
 e.g. renaming a file or creating a new file or directory.
 When `helm-ff-auto-update-initial-value' is non nil you may want to
 disable it temporarily, see [[Toggle auto-completion with `C-c DEL'][Toggle auto-completion with `C-c DEL']] for this.
@@ -287,13 +298,6 @@ with `f1'.
 Note that when copying, renaming, etc. from `helm-find-files' the
 destination file is selected with `helm-read-file-name'.
 
-To avoid confusion when using `read-file-name' or `read-directory-name', `RET'
-follows its standard Emacs behaviour, i.e. it exits the minibuffer as soon as
-you press `RET'.  If you want the same behavior as in `helm-find-files', bind
-`helm-ff-RET' to the `helm-read-file-map':
-
-    (define-key helm-read-file-map (kbd \"RET\") 'helm-ff-RET)
-
 **** `TAB' behavior
 
 Normally `TAB' is bound to `helm-select-action' in helm-map which
@@ -312,6 +316,15 @@ depending of `helm-selection':
 - candidate is a file          => open action menu.
 
 Called with a prefix arg open menu unconditionally.
+
+*** Sort directory contents
+
+When listing a directory without narrowing its contents, i.e. when pattern ends with \"/\",
+you can sort alphabetically, by newest or by size by using respectively
+\\<helm-find-files-map>\\[helm-ff-sort-alpha], \\[helm-ff-sort-by-newest] or \\[helm-ff-sort-by-size].
+NOTE:
+When starting back narrowing i.e. entering something in minibuffer after \"/\" sorting is done
+again with fuzzy sorting and no more with sorting methods previously selected.
 
 *** Find file at point
 
@@ -450,6 +463,9 @@ session by default.  Hitting `\\[next-history-element]' should just kick in the
 locate search with this pattern.  If you want Helm to automatically do this, add
 `helm-source-locate' to `helm-sources-using-default-as-input'.
 
+NOTE: On Windows use Everything with its command line ~es~ as a replacement of locate.
+See [[https://github.com/emacs-helm/helm/wiki/Locate#windows][Locate on Windows]]
+
 **** Recursive completion on subdirectories
 
 Starting from the directory you are currently browsing, it is possible to have
@@ -458,8 +474,6 @@ you want to go to \"/home/you/foo/bar/baz/somewhere/else\", simply type
 \"/home/you/foo/..else\" and hit `\\[helm-execute-persistent-action]' or enter
 the final \"/\".  Helm will then list all possible directories under \"foo\"
 matching \"else\".
-
-Entering two spaces before \"else\" instead of two dots also works.
 
 Note: Completion on subdirectories uses \"locate\" as backend, you can configure
 the command with `helm-locate-recursive-dirs-command'.  Because this completion
@@ -493,7 +507,7 @@ On completion:
 
 *** Use the wildcard to select multiple files
 
-Use of wilcard is supported to run an action over a set of files.
+Use of wildcard is supported to run an action over a set of files.
 
 Example: You can copy all the files with \".el\" extension by using \"*.el\" and
 then run copy action.
@@ -516,7 +530,7 @@ When using an action that involves an external backend (e.g. grep), using \"**\"
 is not recommended (even thought it works fine) because it will be slower to
 select all the files.  You are better off leaving the backend to do it, it will
 be faster.  However, if you know you have not many files it is reasonable to use
-this, also using not recursive wilcard (e.g. \"*.el\") is perfectly fine for
+this, also using not recursive wildcard (e.g. \"*.el\") is perfectly fine for
 this.
 
 The \"**\" feature is active by default in the option `helm-file-globstar'.  It
@@ -524,6 +538,19 @@ is different from the Bash \"shopt globstar\" feature in that to list files with
 a named extension recursively you would write \"**.el\" whereas in Bash it would
 be \"**/*.el\".  Directory selection with \"**/\" like Bash \"shopt globstar\"
 option is not supported yet.
+
+Helm supports different styles of wildcards:
+
+- `sh' style, the ones supported by `file-expand-wildcards'.
+e.g. \"*.el\", \"*.[ch]\" which match respectively all \".el\"
+files or all \".c\" and \".h\" files.
+
+- `bash' style (partially) In addition to what allowed in `sh'
+style you can specify file extensions that have more than one
+character like this: \"*.{sh,py}\" which match \".sh\" and
+\".py\" files.
+
+Of course in both styles you can specify one or two \"*\".
 
 *** Query replace regexp on filenames
 
@@ -568,8 +595,7 @@ are available as`%u', `%d' and `%c' respectively.
 
 Use the `helm-file-globstar' feature described in [[Use the wildcard to select multiple files][recursive globbing]]
 by entering \"**.JPG\" at the end of the Helm-find-files pattern, then hit
-\\<helm-map>\\[helm-ff-query-replace-on-filenames]: First \"JPG\", then \"jpg\"
-and hit `RET'.
+\\<helm-find-files-map>\\[helm-ff-run-query-replace-fnames-on-marked] and enter \"JPG\" on first prompt, then \"jpg\" on second prompt and hit `RET'.
 
 Alternatively you can enter \".%\" at the first prompt, then \"jpg\" and hit
 `RET'.  Note that when using this instead of using \"JPG\" at the first prompt,
@@ -695,6 +721,18 @@ You can customize `helm-dwim-target' to behave differently depending on the
 windows open in the current frame.  Default is to provide completion on all
 directories associated to each window.
 
+*** Copying/Renaming from or to remote directories
+
+Never use ssh tramp method to copy/rename large files, use
+instead its scp method if you want to avoid out of memory
+problems and crash Emacs or the whole system.  Moreover when using
+scp method, you will hit a bug when copying more than 3 files at
+the time, see [[https://github.com/emacs-helm/helm/issues/1945][bug#1945]].
+The best way actually is using Rsync to copy files from or to
+remote, see [[Use Rsync to copy files][Use Rsync to copy files]].
+Also if you often work on remote you may consider using SSHFS
+instead of relying on tramp.
+
 *** Copying and renaming asynchronously
 
 If you have the async library installed (if you got Helm from MELPA you do), you
@@ -708,11 +746,43 @@ When `dired-async-mode' is enabled, an additional action named \"Backup files\"
 will be available. (Such command is not natively available in Emacs).
 See [[Use the wildcard to select multiple files]] for details.
 
+*** Use Rsync to copy files
+
+If Rsync is available, you can use it to copy/sync files or directories
+with some restrictions though:
+
+- Copying from/to tramp sudo method may not work (permissions).
+- Copying from remote to remote is not supported (rsync restriction).
+
+This command is mostly useful when copying large files as it is
+fast, asynchronous and provide a progress bar in mode-line.  Each
+rsync process have its own progress bar, so you can run several
+rsync jobs, they are independents.  If rsync fails you can
+consult the \"*helm-rsync<n>*\" buffer to see rsync errors.  An
+help-echo (move mouse over progress bar) is provided to see which
+file is in transfer.  Note that when copying directories, no
+trailing slashes are added to directory names, which mean that
+directory is created on destination if it doesn't already exists,
+see rsync documentation for more infos on rsync behavior.  To
+synchronize a directory, mark all in the directory and rsync all
+marked to the destination directory or rsync the directory itself
+to its parent, e.g. remote:/home/you/music => /home/you.
+
+The options are configurable through `helm-rsync-switches', but
+you can modify them on the fly when needed by using a prefix arg,
+in this case you will be prompted for modifications.
+
+NOTE: When selecting a remote file, if you use the tramp syntax
+for specifying a port, i.e. host#2222, helm will add
+automatically \"-e 'ssh -p 2222'\" to the rsync command line
+unless you have specified yourself the \"-e\" option by editing
+rsync command line with a prefix arg (see above).
+
 *** Bookmark the `helm-find-files' session
 
 You can bookmark the `helm-find-files' session with `\\[helm-ff-bookmark-set]'.
 You can later retrieve these bookmarks by calling `helm-filtered-bookmarks'
-or, from the current `helm-find-files' session, by hitting `\\[helm-find-files-toggle-to-bookmark]'.
+or, from the current `helm-find-files' session, by hitting `\\[helm-find-files-switch-to-bookmark]'.
 
 *** Grep files from `helm-find-files'
 
@@ -744,6 +814,11 @@ To toggle suspend-update, use `\\<helm-map>\\[helm-toggle-suspend-update]'.
 *** Execute Eshell commands on files
 
 Setting up aliases in Eshell allows you to set up powerful customized commands.
+
+Your aliases for using eshell command on file should allow
+specifying one or more files, use e.g. \"alias foo $1\" or
+\"alias foo $*\", if you want your command to be asynchronous add
+at end \"&\", e.g. \"alias foo $* &\".
 
 Adding Eshell aliases to your `eshell-aliases-file' or using the
 `alias' command from Eshell allows you to create personalized
@@ -978,6 +1053,21 @@ Helm-find-files can ignore files matching
 `helm-boring-file-regexp-list' or files that are git ignored, you
 can set this with `helm-ff-skip-boring-files' or
 `helm-ff-skip-git-ignored-files'.
+NOTE: This will slow down helm, be warned.
+
+*** Helm-find-files is using a cache
+
+Helm is caching each directory files list in a hash table for
+faster search.  What is kept in the cache is defined by
+`helm-ff-keep-cached-candidates' variable.  By default HFF keep
+all in the cache between its sessions but you can customize
+`helm-ff-keep-cached-candidates', do not use setq for this.  When
+`helm-ff-keep-cached-candidates' is non nil HFF refreshes the
+cache automatically between its sessions when Emacs is idle, you
+should see a little icon brievly changing form when the cache is
+refreshed if you have set `helm-ff-cache-mode-lighter-updating'
+and `helm-ff-cache-mode-lighter-sleep' . You can also refresh a
+directory at anytime during your HFF sessions by hitting \\<helm-map>\\[helm-refresh].
 
 ** Commands
 \\<helm-find-files-map>
@@ -994,6 +1084,7 @@ can set this with `helm-ff-skip-boring-files' or
 \\[helm-ff-run-rename-file]\t\tRename Files (`\\[universal-argument]' to follow).
 \\[helm-ff-run-query-replace-fnames-on-marked]\t\tQuery replace on marked files.
 \\[helm-ff-run-copy-file]\t\tCopy Files (`\\[universal-argument]' to follow).
+\\[helm-ff-run-rsync-file]\t\tRsync Files (`\\[universal-argument]' to edit command).
 \\[helm-ff-run-byte-compile-file]\t\tByte Compile Files (`\\[universal-argument]' to load).
 \\[helm-ff-run-load-file]\t\tLoad Files.
 \\[helm-ff-run-symlink-file]\t\tSymlink Files.
@@ -1063,7 +1154,7 @@ You can toggle the view of deleted files, see commands below.
      "* Helm `%s' read file name completion
 
 This is `%s' read file name completion that have been \"helmized\"
-because you have enabled [[Helm mode][helm-mode]]'.
+because you have enabled [[Helm mode][helm-mode]].
 Don't confuse this with `helm-find-files' which is a native helm command,
 see [[Helm functions vs helmized Emacs functions]].
 
@@ -1170,8 +1261,11 @@ search will be performed on basename only for efficiency (so don't add \"-b\" at
 prompt).  As soon as you separate the patterns with spaces, fuzzy matching will
 be disabled and search will be done on the full filename.  Note that in
 multi-match, fuzzy is completely disabled, which means that each pattern is a
-match regexp (i.e. \"helm\" will match \"helm\" but \"hlm\" will \*not* match
+match regexp (i.e. \"helm\" will match \"helm\" but \"hlm\" will *not* match
 \"helm\").
+
+NOTE: On Windows use Everything with its command line ~es~ as a replacement of locate.
+See [[https://github.com/emacs-helm/helm/wiki/Locate#windows][Locate on Windows]]
 
 *** Browse project
 
@@ -1223,21 +1317,42 @@ than 1 megabyte:
 
 ** Tips
 
-*** Use a prefix argument to grep recursively
+With Helm supporting Git-grep and AG/RG, you are better off using
+one of them for recursive searches, keeping grep or ack-grep to
+grep individual or marked files.  See [[Helm AG][Helm AG]].
 
-With Helm supporting git-grep and AG however, you are better off using one of
-them for recursive searches.
+*** Meaning of the prefix argument
+**** With grep or ack-grep
+
+Grep recursively, in this case you are
+prompted for types (ack-grep) or for wild cards (grep).
+
+**** With AG or RG
+
+the prefix arg allows you to specify a type of file to search in.
 
 *** You can use wild cards when selecting files (e.g. \"*.el\")
 
-*** You can grep in many different directories by marking files or using wild cards
+Note that a way to grep specific files recursively is to use
+e.g. \"**.el\" to select files, the variable `helm-file-globstar'
+controls this (it is non nil by default), however it is much
+slower than using grep recusively (see helm-find-files
+documentation about this feature).
+
+*** Grep hidden files
+
+You may want to customize your command line for grepping hidden
+files, for AG/RG use \"--hidden\", see man page
+of your backend for more infos.
+
+*** You can grep in different directories by marking files or using wild cards
 
 *** You can save the result in a `helm-grep-mode' buffer
 
 See [[Commands][commands]] below.
 
-Once in that buffer you can use \"emacs-wgrep\" (external package not bundled with Helm)
-to edit your changes.
+Once in that buffer you can use [[https://github.com/mhayashi1120/Emacs-wgrep][emacs-wgrep]] (external package not bundled with Helm)
+to edit your changes, for Helm the package name is `wgrep-helm', it is hightly recommended.
 
 *** Helm-grep supports multi-matching
 
@@ -1245,10 +1360,15 @@ to edit your changes.
 
 Simply add a space between each pattern as for most Helm commands.
 
+NOTE: Depending the regexp you use it may match as well the
+filename, this because we pipe the first grep command which send
+the filename in output.
+
 *** See full path of selected candidate
 
-Add (helm-popup-tip-mode 1) in your init file or enable it interactively with
-M-x helm-popup-tip-mode.
+Add (helm-popup-tip-mode 1) in your init file or enable it
+interactively with M-x helm-popup-tip-mode, however it is
+generally enough to just put your mouse cursor over candidate.
 
 *** Open file in other window
 
@@ -1271,6 +1391,9 @@ SSHFS.
 
 * Helm GID
 
+Still supported, but mostly deprecated, using AG/RG or Git-grep
+is much more efficient, also `id-utils' seems no more maintained.
+
 ** Tips
 
 Helm-GID reads the database created with the `mkid' command from id-utils.
@@ -1288,11 +1411,15 @@ highlighted since there is no ~--color~-like option in GID itself.
 
 ** Tips
 
-Helm-AG is different from grep or ack-grep in that it works on a directory and
-not on a list of files.
+Helm-AG is different from grep or ack-grep in that it works on a
+directory recursively and not on a list of files.  It is called
+helm-AG but it support several backend, namely AG, RG and PT.
+Nowaday the best backend is Ripgrep aka RG, it is the fastest and
+is actively maintained, see `helm-grep-ag-command' and
+`helm-grep-ag-pipe-cmd-switches' to configure it.
 
 You can ignore files and directories with a \".agignore\" file, local to a
-directory or global when placed in the home directory. \(See the AG man page for
+directory or global when placed in the home directory. (See the AG man page for
 more details.)  That file follows the same syntax as `helm-grep-ignored-files'
 and `helm-grep-ignored-directories'.
 
@@ -1301,7 +1428,8 @@ As always you can access Helm AG from `helm-find-files'.
 Starting with version 0.30, AG accepts one or more TYPE arguments on its command
 line.  Helm provides completion on these TYPE arguments when available with your
 AG version.  Use a prefix argument when starting a Helm-AG session to enable this
-completion.
+completion.  See RG and AG man pages on how to add new types.
+
 
 Note: You can mark several types to match in the AG query.  The first AG
 versions providing this feature allowed only one type, so in this case only the
@@ -1309,7 +1437,7 @@ last mark will be used.
 
 * Helm git-grep
 
-Helm-git-grep searches the current directory, i.e the default directory or the
+Helm-git-grep searches the current directory, i.e. the default directory or the
 directory in Helm-find-files.  If this current directory is a subdirectory of a
 project and you want to also match parent directories (i.e the whole project),
 use a prefix argument.
@@ -1450,6 +1578,16 @@ the command is called once for each file like this:
     <command> file1
     <command> file2
     ...
+
+*** Run eshell commands asynchronously
+
+You can run your commands asynchronously by adding \"&\" at end
+of any commands, e.g. \"foo %s &\".  You can also directly setup
+your alias in the eshell alias file with e.g. \"alias foo $1 &\".
+
+NOTE: If you use \"&\" in a command with marked files and your
+command accept many files as argument don't forget to pass the
+prefix arg to ensure you run only one command on all marked async.
 
 ** Commands
 \\<helm-esh-on-file-map>")
@@ -1627,15 +1765,33 @@ marking it (`C-c u' or `RET') .
 
 ** Tips
 
-*** You can get help on any command with persistent action (\\[helm-execute-persistent-action])
+*** You can get help on any command with persistent action (\\<helm-map>\\[helm-execute-persistent-action])
 
 *** Prefix arguments
 
-You must pass prefix arguments \*after* starting `helm-M-x'.  A mode-line
+You can pass prefix arguments *after* starting `helm-M-x'.  A mode-line
 counter will display the number of given prefix arguments.
 
 If you pass prefix arguments before running `helm-M-x', it will be displayed in the prompt.
-The first `\\[universal-argument]' after `helm-M-x' clears those prefix arguments.")
+The first `\\[universal-argument]' after `helm-M-x' clears those prefix arguments.
+
+NOTE: When you specify prefix arguments once `helm-M-x' is
+started, the prefix argument apply on the next command, so if you
+hit RET, it will apply on the selected command, but if you type a
+new character at prompt to narrow down further candidates, the
+prefix arg will apply to `self-insert-command' (e.g. if you type
+`C-u e' \"eeee\" will be inserted in prompt) so select the
+command you want to execute before specifying prefix arg.
+
+*** Completion styles in helm-M-x
+
+By default helm-M-x use 'helm completion style, if you want to enable fuzzy matching aka flex,
+see [[Completion-styles][Completion-styles]].
+
+*** Duplicate entries in helm-M-x history
+
+helm-M-x history obey to history variables, if you have
+duplicates in your helm-M-x history set `history-delete-duplicates' to non nil.")
 
 ;;; Helm imenu
 ;;

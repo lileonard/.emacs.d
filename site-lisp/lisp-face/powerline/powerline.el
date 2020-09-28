@@ -77,7 +77,7 @@
 
 Valid Values: alternate, arrow, arrow-fade, bar, box, brace,
 butt, chamfer, contour, curve, rounded, roundstub, wave, zigzag,
-utf-8."
+slant, utf-8."
   :group 'powerline
   :type '(choice (const alternate)
                  (const arrow)
@@ -289,7 +289,7 @@ static char * %s[] = {
                                 "\"};"
                               "\",\n")))
                        data))))
-     'xpm t :ascent 'center)))
+     'xpm t :scale t :ascent 'center)))
 
 (defun pl/percent-xpm
     (height pmax pmin winend winstart width color1 color2)

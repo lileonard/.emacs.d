@@ -32,17 +32,69 @@ Moe, moe, kyun!")
       (orange-0 "#ffaf87") (orange-00 "#ffd787") (orange-000 "#ffd7af")
       (linum-dark "#87875f") (linum-light "#d7d7af")
       )
+  ;; Customize color
+  (defconst -moe-light-bg                        LIGHT_BG)
+  (defconst -moe-light-fg                        black-5)
+  (defconst -moe-light-builtin                   purple-2)
+  (defconst -moe-light-comment-delimiter         white-4)
+  (defconst -moe-light-comment                   white-4)
+  (defconst -moe-light-constant                  blue-2)
+  (defconst -moe-light-doc                       red-2)
+  (defconst -moe-light-doc-string                yellow-3)
+  (defconst -moe-light-function-name             red-1)
+  (defconst -moe-light-keyword                   green-3)
+  (defconst -moe-light-negation-char             red-2)
+  (defconst -moe-light-preprocessor              purple-2)
+  (defconst -moe-light-regexp-grouping-backslash orange-2)
+  (defconst -moe-light-regexp-grouping-construct purple-2)
+  (defconst -moe-light-string                    magenta-3)
+  (defconst -moe-light-type                      cyan-5)
+  (defconst -moe-light-variable-name             orange-2)
+  (defconst -moe-light-warning                   red-2)
+
+  (defvar moe-light-bg                        -moe-light-bg                       )
+  (defvar moe-light-fg                        -moe-light-fg                       )
+  (defvar moe-light-builtin                   -moe-light-builtin                  )
+  (defvar moe-light-comment-delimiter         -moe-light-comment-delimiter        )
+  (defvar moe-light-comment                   -moe-light-comment                  )
+  (defvar moe-light-constant                  -moe-light-constant                 )
+  (defvar moe-light-doc                       -moe-light-doc                      )
+  (defvar moe-light-doc-string                -moe-light-doc-string               )
+  (defvar moe-light-function-name             -moe-light-function-name            )
+  (defvar moe-light-keyword                   -moe-light-keyword                  )
+  (defvar moe-light-negation-char             -moe-light-negation-char            )
+  (defvar moe-light-preprocessor              -moe-light-preprocessor             )
+  (defvar moe-light-regexp-grouping-backslash -moe-light-regexp-grouping-backslash)
+  (defvar moe-light-regexp-grouping-construct -moe-light-regexp-grouping-construct)
+  (defvar moe-light-string                    -moe-light-string                   )
+  (defvar moe-light-type                      -moe-light-type                     )
+  (defvar moe-light-variable-name             -moe-light-variable-name            )
+  (defvar moe-light-warning                   -moe-light-warning                  )
 
   (custom-theme-set-faces
    'moe-light
+   ;; Font-lock faces
+   `(font-lock-builtin-face              ((,class (:background nil :foreground ,moe-light-builtin                  ))))
+   `(font-lock-comment-delimiter-face    ((,class (:background nil :foreground ,moe-light-comment-delimiter        :slant italic))))
+   `(font-lock-comment-face              ((,class (:background nil :foreground ,moe-light-comment                  :slant italic))))
+   `(font-lock-constant-face             ((,class (:background nil :foreground ,moe-light-constant                 ))))
+   `(font-lock-doc-face                  ((,class (:background nil :foreground ,moe-light-doc                      ))))
+   `(font-lock-doc-string-face           ((,class (:background nil :foreground ,moe-light-doc-string               ))))
+   `(font-lock-function-name-face        ((,class (:background nil :foreground ,moe-light-function-name            ))))
+   `(font-lock-keyword-face              ((,class (:background nil :foreground ,moe-light-keyword                  ))))
+   `(font-lock-negation-char-face        ((,class (:background nil :foreground ,moe-light-negation-char            ))))
+   `(font-lock-preprocessor-face         ((,class (:background nil :foreground ,moe-light-preprocessor             ))))
+   `(font-lock-regexp-grouping-backslash ((,class (:background nil :foreground ,moe-light-regexp-grouping-backslash))))
+   `(font-lock-regexp-grouping-construct ((,class (:background nil :foreground ,moe-light-regexp-grouping-construct))))
+   `(font-lock-string-face               ((,class (:background nil :foreground ,moe-light-string                   ))))
+   `(font-lock-type-face                 ((,class (:background nil :foreground ,moe-light-type                     ))))
+   `(font-lock-variable-name-face        ((,class (:background nil :foreground ,moe-light-variable-name            ))))
+   `(font-lock-warning-face              ((,class (:background nil :foreground ,moe-light-warning               :weight bold))))
    ;; Ensure sufficient contrast on low-color terminals.
-   `(default ((((class color) (min-colors 4096))
-               (:foreground ,black-5 :background ,LIGHT_BG))
-              (((class color) (min-colors 256))
-               (:foreground ,black-5 :background ,LIGHT_BG))
-              (,class
-               (:foreground ,black-5 :background ,LIGHT_BG))))
-   `(cursor ((,class (:background ,black-5))))
+   `(default ((((class color) (min-colors 4096)) (:foreground ,moe-light-fg :background ,moe-light-bg))
+              (((class color) (min-colors 256)) (:foreground ,moe-light-fg :background ,moe-light-bg))
+              (,class (:foreground ,moe-light-fg :background ,moe-light-bg))))
+   `(cursor ((,class (:background ,moe-light-fg))))
 
    ;; Highlighting faces
    `(fringe ((,class (:foreground ,black-1 :background ,linum-light))))
@@ -74,24 +126,6 @@ Moe, moe, kyun!")
    `(error ((,class (:foreground ,red-0))))
    `(warning ((,class (:foreground ,orange-2 :bold t))))
    `(success ((,class (:foreground ,green-2))))
-
-   ;; Font lock faces
-   `(font-lock-builtin-face ((,class (:foreground ,purple-2))))
-   `(font-lock-comment-delimiter-face ((,class (:foreground ,white-4 :slant italic))))
-   `(font-lock-comment-face ((,class (:foreground ,white-4 :slant italic))))
-   `(font-lock-constant-face ((,class (:foreground ,blue-2))))
-   `(font-lock-doc-face ((,class (:foreground ,red-2))))
-   `(font-lock-doc-string-face ((,class (:foreground ,yellow-3))))
-   `(font-lock-function-name-face ((,class (:foreground ,red-1))))
-   `(font-lock-keyword-face ((,class (:foreground ,green-3))))
-   `(font-lock-negation-char-face ((,class (:foreground ,red-2))))
-   `(font-lock-preprocessor-face ((,class (:foreground ,purple-2))))
-   `(font-lock-regexp-grouping-backslash ((,class (:foreground ,orange-2))))
-   `(font-lock-regexp-grouping-construct ((,class (:foreground ,purple-2))))
-   `(font-lock-string-face ((,class (:foreground ,magenta-3))))
-   `(font-lock-type-face ((,class (:foreground ,cyan-5))))
-   `(font-lock-variable-name-face ((,class (:foreground ,orange-2))))
-   `(font-lock-warning-face ((,class (:weight bold :foreground ,red-2))))
 
    ;; Completions
    `(completions-annotations ((,class (:foreground ,green-3))))
@@ -447,7 +481,7 @@ Moe, moe, kyun!")
    `(magit-reflog-remote ((,class (:foreground ,blue-4 :background ,blue-0))))
    `(magit-reflog-reset ((,class (:foreground ,red-3 :background ,red-00))))
    `(magit-section-heading ((,class (:foreground ,orange-3 :background nil :bold t :underline t))))
-   `(magit-section-heading-selection ((,class (:background ,blue-0))))
+   `(magit-section-heading-selection ((,class (:foreground ,black-6 :background ,blue-0))))
    `(magit-section-highlight ((,class (:background ,yellow-00))))
    `(magit-sequence-done ((,class (:foreground ,green-3))))
    `(magit-sequence-drop ((,class (:foreground ,orange-2))))
@@ -565,22 +599,26 @@ Moe, moe, kyun!")
    `(diff-removed ((,class (:foreground ,red-3 :background ,red-00 :bold t))))
 
    ;; Ediff
-   `(ediff-current-diff-A ((,class (:background ,yellow-0))))
-   `(ediff-current-diff-Ancestor ((,class (:background ,blue-0))))
-   `(ediff-current-diff-B ((,class (:background ,green-00))))
-   `(ediff-current-diff-C ((,class (:background ,orange-00))))
-   `(ediff-even-diff-A ((,class (:background ,white-3))))
-   `(ediff-even-diff-Ancestor ((,class (:background ,white-3))))
-   `(ediff-even-diff-B ((,class (:background ,white-3))))
-   `(ediff-even-diff-C ((,class (:background ,white-3))))
-   `(ediff-fine-diff-A ((,class (:foreground nil :background ,green-00 :bold t))))
-   `(ediff-fine-diff-Ancestor ((,class (:foreground nil :background ,green-00 :bold t))))
-   `(ediff-fine-diff-B ((,class (:foreground nil :background ,green-00 :bold t))))
-   `(ediff-fine-diff-C ((,class (:foreground nil :background ,green-00 :bold t))))
-   `(ediff-odd-diff-A ((,class (:background ,red-00 :bold t))))
-   `(ediff-odd-diff-Ancestor ((,class (:background ,red-00 :bold t))))
-   `(ediff-odd-diff-B ((,class (:background ,red-00 :bold t))))
-   `(ediff-odd-diff-C ((,class (:background ,red-00 :bold t))))
+   ;; `current': Face for highlighting the selected difference in buffer A/B/C
+   ;; `fine':    Face for highlighting the refinement of the selected diff in buffer A/B/C.
+   ;; `even':    Face for highlighting even-numbered non-current differences in buffer A/B/C
+   ;; `odd':     Face for highlighting odd-numbered non-current differences in buffer A/B/C.
+   `(ediff-current-diff-A        ((,class (:background ,green-00 :foreground ,black-5))))
+   `(ediff-current-diff-Ancestor ((,class (:background ,green-00 :foreground ,black-5))))
+   `(ediff-current-diff-B        ((,class (:background ,green-00 :foreground ,black-5))))
+   `(ediff-current-diff-C        ((,class (:background ,green-00 :foreground ,black-5))))
+   `(ediff-fine-diff-A           ((,class (:background ,green-0  :foreground ,green-5 :bold t))))
+   `(ediff-fine-diff-Ancestor    ((,class (:background ,green-0  :foreground ,green-5 :bold t))))
+   `(ediff-fine-diff-B           ((,class (:background ,green-0  :foreground ,green-5 :bold t))))
+   `(ediff-fine-diff-C           ((,class (:background ,green-0  :foreground ,green-5 :bold t))))
+   `(ediff-even-diff-A           ((,class (:background ,white-2 :foreground ,black-2))))
+   `(ediff-even-diff-Ancestor    ((,class (:background ,white-2 :foreground ,black-2))))
+   `(ediff-even-diff-B           ((,class (:background ,white-2 :foreground ,black-2))))
+   `(ediff-even-diff-C           ((,class (:background ,white-2 :foreground ,black-2))))
+   `(ediff-odd-diff-A            ((,class (:background ,white-2 :foreground ,black-2))))
+   `(ediff-odd-diff-Ancestor     ((,class (:background ,white-2 :foreground ,black-2))))
+   `(ediff-odd-diff-B            ((,class (:background ,white-2 :foreground ,black-2))))
+   `(ediff-odd-diff-C            ((,class (:background ,white-2 :foreground ,black-2))))
 
    ;; smerge
    `(smerge-refined-change ((,class (:background ,blue-3 :foreground ,white-0))))
@@ -591,14 +629,12 @@ Moe, moe, kyun!")
 
    ;; Semantic faces
    `(semantic-decoration-on-includes ((,class (:underline ,black-1))))
-   `(semantic-decoration-on-private-members-face
-     ((,class (:background ,purple-0))))
-   `(semantic-decoration-on-protected-members-face
-     ((,class (:background ,magenta-1))))
-   `(semantic-decoration-on-unknown-includes
-     ((,class (:background ,red-0))))
-   `(semantic-decoration-on-unparsed-includes
-     ((,class (:background ,yellow-1))))
+   `(semantic-decoration-on-private-members-face   ((,class (:foreground ,white-0 :background ,purple-0))))
+   `(semantic-decoration-on-protected-members-face ((,class (:foreground ,white-0 :background ,magenta-1))))
+   `(semantic-decoration-on-unknown-includes       ((,class (:foreground ,white-0 :background ,red-0))))
+   `(semantic-decoration-on-unparsed-includes      ((,class (:foreground nil      :background ,yellow-1))))
+   `(semantic-highlight-edits-face                 ((,class (:foreground nil :background ,green-0))))
+   `(semantic-highlight-func-current-tag-face      ((,class (:foreground nil :background ,green-0))))
    `(semantic-tag-boundary-face ((,class (:overline ,blue-1))))
    `(semantic-unmatched-syntax-face ((,class (:underline ,red-1))))
 
@@ -645,7 +681,7 @@ Moe, moe, kyun!")
    `(comint-highlight-prompt ((,class (:foreground ,black-3 :background ,yellow-0 :bold t))))
 
    ;; which-function-mode
-   `(which-func ((,class (:foreground ,white-0 :background ,orange-2))))
+   `(which-func ((,class (:foreground ,blue-3 :background nil))))
 
    ;; Flymake
    `(flymake-warnline ((,class (:underline ,orange-2))))
@@ -793,6 +829,7 @@ Moe, moe, kyun!")
 
    ;; notmuch
    `(notmuch-search-unread-face ((,class (:weight bold))))
+   `(notmuch-message-summary-face ((,class (:background ,white-1))))
 
    ;; git-gutter (&-fringe)
    `(git-gutter:added ((,class (:foreground ,green-4 :background ,green-0 :bold t))))
@@ -951,11 +988,7 @@ Moe, moe, kyun!")
 
   (custom-theme-set-variables
    'moe-light
-   `(ansi-color-names-vector [,black-5 ,red-0 ,green-2 ,yellow-1
-                                       ,blue-1 ,purple-1 ,blue-0 ,white-0])))
-
-
-(setq moe-theme-which-enabled 'light)
+   `(ansi-color-names-vector [,black-5 ,red-0 ,green-2 ,yellow-1 ,blue-1 ,purple-1 ,blue-0 ,white-0])))
 
 (provide-theme 'moe-light)
 

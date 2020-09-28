@@ -1,6 +1,6 @@
 ;;; elpy-profile.el --- Profiling capabilitiss for elpy
 
-;; Copyright (C) 2013-2016  Jorgen Schaefer
+;; Copyright (C) 2013-2019  Jorgen Schaefer
 
 ;; Author: Gaby Launay <gaby.launay@tutanota.com>
 ;; URL: https://github.com/jorgenschaefer/elpy
@@ -30,7 +30,10 @@
 
 (defcustom elpy-profile-visualizer "snakeviz"
   "Visualizer for elpy profile results."
-  :type 'str
+  :type '(choice (const :tag "Snakeviz" "snakeviz")
+                 (const :tag "RunSnakeRun" "runsnake")
+                 (const :tag "pyprof2calltree" "pyprof2calltree -k -i")
+                 (string :tag "Other"))
   :group 'elpy)
 
 ;;;;;;;;;;;;;;;;;;;;;;
@@ -56,7 +59,7 @@
           (message  "[%s] Profiling failed" filename)
           (display-buffer  "*elpy-profile-log*"))
       (message  "[%s] Profiling succeeded" filename)
-      (when (not dont-display)
+      (unless dont-display
         (elpy-profile--display-profiling prof-file)))))
 
 (defun elpy-profile--file (file &optional in-dir dont-display)

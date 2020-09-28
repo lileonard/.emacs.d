@@ -24,6 +24,13 @@
 (require 'cl-lib)
 (require 'eieio)
 
+(defvar helm-map)
+(defvar helm-mode-line-string)
+(defvar helm-bookmark-map)
+(declare-function helm-make-actions "helm-lib")
+(declare-function helm-ediff-marked-buffers "helm-buffers")
+(declare-function helm-make-type "helm-source")
+
 
 ;;  Files
 (defclass helm-type-file (helm-source) ()
@@ -170,6 +177,8 @@
    (lambda () (and (fboundp 'tab-bar-mode)
                    "Switch to buffer other tab `C-c C-t'"))
    'switch-to-buffer-other-tab
+   "Switch to buffer at line number"
+   'helm-switch-to-buffer-at-linum
    "Browse project `C-x C-d'"
    'helm-buffers-browse-project
    "Query replace regexp `C-M-%'"
@@ -202,7 +211,11 @@
 (defmethod helm--setup-source :before ((source helm-type-buffer))
   (setf (slot-value source 'action) 'helm-type-buffer-actions)
   (setf (slot-value source 'persistent-help) "Show this buffer")
-  (setf (slot-value source 'mode-line) (list "Buffer(s)" helm-mode-line-string))
+  (setf (slot-value source 'mode-line)
+        ;; Use default-value of `helm-mode-line-string' in case user
+        ;; starts with a helm buffer as current-buffer otherwise the
+        ;; local value of this helm buffer is used (issues #1517,#2377).
+        (list "Buffer(s)" (default-value 'helm-mode-line-string)))
   (setf (slot-value source 'filtered-candidate-transformer)
         '(helm-skip-boring-buffers
           helm-buffers-sort-transformer
@@ -215,9 +228,9 @@
 
 (defcustom helm-type-function-actions
   (helm-make-actions
-   "Describe command" 'describe-function
-   "Add command to kill ring" 'helm-kill-new
+   "Describe command" 'helm-describe-function
    "Go to command's definition" 'find-function
+   "Info lookup" 'helm-info-lookup-symbol
    "Debug on entry" 'debug-on-entry
    "Cancel debug on entry" 'cancel-debug-on-entry
    "Trace function" 'trace-function
@@ -225,7 +238,9 @@
    "Untrace function" 'untrace-function)
     "Default actions for type functions."
   :group 'helm-elisp
-  :type '(alist :key-type string :value-type function))
+  ;; Use symbol as value type because some functions may not be
+  ;; autoloaded (like untrace-function).
+  :type '(alist :key-type string :value-type symbol))
 
 (defmethod helm-source-get-action-from-type ((object helm-type-function))
   (slot-value object 'action))
@@ -257,18 +272,20 @@
 
 (defcustom helm-type-command-actions
   (append (helm-make-actions
-           "Call interactively" 'helm-call-interactively)
-          (helm-actions-from-type-function))
+           "Execute command" 'helm-M-x-execute-command)
+          (symbol-value
+           (helm-actions-from-type-function)))
   "Default actions for type command."
   :group 'helm-command
-  :type '(alist :key-type string :value-type function))
+  :type '(alist :key-type string :value-type symbol))
 
 (defmethod helm--setup-source :primary ((_source helm-type-command)))
 
 (defmethod helm--setup-source :before ((source helm-type-command))
   (setf (slot-value source 'action) 'helm-type-command-actions)
   (setf (slot-value source 'coerce) 'helm-symbolify)
-  (setf (slot-value source 'persistent-action) 'describe-function)
+  (setf (slot-value source 'persistent-action) 'helm-M-x-persistent-action)
+  (setf (slot-value source 'persistent-help) "Describe this command")
   (setf (slot-value source 'group) 'helm-command))
 
 ;; Timers
@@ -284,7 +301,8 @@
                              (describe-function (timer--function tm))))
     ("Find Function" . (lambda (tm)
                          (helm-aif (timer--function tm)
-                             (if (byte-code-function-p it)
+                             (if (or (byte-code-function-p it)
+                                     (helm-subr-native-elisp-p it))
                                  (message "Can't find anonymous function `%s'" it)
                                  (find-function it))))))
   "Default actions for type timers."

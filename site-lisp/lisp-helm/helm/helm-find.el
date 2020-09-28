@@ -26,8 +26,9 @@
   :type  'boolean)
 
 (defcustom helm-findutils-search-full-path nil
-  "Search in full path with shell command find when non--nil.
-I.e use the -path/ipath arguments of find instead of -name/iname."
+  "Search in full path with shell command find when non-nil.
+I.e. use the -path/ipath arguments of find instead of
+-name/iname."
   :group 'helm-files
   :type 'boolean)
 
@@ -123,19 +124,9 @@ separator."
            (helm-process-deferred-sentinel-hook
             process event (helm-default-directory))
            (if (string= event "finished\n")
-               (with-helm-window
-                 (setq mode-line-format
-                       '(" " mode-line-buffer-identification " "
-                         (:eval (format "L%s" (helm-candidate-number-at-point))) " "
-                         (:eval (propertize
-                                 (format "[Find process finished - (%s results)]"
-                                         (max (1- (count-lines
-                                                   (point-min) (point-max)))
-                                              0))
-                                 'face 'helm-locate-finish))))
-                 (force-mode-line-update))
-               (helm-log "Error: Find %s"
-                         (replace-regexp-in-string "\n" "" event))))))))
+               (helm-locate-update-mode-line "Find")
+             (helm-log "Error: Find %s"
+                       (replace-regexp-in-string "\n" "" event))))))))
 
 (defun helm-find-1 (dir)
   (let ((default-directory (file-name-as-directory dir)))

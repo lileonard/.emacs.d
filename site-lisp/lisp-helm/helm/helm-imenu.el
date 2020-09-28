@@ -24,13 +24,15 @@
 (require 'helm-utils)
 (require 'helm-help)
 
+(declare-function which-function "which-func")
+
 
 (defgroup helm-imenu nil
-  "Imenu related libraries and applications for helm."
+  "Imenu related libraries and applications for Helm."
   :group 'helm)
 
 (defcustom helm-imenu-delimiter " / "
-  "Delimit types of candidates and his value in `helm-buffer'."
+  "Delimit types of candidates and their value in `helm-buffer'."
   :group 'helm-imenu
   :type 'string)
 
@@ -42,9 +44,9 @@
 
 (defcustom helm-imenu-all-buffer-assoc nil
   "Major mode association alist for `helm-imenu-in-all-buffers'.
-Allow `helm-imenu-in-all-buffers' searching in these associated buffers
-even if they are not derived from each other.
-The alist is bidirectional, i.e no need to add '((foo . bar) (bar . foo))
+Allow `helm-imenu-in-all-buffers' searching in these associated
+buffers even if they are not derived from each other.  The alist
+is bidirectional, i.e. no need to add '((foo . bar) (bar . foo)),
 only '((foo . bar)) is needed."
   :type '(alist :key-type symbol :value-type symbol)
   :group 'helm-imenu)
@@ -56,9 +58,10 @@ When nil all candidates are displayed in a single source.
 
 NOTE: Each source will have as name \"Imenu <buffer-name>\".
 `helm-source-imenu-all' will not be set, however it will continue
-to be used as a flag for using default as input, if you do not want
-this behavior, remove it from `helm-sources-using-default-as-input'
-even if not using a single source to display imenu in all buffers."
+to be used as a flag for using default as input.  If you do not
+want this behavior, remove it from
+`helm-sources-using-default-as-input' even if not using a single
+source to display imenu in all buffers."
   :type 'boolean
   :group 'helm-imenu)
 
@@ -67,9 +70,10 @@ even if not using a single source to display imenu in all buffers."
     ("^\\(Function\\|Functions\\|Defuns\\)$" . font-lock-function-name-face)
     ("^\\(Types\\|Provides\\|Requires\\|Classes\\|Class\\|Includes\\|Imports\\|Misc\\|Code\\)$" . font-lock-type-face))
   "Faces for showing type in helm-imenu.
-This is a list of cons cells.  The cdr of each cell is a face to be used,
-and it can also just be like \\='(:foreground \"yellow\").
-Each car is a regexp match pattern of the imenu type string."
+This is a list of cons cells.  The cdr of each cell is a face to
+be used, and it can also just be like \\='(:foreground
+\"yellow\").  Each car is a regexp match pattern of the imenu type
+string."
   :group 'helm-faces
   :type '(repeat
           (cons
@@ -77,7 +81,7 @@ Each car is a regexp match pattern of the imenu type string."
            (sexp :tag "Face"))))
 
 (defcustom helm-imenu-extra-modes nil
-  "Extra modes where helm-imenu-in-all-buffers should look into."
+  "Extra modes where `helm-imenu-in-all-buffers' should look into."
   :group 'helm-imenu
   :type '(repeat symbol))
 
@@ -175,6 +179,10 @@ Each car is a regexp match pattern of the imenu type string."
               (save-excursion
                 (goto-char (point-at-bol))
                  (point-marker)))))
+    ;; Happen when cursor is on the line where a definition is. This
+    ;; prevent jumping to the definition where we are already, instead
+    ;; display helm with all definitions and preselection to the place
+    ;; we already are.
     (if (equal (cdr cur) mb)
         (prog1 nil
           (helm-set-pattern "")
@@ -310,25 +318,32 @@ Each car is a regexp match pattern of the imenu type string."
 (defun helm-imenu ()
   "Preconfigured `helm' for `imenu'."
   (interactive)
+  (require 'which-func)
   (unless helm-source-imenu
     (setq helm-source-imenu
           (helm-make-source "Imenu" 'helm-imenu-source
             :fuzzy-match helm-imenu-fuzzy-match)))
-  (let ((imenu-auto-rescan t)
-        (str (thing-at-point 'symbol))
-        (helm-execute-action-at-once-if-one
-         helm-imenu-execute-action-at-once-if-one))
+  (let* ((imenu-auto-rescan t)
+         (helm-highlight-matches-around-point-max-lines 'never)
+         (str (thing-at-point 'symbol))
+         (init-reg (and str (concat "\\_<" (regexp-quote str) "\\_>")))
+         (helm-execute-action-at-once-if-one
+          helm-imenu-execute-action-at-once-if-one))
     (helm :sources 'helm-source-imenu
-          :default (list (concat "\\_<" (and str (regexp-quote str)) "\\_>") str)
-          :preselect str
+          :default (and str (list init-reg str))
+          :preselect (helm-aif (which-function)
+                         (concat "\\_<" (regexp-quote it) "\\_>")
+                       init-reg)
           :buffer "*helm imenu*")))
 
 ;;;###autoload
 (defun helm-imenu-in-all-buffers ()
-  "Preconfigured helm for fetching imenu entries in all buffers with similar mode as current.
-A mode is similar as current if it is the same, it is derived i.e `derived-mode-p'
-or it have an association in `helm-imenu-all-buffer-assoc'."
+  "Preconfigured `helm' for fetching imenu entries in all buffers with similar mode as current.
+A mode is similar as current if it is the same, it is derived
+i.e. `derived-mode-p' or it have an association in
+`helm-imenu-all-buffer-assoc'."
   (interactive)
+  (require 'which-func)
   (unless helm-imenu-in-all-buffers-separate-sources
     (unless helm-source-imenu-all
       (setq helm-source-imenu-all
@@ -341,19 +356,23 @@ or it have an association in `helm-imenu-all-buffer-assoc'."
                             (helm-imenu-candidates-in-all-buffers)))
               :candidates 'helm-imenu--in-all-buffers-cache
               :fuzzy-match helm-imenu-fuzzy-match))))
-  (let ((imenu-auto-rescan t)
-        (str (thing-at-point 'symbol))
-        (helm-execute-action-at-once-if-one
-         helm-imenu-execute-action-at-once-if-one)
-        (helm--maybe-use-default-as-input
-         (not (null (memq 'helm-source-imenu-all
-                          helm-sources-using-default-as-input))))
-        (sources (if helm-imenu-in-all-buffers-separate-sources
-                     (helm-imenu-candidates-in-all-buffers 'build-sources)
-                     '(helm-source-imenu-all))))
+  (let* ((imenu-auto-rescan t)
+         (helm-highlight-matches-around-point-max-lines 'never)
+         (str (thing-at-point 'symbol))
+         (init-reg (and str (concat "\\_<" (regexp-quote str) "\\_>")))
+         (helm-execute-action-at-once-if-one
+          helm-imenu-execute-action-at-once-if-one)
+         (helm-maybe-use-default-as-input
+          (not (null (memq 'helm-source-imenu-all
+                           helm-sources-using-default-as-input))))
+         (sources (if helm-imenu-in-all-buffers-separate-sources
+                      (helm-imenu-candidates-in-all-buffers 'build-sources)
+                    '(helm-source-imenu-all))))
     (helm :sources sources
-          :default (list (concat "\\_<" (and str (regexp-quote str)) "\\_>") str)
-          :preselect (unless helm--maybe-use-default-as-input str)
+          :default (and str (list init-reg str))
+          :preselect (helm-aif (which-function)
+                         (concat "\\_<" (regexp-quote it) "\\_>")
+                       init-reg)
           :buffer "*helm imenu all*")))
 
 (provide 'helm-imenu)

@@ -22,16 +22,26 @@
 (require 'helm-help)
 (eval-when-compile (require 'dired))
 
-(declare-function helm-find-files-1 "helm-files.el" (fname &optional preselect))
+(declare-function helm-find-files-1 "helm-files" (fname &optional preselect))
+(declare-function helm-grep-split-line "helm-grep" (line))
 (declare-function popup-tip "ext:popup")
-(declare-function markdown-show-subtree "outline.el")
-(declare-function outline-show-subtree "outline.el")
-(declare-function org-reveal "org.el")
-(declare-function tab-bar-tabs "tab-bar.el")
-(declare-function tab-bar-select-tab "tab-bar.el")
+(declare-function markdown-show-subtree "outline")
+(declare-function outline-show-subtree "outline")
+(declare-function org-reveal "org")
+(declare-function tab-bar-tabs "tab-bar")
+(declare-function tab-bar-select-tab "tab-bar")
+(declare-function dired-goto-file "dired")
+(declare-function bookmark-get-filename "bookmark")
+(declare-function package-installed-p "package")
+(declare-function package-desc-dir "package")
+
 (defvar org-directory)
 (defvar winner-boring-buffers)
+(defvar bookmark-alist)
 (defvar helm-show-completion-overlay)
+(defvar helm-buffers-maybe-switch-to-tab)
+(defvar helm-ff-transformer-show-only-basename)
+(defvar helm-popup-tip-mode)
 
 
 (defgroup helm-utils nil
@@ -54,10 +64,24 @@ It is a float, usually 1024.0 but could be 1000.0 on some systems."
   'helm-highlight-matches-around-point-max-lines
   "20160119")
 
-(defcustom helm-highlight-matches-around-point-max-lines 15
-  "Number of lines around point where matched items are highlighted."
+(defcustom helm-highlight-matches-around-point-max-lines '(15 . 15)
+  "Number of lines around point where matched items are highlighted.
+
+Possible value are:
+- A cons cell (x . y)
+  Match x lines before point and y lines after point.
+- An integer
+  Positive means this number lines after point.
+  Negative means this number lines before point.
+  A zero value means highlight only inside matched lines.
+- The symbol never
+  Means do not highlight matched items. "
   :group 'helm-utils
-  :type 'integer)
+  :type '(choice (cons (integer :tag "Match before")
+                       (integer :tag "Match after"))
+                 (const :tag "Match in line only" 0)
+                 (integer :tag "Match after or before (+/-)")
+                 (const  :tag "Never match" 'never)))
 
 (defcustom helm-buffers-to-resize-on-pa nil
   "A list of helm buffers where the helm-window should be reduced on persistent actions."
@@ -76,11 +100,11 @@ It is a float, usually 1024.0 but could be 1000.0 on some systems."
   :type '(repeat (choice string)))
 
 (defcustom helm-html-decode-entities-function #'helm-html-decode-entities-string
-  "Function used to decode html entities in html bookmarks.
+  "Function used to decode HTML entities in HTML bookmarks.
 Helm comes by default with `helm-html-decode-entities-string', if you need something
 more sophisticated you can use `w3m-decode-entities-string' if available.
 
-In emacs itself org-entities seems broken and `xml-substitute-numeric-entities'
+In Emacs itself org-entities seem broken and `xml-substitute-numeric-entities'
 supports only numeric entities."
   :group 'helm-utils
   :type 'function)
@@ -88,17 +112,17 @@ supports only numeric entities."
 
 (defvar helm-goto-line-before-hook '(helm-save-current-pos-to-mark-ring)
   "Run before jumping to line.
-This hook run when jumping from `helm-goto-line', `helm-etags-default-action',
+This hook runs when jumping from `helm-goto-line', `helm-etags-default-action',
 and `helm-imenu-default-action'.
-This allow you to retrieve a previous position after using the different helm
+This allows you to retrieve a previous position after using the different helm
 tools for searching (etags, grep, gid, (m)occur etc...).
-By default positions are added to `mark-ring' you can also add to register
-by using instead (or adding) `helm-save-pos-to-register-before-jump'.
-In this case last position is added to the register
-`helm-save-pos-before-jump-register'.")
+By default positions are added to `mark-ring'.
+You can also add to register by using (or adding)
+`helm-save-pos-to-register-before-jump' instead. In this case
+last position is added to the register `helm-save-pos-before-jump-register'.")
 
 (defvar helm-save-pos-before-jump-register ?_
-  "The register where `helm-save-pos-to-register-before-jump' save position.")
+  "The register where `helm-save-pos-to-register-before-jump' saves position.")
 
 (defconst helm-html-entities-alist
   '(("&quot;"   . 34)   ;; "
@@ -206,18 +230,20 @@ In this case last position is added to the register
   "Table of html character entities and values.")
 
 (defvar helm-find-many-files-after-hook nil
-  "Hook that run at end of `helm-find-many-files'.")
+  "Hook that runs at end of `helm-find-many-files'.")
 
 ;;; Faces.
 ;;
 (defface helm-selection-line
-    '((t (:inherit highlight :distant-foreground "black")))
-  "Face used in the `helm-current-buffer' when jumping to candidate."
+  `((t ,@(and (>= emacs-major-version 27) '(:extend t))
+       :inherit highlight :distant-foreground "black"))
+  "Face used in the `helm-current-buffer' when jumping to a candidate."
   :group 'helm-faces)
 
 (defface helm-match-item
-    '((t (:inherit isearch)))
-  "Face used to highlight item matched in a selected line."
+  `((t ,@(and (>= emacs-major-version 27) '(:extend t))
+       :inherit isearch))
+  "Face used to highlight the item matched in a selected line."
   :group 'helm-faces)
 
 
@@ -236,7 +262,7 @@ according to the setting of `split-width-threshold' and the size of
 the window from where splitting is done.
 
 Note that when using `decide' and `split-width-threshold' is nil, the
-behavior is the same that with a nil value."
+behavior is the same as with a nil value."
   :group 'helm-utils
   :type '(choice
            (const :tag "Split window vertically" t)
@@ -258,8 +284,8 @@ It is typically used to rearrange windows."
 (defun helm-window-show-buffers (buffers &optional other-window)
   "Show BUFFERS.
 
-If more than one buffer marked switch to these buffers in separate windows.
-If OTHER-WINDOW is non-nil, keep current buffer and switch to others buffers
+With more than one buffer marked switch to these buffers in separate windows.
+If OTHER-WINDOW is non-nil, keep current buffer and switch to other buffers
 in separate windows.
 If a prefix arg is given split windows vertically."
   (let ((initial-ow-fn (if (cdr (window-list))
@@ -272,19 +298,24 @@ If a prefix arg is given split windows vertically."
           (funcall initial-ow-fn (car buffers))
         (helm-buffers-switch-to-buffer-or-tab (car buffers))))))
 
+(defvar tab-bar-tab-name-function)
+(declare-function tab-bar-switch-to-tab "tab-bar.el")
+(declare-function tab-bar-tab-name-all "tab-bar.el")
+
 (defun helm-buffers-switch-to-buffer-or-tab (buffer)
   "Switch to BUFFER in its tab if some."
   (if (and (fboundp 'tab-bar-mode)
            helm-buffers-maybe-switch-to-tab)
-      (let* ((tabs (tab-bar-tabs))
+      (let* ((tab-bar-tab-name-function #'tab-bar-tab-name-all)
+             (tabs (tab-bar-tabs))
              (tab-names (mapcar (lambda (tab)
                                   (cdr (assq 'name tab)))
-                                (tab-bar-tabs)))
+                                tabs))
              (bname (buffer-name (get-buffer buffer)))
              (tab (helm-buffers--get-tab-from-name bname tabs)))
         (if (helm-buffers--buffer-in-tab-p bname tab-names)
             (progn
-              (tab-bar-select-tab tab)
+              (tab-bar-switch-to-tab (alist-get 'name tab))
               (select-window (get-buffer-window bname)))
           (switch-to-buffer buffer)))
     (switch-to-buffer buffer)))
@@ -489,7 +520,7 @@ To use this add it to `helm-goto-line-before-hook'."
 (defun helm-show-all-candidates-in-source (arg)
   "Toggle all or only candidate-number-limit cands in current source.
 With a numeric prefix arg show only the ARG number of candidates.
-The prefix arg have no effect when toggling to only
+The prefix arg has no effect when toggling to only
 candidate-number-limit."
   (interactive "p")
   (with-helm-alive-p
@@ -538,6 +569,7 @@ from its directory."
   (with-helm-alive-p
     (require 'helm-grep)
     (require 'helm-elisp)
+    (require 'bookmark) ; For bookmark-alist
     (helm-run-after-exit
      (lambda (f)
        ;; Ensure specifics `helm-execute-action-at-once-if-one'
@@ -553,9 +585,12 @@ from its directory."
                                       (helm-basename f) f))))
              (helm-find-files-1 f))))
      (let* ((sel       (helm-get-selection))
-            (marker    (if (consp sel) (markerp (cdr sel))))
+            (marker    (and (consp sel) (markerp (cdr sel))))
             (grep-line (and (stringp sel)
                             (helm-grep-split-line sel)))
+            (occur-fname (helm-aand (numberp sel)
+                                    (helm-attr 'buffer-name)
+                                    (buffer-file-name (get-buffer it))))
             (bmk-name  (and (stringp sel)
                             (not grep-line)
                             (replace-regexp-in-string "\\`\\*" "" sel)))
@@ -593,9 +628,8 @@ from its directory."
          ((and grep-line (file-exists-p (car grep-line)))
           (expand-file-name (car grep-line)))
          ;; Occur.
-         (grep-line
-          (with-current-buffer (get-buffer (car grep-line))
-            (expand-file-name (or (buffer-file-name) default-directory))))
+         ((and occur-fname (file-exists-p occur-fname))
+          (expand-file-name occur-fname))
          ;; Package (installed).
          ((and pkg (package-installed-p pkg))
           (expand-file-name (package-desc-dir pkg)))
@@ -619,7 +653,8 @@ that is sorting is done against real value of candidate."
          (reg1  (concat "\\_<" qpattern "\\_>"))
          (reg2  (concat "\\_<" qpattern))
          (reg3  helm-pattern)
-         (split (helm-mm-split-pattern helm-pattern))
+         (split (helm-remove-if-match
+                 "\\`!" (helm-mm-split-pattern helm-pattern)))
          (str1  (if (consp s1) (cdr s1) s1))
          (str2  (if (consp s2) (cdr s2) s2))
          (score (lambda (str r1 r2 r3 lst)
@@ -629,25 +664,31 @@ that is sorting is done against real value of candidate."
                                    (string-match
                                     (concat "\\_<" (regexp-quote (car lst))) str)
                                    (cl-loop for r in (cdr lst)
-                                            always (string-match r str))) 4)
+                                            always (string-match r str)))
+                              4)
                              ((and (string-match " " qpattern)
                                    (cl-loop for r in lst
-                                            always (string-match r str))) 3)
+                                            always (string-match r str)))
+                              3)
                              ((string-match r2 str) 2)
                              ((string-match r3 str) 1)
                              (t 0)))))
-         (sc1 (funcall score str1 reg1 reg2 reg3 split))
-         (sc2 (funcall score str2 reg1 reg2 reg3 split)))
-    (cond ((or (zerop (string-width qpattern))
-               (and (zerop sc1) (zerop sc2)))
+         (sc1 (get-text-property 0 'completion-score str1))
+         (sc2 (get-text-property 0 'completion-score str2))
+         (sc3 (if sc1 0 (funcall score str1 reg1 reg2 reg3 split)))
+         (sc4 (if sc2 0 (funcall score str2 reg1 reg2 reg3 split))))
+    (cond ((and sc1 sc2) ; helm-flex style.
+           (> sc1 sc2))
+          ((or (zerop (string-width qpattern))
+               (and (zerop sc3) (zerop sc4)))
            (string-lessp str1 str2))
-          ((= sc1 sc2)
+          ((= sc3 sc4)
            (< (length str1) (length str2)))
-          (t (> sc1 sc2)))))
+          (t (> sc3 sc4)))))
 
 (cl-defun helm-file-human-size (size &optional (kbsize helm-default-kbsize))
   "Return a string showing SIZE of a file in human readable form.
-SIZE can be an integer or a float depending it's value.
+SIZE can be an integer or a float depending on it's value.
 `file-attributes' will take care of that to avoid overflow error.
 KBSIZE is a floating point number, defaulting to `helm-default-kbsize'."
   (cl-loop with result = (cons "B" size)
@@ -658,6 +699,24 @@ KBSIZE is a floating point number, defaulting to `helm-default-kbsize'."
            (helm-acase (car result)
              ("B" (format "%s" size))
              (t (format "%.1f%s" (cdr result) it)))))
+
+(defun helm-directory-size (directory &optional recursive human)
+  "Return the resulting size of the sum of all files in DIRECTORY.
+
+If RECURSIVE is non nil return the size of all files in DIRECTORY and
+its subdirectories.  With arg HUMAN format the size in a human
+readable format,see `helm-file-human-size'."
+  (cl-loop with files = (if recursive
+                            (helm-walk-directory
+                             directory
+                             :path 'full
+                             :directories t)
+                          (directory-files directory t))
+           for file in files
+           sum (nth 7 (file-attributes file)) into total
+           finally return (if human
+                              (helm-file-human-size total)
+                            total)))
 
 (cl-defun helm-file-attributes
     (file &key type links uid gid access-time modif-time
@@ -776,8 +835,9 @@ Inlined here for compatibility."
 
 (defmacro with-helm-display-marked-candidates (buffer-or-name candidates &rest body)
   (declare (indent 0) (debug t))
-  (helm-with-gensyms (buffer window)
+  (helm-with-gensyms (buffer window winconf)
     `(let* ((,buffer (temp-buffer-window-setup ,buffer-or-name))
+            (,winconf helm-last-frame-or-window-configuration)
             (helm-always-two-windows t)
             (helm-split-window-default-side
              (if (eq helm-split-window-default-side 'same)
@@ -794,7 +854,8 @@ Inlined here for compatibility."
                                '(display-buffer-below-selected
                                  (window-height . fit-window-to-buffer))))
               (progn ,@body))
-         (quit-window 'kill ,window)))))
+         (quit-window 'kill ,window)
+         (and ,winconf (set-window-configuration ,winconf))))))
 
 ;;; Persistent Action Helpers
 ;;
@@ -803,7 +864,7 @@ Inlined here for compatibility."
 (defvar helm-match-line-overlay nil)
 (defvar helm--match-item-overlays nil)
 
-(defun helm-highlight-current-line (&optional start end buf face)
+(cl-defun helm-highlight-current-line (&optional start end buf face)
   "Highlight and underline current position"
   (let* ((start (or start (line-beginning-position)))
          (end (or end (1+ (line-end-position))))
@@ -821,20 +882,40 @@ Inlined here for compatibility."
     ;; Now highlight matches only if we are in helm session, we are
     ;; maybe coming from helm-grep-mode or helm-moccur-mode buffers.
     (when helm-alive-p
-      (if (or (null helm-highlight-matches-around-point-max-lines)
-              (zerop helm-highlight-matches-around-point-max-lines))
-          (setq start-match start
-                end-match   end)
-          (setq start-match
-                (save-excursion
-                  (forward-line
-                   (- helm-highlight-matches-around-point-max-lines))
-                  (point-at-bol))
-                  end-match
-                  (save-excursion
-                    (forward-line
-                     helm-highlight-matches-around-point-max-lines)
-                    (point-at-bol))))
+      (cond (;; These 2 clauses have to be the first otherwise
+             ;; `helm-highlight-matches-around-point-max-lines' is
+             ;; compared as a number by other clauses and return an error.
+             (eq helm-highlight-matches-around-point-max-lines 'never)
+             (cl-return-from helm-highlight-current-line))
+            ((consp helm-highlight-matches-around-point-max-lines)
+             (setq start-match
+                   (save-excursion
+                     (forward-line
+                      (- (car helm-highlight-matches-around-point-max-lines)))
+                     (point-at-bol))
+                   end-match
+                   (save-excursion
+                     (forward-line
+                      (cdr helm-highlight-matches-around-point-max-lines))
+                     (point-at-bol))))
+            ((or (null helm-highlight-matches-around-point-max-lines)
+                 (zerop helm-highlight-matches-around-point-max-lines))
+             (setq start-match start
+                   end-match   end))
+            ((< helm-highlight-matches-around-point-max-lines 0)
+             (setq start-match
+                   (save-excursion
+                     (forward-line
+                      helm-highlight-matches-around-point-max-lines)
+                     (point-at-bol))
+                   end-match start))
+            ((> helm-highlight-matches-around-point-max-lines 0)
+             (setq start-match start
+                   end-match
+                   (save-excursion
+                     (forward-line
+                      helm-highlight-matches-around-point-max-lines)
+                     (point-at-bol)))))
       (catch 'empty-line
         (cl-loop with ov
                  for r in (helm-remove-if-match
@@ -847,9 +928,10 @@ Inlined here for compatibility."
                  do (save-excursion
                       (goto-char start-match)
                       (while (condition-case _err
-                                 (if helm-migemo-mode
-                                     (helm-mm-migemo-forward r end-match t)
-                                     (re-search-forward r end-match t))
+                                 (and (not (= start-match end-match))
+                                      (if helm-migemo-mode
+                                          (helm-mm-migemo-forward r end-match t)
+                                        (re-search-forward r end-match t)))
                                (invalid-regexp nil))
                         (let ((s (match-beginning 0))
                               (e (match-end 0)))
@@ -893,6 +975,8 @@ Assume regexp is a pcre based regexp."
     (helm-match-line-cleanup)))
 
 (defun helm-match-line-update ()
+  (when helm--match-item-overlays
+    (mapc 'delete-overlay helm--match-item-overlays))
   (when helm-match-line-overlay
     (delete-overlay helm-match-line-overlay)
     (helm-highlight-current-line)))
@@ -969,8 +1053,8 @@ Assume regexp is a pcre based regexp."
                      file))))
 
 (defun helm-open-dired (file)
-  "Opens a dired buffer in FILE's directory.  If FILE is a
-directory, open this directory."
+  "Open a dired buffer in FILE's directory.
+If FILE is a directory, open this directory."
   (if (file-directory-p file)
       (dired file)
     (dired (file-name-directory file))
@@ -999,7 +1083,7 @@ directory, open this directory."
 
 (defun helm-find-many-files (_ignore)
   "Simple action that run `find-file' on marked candidates.
-Run `helm-find-many-files-after-hook' at end"
+Run `helm-find-many-files-after-hook' at end."
   (let ((helm--reading-passwd-or-string t))
     (mapc 'find-file (helm-marked-candidates))
     (helm-log-run-hook 'helm-find-many-files-after-hook)))
@@ -1016,7 +1100,7 @@ If COUNT is non--nil add a number after each prompt."
         finally return (remove "" lis)))
 
 (defun helm-html-bookmarks-to-alist (file url-regexp bmk-regexp)
-  "Parse html bookmark FILE and return an alist with (title . url) as elements."
+  "Parse HTML bookmark FILE and return an alist with (title . url) as elements."
   (let (bookmarks-alist url title)
     (with-temp-buffer
       (insert-file-contents file)
@@ -1034,7 +1118,7 @@ If COUNT is non--nil add a number after each prompt."
     (nreverse bookmarks-alist)))
 
 (defun helm-html-entity-to-string (entity)
-  "Replace an html ENTITY by its string value.
+  "Replace an HTML ENTITY with its string value.
 When unable to decode ENTITY returns nil."
   (helm-aif (assoc entity helm-html-entities-alist)
       (string (cdr it))

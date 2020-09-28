@@ -1,6 +1,6 @@
 ;;; elpy-refactor.el --- Refactoring mode for Elpy
 
-;; Copyright (C) 2013-2016  Jorgen Schaefer
+;; Copyright (C) 2013-2019  Jorgen Schaefer
 
 ;; Author: Jorgen Schaefer <contact@jorgenschaefer.de>
 ;; URL: https://github.com/jorgenschaefer/elpy
@@ -85,7 +85,7 @@ created."
               (description (cdr (assq 'description option)))
               (name (cdr (assq 'name option)))
               (args (cdr (assq 'args option))))
-          (when (not (equal category last-category))
+          (unless (equal category last-category)
             (when last-category
               (insert "\n"))
             (insert (propertize category 'face 'bold) "\n")
@@ -155,7 +155,7 @@ Available types:
 
 The user can review the changes and confirm them with
 \\[elpy-refactor-commit]."
-  (when (not changes)
+  (unless changes
     (error "No changes for this refactoring action."))
   (with-current-buffer (get-buffer-create "*Elpy Refactor*")
     (elpy-refactor-mode)
@@ -221,7 +221,7 @@ The user can review the changes and confirm them with
 (defun elpy-refactor-commit ()
   "Commit the changes in the current buffer."
   (interactive)
-  (when (not elpy-refactor-changes)
+  (unless elpy-refactor-changes
     (error "No changes to commit."))
   ;; Restore the window configuration as the first thing so that
   ;; changes below are visible to the user. Especially the point

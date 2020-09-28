@@ -57,10 +57,7 @@
 ;;some TAB settings
 (setq-default indent-tabs-mode nil
               default-tab-width 4)
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;c-c:copy c-x:cut c-v:paste
-(cua-mode t);; nil (cua-base))
-;;(setq cua-keep-region-after-copy t) ;; Standard Windows behaviour
+
 (require 'paren)
 (show-paren-mode t)
 (setq show-paren-style 'parentheses)
@@ -112,18 +109,17 @@
 ;; and do NOT forget CUDA & MPI &FFTW
 (defvar my-sys-c-include
   (list
-   "/home/lyh/Soft/mpich/include"
-   "/home/lyh/Soft/fftw3/include"
-   "/home/lyh/Soft/QT/Qt-4.8.1/Desktop/Qt/4.8.1/gcc/include"
-   "/home/lyh/Soft/LeSeis/include"
-   "."
-   "/usr/lib/gcc/x86_64-redhat-linux/10/../../../../include/c++/10"
-   "/usr/lib/gcc/x86_64-redhat-linux/10/../../../../include/c++/10/x86_64-redhat-linux"
-   "/usr/lib/gcc/x86_64-redhat-linux/10/../../../../include/c++/10/backward"
-   "/usr/lib/gcc/x86_64-redhat-linux/10/include"
-   "/usr/local/include"
-   "/usr/include"
-   ))
+  "/mnt/Soft/LinuxSoft/mpich/include"
+  "/mnt/Soft/LinuxSoft/FFTW3/include"
+  "/mnt/Soft/LinuxSoft/QT/Qt-4.8.1/Desktop/Qt/4.8.1/gcc/include"
+  "/mnt/Soft/LinuxSoft/LeSeis/include"
+  "."
+  "/usr/lib/gcc/x86_64-redhat-linux/9/../../../../include/c++/9"
+  "/usr/lib/gcc/x86_64-redhat-linux/9/../../../../include/c++/9/x86_64-redhat-linux"
+  "/usr/lib/gcc/x86_64-redhat-linux/9/../../../../include/c++/9/backward"
+  "/usr/lib/gcc/x86_64-redhat-linux/9/include"
+  "/usr/local/include"
+  "/usr/include"))
 
 (defvar my-custom-include-dirs 
   (list

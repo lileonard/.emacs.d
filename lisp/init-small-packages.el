@@ -83,14 +83,19 @@
 (custom-set-variables
  '(undo-tree-mode-lighter "Undo"))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;cua settings c-c:copy c-x:cut c-v:paste
+(cua-mode t);;
+(setq cua-keep-region-after-copy t) ;; Standard Windows behaviour
 (require 'cua-rect)
+(require 'cua-base)
+(require 'cua-gmrk)
 (defun hkb-mouse-mark-cua-rectangle (event)
   (interactive "e")
   (if (not cua--rectangle)
       (cua-mouse-set-rectangle-mark event)
     (cua-mouse-resize-rectangle event)))
-(global-set-key (kbd "<s-mouse-1>") 'hkb-mouse-mark-cua-rectangle)
-(define-key cua--rectangle-keymap (kbd "<s-mouse-1>") 'hkb-mouse-mark-cua-rectangle)
+(global-set-key (kbd "<S-C-mouse-1>") 'hkb-mouse-mark-cua-rectangle)
+(define-key cua--rectangle-keymap (kbd "<S-C-mouse-1>") 'hkb-mouse-mark-cua-rectangle)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; turn on save place so that when opening a file, the cursor will be at the last position.
 (require 'saveplace)
@@ -146,8 +151,8 @@
 (popwin-mode 1)             
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'hungry-delete)
-(add-hook 'emacs-lisp-mode-hook  #'(lambda () (hungry-keyboard emacs-lisp-mode-map)))
-(add-hook 'python-mode-hook  #'(lambda () (hungry-keyboard python-mode-map)))
+(add-hook 'emacs-lisp-mode-hook 'hungry-delete-mode)
+(add-hook 'python-mode-hook     'hungry-delete-mode)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'diff)
 ;; show whitespace in diff-mode

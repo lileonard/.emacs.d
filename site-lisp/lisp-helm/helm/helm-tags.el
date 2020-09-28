@@ -23,6 +23,9 @@
 (require 'helm-utils)
 (require 'helm-grep)
 
+(defvar helm-etags-fuzzy-match)
+(declare-function ring-insert "ring")
+
 
 (defgroup helm-tags nil
   "Tags related Applications and libraries for Helm."
@@ -64,8 +67,9 @@ one match."
   :group 'helm-faces)
 
 (defface helm-etags-file
-    '((t (:foreground "Lightgoldenrod4"
-          :underline t)))
+  `((t ,@(and (>= emacs-major-version 27) '(:extend t))
+       :foreground "Lightgoldenrod4"
+       :underline t))
   "Face used to highlight etags filenames."
   :group 'helm-tags-faces)
 
@@ -107,8 +111,8 @@ one match."
   "Cache content of etags files used here for faster access.")
 
 (defun helm-etags-get-tag-file (&optional directory)
-  "Return the path of etags file if found.
-Lookes recursively in parents directorys for a
+  "Return the path of etags file if found in DIRECTORY.
+Look recursively in parents directorys for a
 `helm-etags-tag-file-name' file."
   ;; Get tag file from `default-directory' or upper directory.
   (let ((current-dir (helm-etags-find-tag-file-directory
@@ -118,7 +122,7 @@ Lookes recursively in parents directorys for a
       (expand-file-name helm-etags-tag-file-name current-dir))))
 
 (defun helm-etags-all-tag-files ()
-  "Return files from the following sources;
+  "Return files from the following sources:
   1) An automatically located file in the parent directories, by `helm-etags-get-tag-file'.
   2) `tags-file-name', which is commonly set by `find-tag' command.
   3) `tags-table-list' which is commonly set by `visit-tags-table' command."
@@ -186,7 +190,7 @@ If not found in CURRENT-DIR search in upper directory."
 
 (defun helm-etags-init ()
   "Feed `helm-buffer' using `helm-etags-cache' or tag file.
-If no entry in cache, create one."
+If there is no entry in cache, create one."
   (let ((tagfiles (helm-etags-all-tag-files)))
     (when tagfiles
       (with-current-buffer (helm-candidate-buffer 'global)
@@ -329,9 +333,12 @@ Create with etags shell command, or visit with `find-tag' or `visit-tags-table'.
                 (helm-etags-build-source)))
         (helm :sources 'helm-source-etags-select
               :keymap helm-etags-map
-              :default (if helm-etags-fuzzy-match
-                           str
-                           (list (concat "\\_<" str "\\_>") str))
+              :default (and (stringp str)
+                            (if (or helm-etags-fuzzy-match
+                                    (and (eq major-mode 'haskell-mode)
+                                         (string-match "[']\\'" str)))
+                                str
+                              (list (concat "\\_<" str "\\_>") str)))
               :buffer "*helm etags*"))))
 
 (provide 'helm-tags)

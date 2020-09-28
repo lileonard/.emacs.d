@@ -4,6 +4,8 @@
 
 ;; Author: Artem Malyshev <proofit404@gmail.com>
 ;; URL: https://github.com/proofit404/anaconda-mode
+;; Package-Version: 20200912.239
+;; Package-Commit: 39b1cf88c8c459901630d248d6135d8644075648
 ;; Version: 0.1.13
 ;; Package-Requires: ((emacs "25.1") (pythonic "0.1.0") (dash "2.6.0") (s "1.9") (f "0.16.2"))
 
@@ -69,7 +71,14 @@
   "If the value is not nil, use posframe to show eldoc."
   :type 'boolean)
 
-
+(defcustom anaconda-mode-tunnel-setup-sleep 2
+  "Time in seconds `anaconda-mode' waits after tunnel creation before first RPC call."
+  :type 'integer)
+
+(defcustom anaconda-mode-sync-request-timeout 2
+  "Time in seconds `anaconda-mode' waits for a synchronous response."
+  :type 'integer)
+
 ;;; Compatibility
 
 ;; Functions from posframe which is an optional dependency
@@ -77,29 +86,40 @@
 (declare-function posframe-hide "posframe")
 (declare-function posframe-show "posframe")
 
-
 ;;; Server.
-
 (defvar anaconda-mode-server-version "0.1.13"
   "Server version needed to run `anaconda-mode'.")
 
 (defvar anaconda-mode-server-command "
 from __future__ import print_function
+
 # CLI arguments.
+
 import sys
+
 assert len(sys.argv) > 3, 'CLI arguments: %s' % sys.argv
+
 server_directory = sys.argv[-3]
 server_address = sys.argv[-2]
 virtual_environment = sys.argv[-1]
+
 # Ensure directory.
+
 import os
+
 server_directory = os.path.expanduser(server_directory)
+virtual_environment = os.path.expanduser(virtual_environment)
+
 if not os.path.exists(server_directory):
     os.makedirs(server_directory)
+
 # Installation check.
+
 jedi_dep = ('jedi', '0.13.0')
 service_factory_dep = ('service_factory', '0.1.5')
+
 missing_dependencies = []
+
 def instrument_installation():
     for package in (jedi_dep, service_factory_dep):
         package_is_installed = False
@@ -112,8 +132,11 @@ def instrument_installation():
                     package_is_installed = True
         if not package_is_installed:
             missing_dependencies.append('>='.join(package))
+
 instrument_installation()
+
 # Installation.
+
 def install_deps():
     import site
     import setuptools.command.easy_install
@@ -124,31 +147,42 @@ def install_deps():
     cmd.extend(missing_dependencies)
     setuptools.command.easy_install.main(cmd)
     instrument_installation()
+
 if missing_dependencies:
     install_deps()
+
 del missing_dependencies[:]
+
 try:
     import jedi
 except ImportError:
     missing_dependencies.append('>='.join(jedi_dep))
+
 try:
     import service_factory
 except ImportError:
     missing_dependencies.append('>='.join(service_factory_dep))
+
 # Try one more time in case if anaconda installation gets broken somehow
 if missing_dependencies:
     install_deps()
     import jedi
     import service_factory
+
 # Setup server.
+
 assert jedi.__version__ >= jedi_dep[1], 'Jedi version should be >= %s, current version: %s' % (jedi_dep[1], jedi.__version__,)
+
 if virtual_environment:
     virtual_environment = jedi.create_environment(virtual_environment, safe=False)
 else:
     virtual_environment = None
+
 # Define JSON-RPC application.
+
 import functools
 import threading
+
 def script_method(f):
     @functools.wraps(f)
     def wrapper(source, line, column, path):
@@ -158,6 +192,7 @@ def script_method(f):
         timer.cancel()
         return result
     return wrapper
+
 def process_definitions(f):
     @functools.wraps(f)
     def wrapper(script):
@@ -172,10 +207,12 @@ def process_definitions(f):
                 for definition in definitions
                 if definition.module_path] or None
     return wrapper
+
 @script_method
 def complete(script):
     return [[definition.name, definition.type]
             for definition in script.completions()]
+
 @script_method
 def company_complete(script):
     return [[definition.name,
@@ -184,22 +221,27 @@ def company_complete(script):
              definition.module_path,
              definition.line]
             for definition in script.completions()]
+
 @script_method
 def show_doc(script):
     return [[definition.module_name, definition.docstring()]
             for definition in script.goto_definitions()]
+
 @script_method
 @process_definitions
 def goto_definitions(script):
     return script.goto_definitions()
+
 @script_method
 @process_definitions
 def goto_assignments(script):
     return script.goto_assignments()
+
 @script_method
 @process_definitions
 def usages(script):
     return script.usages()
+
 @script_method
 def eldoc(script):
     signatures = script.call_signatures()
@@ -208,8 +250,11 @@ def eldoc(script):
         return [signature.name,
                 signature.index,
                 [param.description[6:] for param in signature.params]]
+
 # Run.
+
 app = [complete, company_complete, show_doc, goto_definitions, goto_assignments, usages, eldoc]
+
 service_factory.service_factory(app, server_address, 0, 'anaconda_mode port {port}')
 " "Run `anaconda-mode' server.")
 
@@ -337,12 +382,27 @@ be bound."
                 (equal (process-get anaconda-mode-process 'remote-port)
                        (pythonic-remote-port)))))))
 
+(defun anaconda-mode-get-server-process-cwd ()
+  "Get the working directory for starting the anaconda server process.
+
+The current working directory ends up being on sys.path, which may
+result in conflicts with stdlib modules.
+
+When running python from the local machine, we start the server
+process from `anaconda-mode-installation-directory'.
+This function creates that directory if it doesn't exist yet."
+  (when (pythonic-local-p)
+    (unless (file-directory-p anaconda-mode-installation-directory)
+      (make-directory anaconda-mode-installation-directory t))
+    anaconda-mode-installation-directory))
+
 (defun anaconda-mode-bootstrap (&optional callback)
   "Run `anaconda-mode' server.
 CALLBACK function will be called when `anaconda-mode-port' will
 be bound."
   (setq anaconda-mode-process
         (pythonic-start-process :process anaconda-mode-process-name
+                                :cwd (anaconda-mode-get-server-process-cwd)
                                 :buffer (get-buffer-create anaconda-mode-process-buffer)
                                 :query-on-exit nil
                                 :filter (lambda (process output)
@@ -364,6 +424,25 @@ be bound."
     (process-put anaconda-mode-process 'remote-user (pythonic-remote-user))
     (process-put anaconda-mode-process 'remote-host (pythonic-remote-host))
     (process-put anaconda-mode-process 'remote-port (pythonic-remote-port))))
+
+(defun anaconda-jump-proxy-string ()
+  "Create -J option string for SSH tunnel."
+  (let ((dfn
+         (tramp-dissect-file-name (pythonic-aliased-path default-directory))))
+    (when (tramp-file-name-hop dfn)
+      (let ((hop-list (split-string (tramp-file-name-hop dfn) "|"))
+            (result "-J "))
+        (delete "" hop-list) ;; remove empty string after final pipe
+        (dolist (elt hop-list result)
+          ;; tramp-dissect-file-name expects a filename so give it dummy.file
+          (let ((ts (tramp-dissect-file-name (concat "/" elt ":/dummy.file"))))
+            (setq result (concat result
+                                 (format "%s@%s:%s,"
+                                         (tramp-file-name-user ts)
+                                         (tramp-file-name-host ts)
+                                         (or (tramp-file-name-port-or-default ts) 22))))))
+        ;; Remove final comma
+        (substring result 0 -1)))))
 
 (defun anaconda-mode-bootstrap-filter (process output &optional callback)
   "Set `anaconda-mode-port' from PROCESS OUTPUT.
@@ -398,14 +477,28 @@ called when `anaconda-mode-port' will be bound."
                                     (format "TCP4:%s:%d" container-ip (anaconda-mode-port))))
                (set-process-query-on-exit-flag anaconda-mode-socat-process nil)))
             ((pythonic-remote-ssh-p)
-             (setq anaconda-mode-ssh-process
-                   (start-process anaconda-mode-ssh-process-name
-                                  anaconda-mode-ssh-process-buffer
-                                  "ssh" "-nNT"
-                                  (format "%s@%s" (pythonic-remote-user) (pythonic-remote-host))
-                                  "-p" (number-to-string (pythonic-remote-port))
-                                  "-L" (format "%s:%s:%s" (anaconda-mode-port) (pythonic-remote-host) (anaconda-mode-port))))
-             (set-process-query-on-exit-flag anaconda-mode-ssh-process nil)))
+             (let ((jump (anaconda-jump-proxy-string)))
+               (message (format "Anaconda Jump Proxy: %s" jump))
+               (setq anaconda-mode-ssh-process
+                     (if jump
+                         (start-process anaconda-mode-ssh-process-name
+                                        anaconda-mode-ssh-process-buffer
+                                        "ssh" jump "-nNT"
+                                        "-L" (format "%s:localhost:%s" (anaconda-mode-port) (anaconda-mode-port))
+                                        (format "%s@%s" (pythonic-remote-user) (pythonic-remote-host))
+                                        "-p" (number-to-string (or (pythonic-remote-port) 22)))
+                       (start-process anaconda-mode-ssh-process-name
+                                      anaconda-mode-ssh-process-buffer
+                                      "ssh" "-nNT"
+                                      "-L" (format "%s:localhost:%s" (anaconda-mode-port) (anaconda-mode-port))
+                                      (if (pythonic-remote-user)
+                                          (format "%s@%s" (pythonic-remote-user) (pythonic-remote-host))
+                                        ;; Asssume remote host is an ssh alias
+                                        (pythonic-remote-host))
+                                      "-p" (number-to-string (or (pythonic-remote-port) 22)))))
+               ;; prevent race condition between tunnel setup and first use
+               (sleep-for anaconda-mode-tunnel-setup-sleep)
+               (set-process-query-on-exit-flag anaconda-mode-ssh-process nil))))
       (when callback
         (funcall callback)))))
 
@@ -414,9 +507,24 @@ called when `anaconda-mode-port' will be bound."
 
 (defun anaconda-mode-call (command callback)
   "Make remote procedure call for COMMAND.
-Apply CALLBACK to it result."
+Apply CALLBACK to the result asynchronously."
   (anaconda-mode-start
    (lambda () (anaconda-mode-jsonrpc command callback))))
+
+(defun anaconda-mode-call-sync (command callback)
+  "Make remote procedure call for COMMAND.
+Apply CALLBACK to the result synchronously."
+  (let ((start-time (current-time))
+        (result 'pending))
+    (anaconda-mode-call
+     command
+     (lambda (r) (setq result r)))
+    (while (eq result 'pending)
+      (accept-process-output nil 0.01)
+      (when (> (cadr (time-subtract (current-time) start-time))
+               anaconda-mode-sync-request-timeout)
+        (error "%s request timed out" command)))
+    (funcall callback result)))
 
 (defun anaconda-mode-jsonrpc (command callback)
   "Perform JSONRPC call for COMMAND.
@@ -426,7 +534,7 @@ number position, column number position and file path."
   (let ((url-request-method "POST")
         (url-request-data (anaconda-mode-jsonrpc-request command)))
     (url-retrieve
-     (format "http://%s:%s" (anaconda-mode-host) (anaconda-mode-port))
+     (format "http://%s:%s" anaconda-mode-localhost-address (anaconda-mode-port))
      (anaconda-mode-create-response-handler callback)
      nil
      t)))
@@ -478,7 +586,9 @@ number position, column number position and file path."
                       (let* ((error-structure (cdr (assoc 'error response)))
                              (error-message (cdr (assoc 'message error-structure)))
                              (error-data (cdr (assoc 'data error-structure)))
-                             (error-template (if error-data "%s: %s" "%s")))
+                             (error-template (concat (if error-data "%s: %s" "%s")
+                                                     " - see " anaconda-mode-process-buffer
+                                                     " for more information.")))
                         (apply 'message error-template (delq nil (list error-message error-data))))
                     (with-current-buffer anaconda-mode-request-buffer
                       (let ((result (cdr (assoc 'result response))))
@@ -666,6 +776,42 @@ number position, column number position and file path."
 
 ;;; Xref.
 
+(defun anaconda-mode-xref-backend ()
+  "Integrate `anaconda-mode' with xref."
+  'anaconda)
+
+(cl-defmethod xref-backend-definitions ((_backend (eql anaconda)) _identifier)
+  "Find definitions for thing at point."
+  (anaconda-mode-call-sync
+   "goto_definitions"
+   (lambda (result)
+     (if result
+         (if (stringp result)
+             (progn
+               (message result)
+               nil)
+           (anaconda-mode-make-xrefs result))))))
+
+(cl-defmethod xref-backend-references ((_backend (eql anaconda)) _identifier)
+  "Find references for thing at point."
+  (anaconda-mode-call-sync
+   "usages"
+   (lambda (result)
+     (if result
+         (if (stringp result)
+             (progn
+               (message result)
+               nil)
+           (anaconda-mode-make-xrefs result))))))
+
+(cl-defmethod xref-backend-apropos ((_backend (eql anaconda)) _pattern)
+  "Not implemented."
+  nil)
+
+(cl-defmethod xref-backend-identifier-completion-table ((_backend (eql anaconda)))
+  "Not implemented."
+  nil)
+
 (defun anaconda-mode-show-xrefs (result display-action error-message)
   "Show xref from RESULT using DISPLAY-ACTION.
 Show ERROR-MESSAGE if result is empty."
@@ -680,7 +826,7 @@ Show ERROR-MESSAGE if result is empty."
                              'xref-pop-to-location
                            'xref--pop-to-location)
                          (cl-first xrefs)
-                         (assoc-default 'display-action display-action)))
+                         display-action))
             (xref--show-xrefs (if (functionp 'xref--create-fetcher)
                                   (lambda (&rest _) xrefs)
                                 xrefs)
@@ -748,10 +894,14 @@ Show ERROR-MESSAGE if result is empty."
 ;;;###autoload
 (define-minor-mode anaconda-mode
   "Code navigation, documentation lookup and completion for Python.
+
 \\{anaconda-mode-map}"
   :lighter anaconda-mode-lighter
   :keymap anaconda-mode-map
-  (setq-local url-http-attempt-keepalives nil))
+  (setq-local url-http-attempt-keepalives nil)
+  (if anaconda-mode
+      (add-hook 'xref-backend-functions #'anaconda-mode-xref-backend nil t)
+    (remove-hook 'xref-backend-functions #'anaconda-mode-xref-backend t)))
 
 ;;;###autoload
 (define-minor-mode anaconda-eldoc-mode

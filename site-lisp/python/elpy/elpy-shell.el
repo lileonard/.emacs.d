@@ -1,8 +1,8 @@
 ;;; elpy-shell.el --- Interactive Python support for elpy -*- lexical-binding: t -*-
 ;;
-;; Copyright (C) 2012-2016  Jorgen Schaefer
+;; Copyright (C) 2012-2019  Jorgen Schaefer
 ;;
-;; Author: Jorgen Schaefer <contact@jorgenschaefer.de>, Rainer Gemulla <rgemulla@gmx.de>
+;; Author: Jorgen Schaefer <contact@jorgenschaefer.de>, Rainer Gemulla <rgemulla@gmx.de>, Gaby Launay <gaby.launay@protonmail.com>
 ;; URL: https://github.com/jorgenschaefer/elpy
 ;;
 ;; This program is free software; you can redistribute it and/or
@@ -25,7 +25,6 @@
 ;;; Code:
 
 (eval-when-compile (require 'subr-x))
-(require 'pyvenv)
 (require 'python)
 
 ;;;;;;;;;;;;;;;;;;;;;;
@@ -100,13 +99,28 @@ in the Python shell."
   :type 'integer
   :group 'elpy)
 
+
+(defcustom elpy-shell-starting-directory 'project-root
+  "Directory in which Python shells will be started.
+
+Can be `project-root' (default) to use the current project root,
+`current-directory' to use the buffer current directory, or a
+string indicating a specific path."
+  :type '(choice (const :tag "Project root" project-root)
+                 (const :tag "Current directory" current-directory)
+                 (string :tag "Specific directory"))
+  :group 'elpy)
+
 (defcustom elpy-shell-use-project-root t
   "Whether to use project root as default directory when starting a Python shells.
 
-The project root is determined using `elpy-project-root`. If this variable is set to
-nil, the current directory is used instead."
+The project root is determined using `elpy-project-root`. If this
+variable is set to nil, the current directory is used instead."
   :type 'boolean
   :group 'elpy)
+(make-obsolete-variable 'elpy-shell-use-project-root
+                        'elpy-shell-starting-directory
+                        "1.32.0")
 
 (defcustom elpy-shell-cell-boundary-regexp
   (concat "^\\(?:"
@@ -118,7 +132,11 @@ nil, the current directory is used instead."
 of a cell (beginning or ending). By default, lines starting with
 ``##`` are treated as a cell boundaries, as are the boundaries in
 Python files exported from IPython or Jupyter notebooks (e.g.,
-``# <markdowncell>``, ``# In[1]:'', or ``# Out[1]:``)."
+``# <markdowncell>``, ``# In[1]:'', or ``# Out[1]:``).
+
+Note that `elpy-shell-cell-beginning-regexp' must also match
+the first boundary of the code cell."
+
   :type 'string
   :group 'elpy)
 
@@ -140,6 +158,18 @@ the code cell beginnings defined here."
   :type 'string
   :group 'elpy)
 
+(defcustom elpy-shell-add-to-shell-history nil
+  "If Elpy should make the code sent to the shell available in the
+shell history. This allows to use `comint-previous-input' in the
+python shell to get back the pieces of code sent by Elpy. This affects
+the following functions:
+- `elpy-shell-send-statement'
+- `elpy-shell-send-top-statement'
+- `elpy-shell-send-group'
+- `elpy-shell-send-codecell'
+- `elpy-shell-send-region-or-buffer'."
+  :type 'boolean
+  :group 'elpy)
 
 ;;;;;;;;;;;;;;;;;;
 ;;; Shell commands
@@ -233,18 +263,32 @@ Python process. This allows the process to start up."
          (proc (get-buffer-process bufname)))
     (if proc
         proc
-      (when (not (executable-find python-shell-interpreter))
-        (error "Python shell interpreter `%s' cannot be found. Please set `python-shell-interpreter' to an valid python binary."
+      (unless (executable-find python-shell-interpreter)
+        (error "Python shell interpreter `%s' cannot be found. Please set `python-shell-interpreter' to a valid python binary."
                python-shell-interpreter))
-      (let ((default-directory (or (and elpy-shell-use-project-root
-                                        (elpy-project-root))
-                                   default-directory)))
+      (let ((default-directory
+              (cond ((eq elpy-shell-starting-directory 'project-root)
+                     (or (elpy-project-root)
+                         default-directory))
+                    ((eq elpy-shell-starting-directory 'current-directory)
+                     default-directory)
+                    ((stringp elpy-shell-starting-directory)
+                     (file-name-as-directory
+                      (expand-file-name elpy-shell-starting-directory)))
+                    (t
+                     (error "Wrong value for `elpy-shell-starting-directory', please check this variable documentation and set it to a proper value")))))
         (run-python (python-shell-parse-command) nil t))
       (when sit (sit-for sit))
-      (when (elpy-project-root)
-        (python-shell-send-string
-         (format "import sys;sys.path.append('%s')" (elpy-project-root))))
       (get-buffer-process bufname))))
+
+(defun elpy-shell--send-setup-code ()
+  "Send setup code for the shell."
+  (let ((process (python-shell-get-process)))
+    (when (elpy-project-root)
+      (python-shell-send-string-no-output
+       (format "import sys;sys.path.append('%s');del sys"
+               (elpy-project-root))
+       process))))
 
 (defun elpy-shell-toggle-dedicated-shell (&optional arg)
   "Toggle the use of a dedicated python shell for the current buffer.
@@ -343,24 +387,41 @@ commands can be sent to the shell."
 (defun elpy-shell--flash-and-message-region (begin end)
   "Displays information about code fragments sent to the shell.
 
-BEGIN and END refer to the region of the current buffer containing the code being sent. Displays a message with the first line of that region. If `eval-sexp-fu-flash-mode' is active, additionally flashes that region briefly."
+BEGIN and END refer to the region of the current buffer
+containing the code being sent. Displays a message with the code
+on the first line of that region. If `eval-sexp-fu-flash-mode' is
+active, additionally flashes that region briefly."
   (when (> end begin)
     (save-excursion
-      (goto-char begin)
-      (end-of-line)
-      (if (<= end (point))
-          (message "Sent: %s" (string-trim (thing-at-point 'line)))
-        (message "Sent: %s..." (string-trim (thing-at-point 'line)))))
-    (when (bound-and-true-p eval-sexp-fu-flash-mode)
-      (multiple-value-bind (_bounds hi unhi _eflash)
-          (eval-sexp-fu-flash (cons begin end))
-        (eval-sexp-fu-flash-doit (lambda () t) hi unhi)))))
+      (let* ((bounds
+              (save-excursion
+                (goto-char begin)
+                (bounds-of-thing-at-point 'line)))
+             (begin (max begin (car bounds)))
+             (end (min end (cdr bounds)))
+             (code-on-first-line (string-trim (buffer-substring begin end))))
+        (goto-char begin)
+        (end-of-line)
+        (if (<= end (point))
+            (message "Sent: %s" code-on-first-line)
+          (message "Sent: %s..." code-on-first-line))
+        (when (bound-and-true-p eval-sexp-fu-flash-mode)
+          (multiple-value-bind (_bounds hi unhi _eflash)
+              (eval-sexp-fu-flash (cons begin end))
+            (eval-sexp-fu-flash-doit (lambda () t) hi unhi)))))))
 
 ;;;;;;;;;;;;;;;;;;;
 ;; Helper functions
 
 (defun elpy-shell--current-line-else-or-elif-p ()
   (eq (string-match-p "\\s-*el\\(?:se:\\|if[^\w]\\)" (thing-at-point 'line)) 0))
+
+(defun elpy-shell--current-line-decorator-p ()
+  (eq (string-match-p "^\\s-*@[A-Za-z]" (thing-at-point 'line)) 0))
+
+(defun elpy-shell--current-line-decorated-defun-p ()
+  (save-excursion  (python-nav-backward-statement)
+                   (elpy-shell--current-line-decorator-p)))
 
 (defun elpy-shell--current-line-indented-p ()
   (eq (string-match-p "\\s-+[^\\s-]+" (thing-at-point 'line)) 0))
@@ -505,7 +566,7 @@ complete). Otherwise, does nothing."
 
 Unless NO-FONT-LOCK is set, formats STRING as shell input.
 Prepends a continuation promt if PREPEND-CONT-PROMPT is set."
-  (when (not (string-empty-p string))
+  (unless (string-empty-p string)
   (let* ((process (elpy-shell-get-or-create-process))
          (process-buf (process-buffer process))
          (mark-point (process-mark process)))
@@ -513,8 +574,13 @@ Prepends a continuation promt if PREPEND-CONT-PROMPT is set."
       (save-excursion
         (goto-char mark-point)
         (if prepend-cont-prompt
-            (let* ((column (+ (- (point) (progn (forward-line -1) (end-of-line) (point))) 1))
-                   (prompt (concat (make-string (max 0 (- column 7)) ? ) "...: "))
+            (let* ((column (+ (- (point)
+                                 (let ((inhibit-field-text-motion t))
+                                   (forward-line -1)
+                                   (end-of-line)
+                                   (point)))
+                              1))
+                   (prompt (concat (make-string (max 0 (- column 6)) ? ) "... "))
                    (lines (split-string string "\n")))
               (goto-char mark-point)
               (elpy-shell--insert-and-font-lock
@@ -523,8 +589,13 @@ Prepends a continuation promt if PREPEND-CONT-PROMPT is set."
                   ;; no additional newline at end for multiline
                   (dolist (line (cdr lines))
                     (insert "\n")
-                    (elpy-shell--insert-and-font-lock
-                     prompt 'comint-highlight-prompt no-font-lock)
+                    (let ((from-point (point)))
+                      (elpy-shell--insert-and-font-lock
+                       prompt 'comint-highlight-prompt no-font-lock)
+                      (add-text-properties
+                       from-point (point)
+                       '(field output inhibit-line-move-field-capture t
+                               rear-nonsticky t)))
                     (elpy-shell--insert-and-font-lock
                      line 'comint-highlight-input no-font-lock)))
                 ;; but put one for single line
@@ -669,7 +740,8 @@ there."
   (python-nav-beginning-of-statement)
   (let ((p))
     (while (and (not (eq p (point)))
-                (elpy-shell--current-line-else-or-elif-p))
+                (or (elpy-shell--current-line-else-or-elif-p)
+                    (elpy-shell--current-line-decorated-defun-p)))
       (elpy-nav-backward-block)
       (setq p (point)))))
 
@@ -683,6 +755,10 @@ statement (e.g., after calling
         (p))
     (while (and (not (eq p (point)))
                 continue)
+      ;; if on a decorator, move to the associated function
+      (when (elpy-shell--current-line-decorator-p)
+        (elpy-nav-forward-block))
+
       ;; check if there is a another block at the same indentation level
       (setq p (point))
       (elpy-nav-forward-block)
@@ -764,7 +840,11 @@ definition and returns t. Otherwise, retains point position and
 returns nil.
 
 See `elpy-shell--nav-beginning-of-def' for details."
-  (elpy-shell--nav-beginning-of-def 'elpy-shell--current-line-defun-p))
+  (when (or (elpy-shell--nav-beginning-of-def 'elpy-shell--current-line-defun-p)
+            (elpy-shell--current-line-decorator-p))
+    (when (elpy-shell--current-line-decorated-defun-p)
+      (python-nav-backward-statement))
+    t))
 
 (defun elpy-shell--nav-beginning-of-defclass ()
   "Move point to the beginning of the current class definition.
@@ -808,17 +888,19 @@ Otherwise, skips forward to the next code line and sends the
 corresponding statement."
   (interactive)
   (elpy-shell--ensure-shell-running)
-  (when (not elpy-shell-echo-input) (elpy-shell--append-to-shell-output "\n"))
-  (let ((beg (progn (elpy-shell--nav-beginning-of-statement)
-                    (save-excursion
-                      (beginning-of-line)
-                      (point))))
-        (end (progn (elpy-shell--nav-end-of-statement) (point))))
-    (unless (eq beg end)
-      (elpy-shell--flash-and-message-region beg end)
+  (elpy-shell--nav-beginning-of-statement)
+  ;; Make sure there is a statement to send
+  (unless (looking-at "[[:space:]]*$")
+    (unless elpy-shell-echo-input (elpy-shell--append-to-shell-output "\n"))
+    (let ((beg (save-excursion (beginning-of-line) (point)))
+          (end (progn (elpy-shell--nav-end-of-statement) (point))))
+      (unless (eq beg end)
+        (elpy-shell--flash-and-message-region beg end)
+        (elpy-shell--add-to-shell-history (buffer-substring beg end))
         (elpy-shell--with-maybe-echo
-         (python-shell-send-string (python-shell-buffer-substring beg end)))))
-  (python-nav-forward-statement))
+         (python-shell-send-string
+          (python-shell-buffer-substring beg end)))))
+    (python-nav-forward-statement)))
 
 (defun elpy-shell-send-top-statement-and-step ()
   "Send the current or next top-level statement to the Python shell and step.
@@ -835,8 +917,9 @@ line and sends the corresponding top-level statement."
         ;; single line
         (elpy-shell-send-statement-and-step)
       ;; multiple lines
+      (elpy-shell--add-to-shell-history (buffer-substring beg end))
       (elpy-shell--with-maybe-echo
-       (python-shell-send-region beg end))
+       (python-shell-send-string (python-shell-buffer-substring beg end)))
       (setq mark-active nil)
       (python-nav-forward-statement))))
 
@@ -894,10 +977,12 @@ below point and send the group around this statement."
               ;; single line
               (elpy-shell-send-statement-and-step)
             ;; multiple lines
-            (when (not elpy-shell-echo-input)
+            (unless elpy-shell-echo-input
               (elpy-shell--append-to-shell-output "\n"))
+            (elpy-shell--add-to-shell-history (buffer-substring beg end))
             (elpy-shell--with-maybe-echo
-             (python-shell-send-region beg end))
+             (python-shell-send-string
+              (python-shell-buffer-substring beg end)))
             (python-nav-forward-statement)))
       (goto-char (point-max)))
     (setq mark-active nil)))
@@ -928,10 +1013,11 @@ variables `elpy-shell-cell-boundary-regexp' and
     (if beg
         (progn
           (elpy-shell--flash-and-message-region beg end)
-          (when (not elpy-shell-echo-input)
+          (unless elpy-shell-echo-input
             (elpy-shell--append-to-shell-output "\n"))
+          (elpy-shell--add-to-shell-history (buffer-substring beg end))
           (elpy-shell--with-maybe-echo
-           (python-shell-send-region beg end))
+           (python-shell-send-string (python-shell-buffer-substring beg end)))
           (goto-char end)
           (python-nav-forward-statement))
       (message "Not in a codecell."))))
@@ -968,15 +1054,41 @@ __name__ == '__main__' to be false to avoid accidental execution
 of code. With prefix argument, this code is executed."
   (interactive "P")
   (elpy-shell--ensure-shell-running)
-  (when (not elpy-shell-echo-input) (elpy-shell--append-to-shell-output "\n"))
+  (unless elpy-shell-echo-input (elpy-shell--append-to-shell-output "\n"))
   (let ((if-main-regex "^if +__name__ +== +[\"']__main__[\"'] *:")
         (has-if-main-and-removed nil))
     (if (use-region-p)
         (let ((region (python-shell-buffer-substring
-                       (region-beginning) (region-end))))
+                       (region-beginning) (region-end)))
+              (region-original (buffer-substring
+                                (region-beginning) (region-end))))
           (when (string-match "\t" region)
             (message "Region contained tabs, this might cause weird errors"))
-          (python-shell-send-string region))
+          ;; python-shell-buffer-substring (intentionally?) does not accurately
+          ;; respect (region-beginning); it always start on the first character
+          ;; of the respective line even if that's before the region beginning
+          ;; Here we post-process the output to remove the characters before
+          ;; (region-beginning) and the start of the line. The end of the region
+          ;; is handled correctly and needs no special treatment.
+          (let* ((bounds (save-excursion
+                           (goto-char (region-beginning))
+                           (bounds-of-thing-at-point 'line)))
+                 (used-part (string-trim
+                             (buffer-substring-no-properties
+                              (car bounds)
+                              (min (cdr bounds) (region-end)))))
+                 (relevant-part (string-trim
+                                 (buffer-substring-no-properties
+                                  (max (car bounds) (region-beginning))
+                                  (min (cdr bounds) (region-end))))))
+            (setq region
+                  ;; replace just first match
+                  (replace-regexp-in-string
+                   (concat "\\(" (regexp-quote used-part) "\\)\\(?:.*\n?\\)*\\'")
+                   relevant-part
+                   region t t 1))
+            (elpy-shell--add-to-shell-history region-original)
+            (python-shell-send-string region)))
       (unless arg
         (save-excursion
           (goto-char (point-min))
@@ -1001,6 +1113,13 @@ code is executed."
       (setq p (point)))
     (goto-char p)))
 
+(defun elpy-shell--add-to-shell-history (string)
+  "Add STRING to the shell command history."
+  (when elpy-shell-add-to-shell-history
+    (with-current-buffer (process-buffer (elpy-shell-get-or-create-process))
+      (comint-add-to-input-history (string-trim string)))))
+
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Send command variations (with/without step; with/without go)
 
@@ -1015,7 +1134,7 @@ switches focus to Python shell buffer."
   (let ((orig (point)))
     (setq current-prefix-arg my-prefix-arg)
     (call-interactively step-fun)
-    (when (not step)
+    (unless step
       (goto-char orig)))
   (when go
     (elpy-shell-switch-to-shell)))
@@ -1081,8 +1200,8 @@ if OUTPUT is non-nil, display the prompt after execution."
            (bp-lines '()))
       (dolist (ov overlays)
         (when (overlay-get ov 'elpy-breakpoint)
-          (add-to-list 'bp-lines
-                       (line-number-at-pos (overlay-start ov)))))
+          (push (line-number-at-pos (overlay-start ov))
+                bp-lines)))
       bp-lines))
 
   (defun elpy-pdb-debug-buffer (&optional arg)
@@ -1225,5 +1344,4 @@ region or buffer."
 (make-obsolete 'elpy-use-cpython nil "Jan 2017")
 
 (provide 'elpy-shell)
-
 ;;; elpy-shell.el ends here

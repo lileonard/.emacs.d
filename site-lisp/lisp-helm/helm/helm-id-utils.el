@@ -28,7 +28,7 @@
   "Name of gid command (usually `gid').
 For Mac OS X users, if you install GNU coreutils, the name `gid'
 might be occupied by `id' from GNU coreutils, and you should set
-it to correct name (or absolute path), for example, if using
+it to correct name (or absolute path).  For example, if using
 MacPorts to install id-utils, it should be `gid32'."
   :group 'helm-id-utils
   :type 'file)
@@ -101,10 +101,10 @@ MacPorts to install id-utils, it should be `gid32'."
 
 ;;;###autoload
 (defun helm-gid ()
-  "Preconfigured helm for `gid' command line of `ID-Utils'.
-Need A database created with the command `mkid'
-above `default-directory'.
-Need id-utils as dependency which provide `mkid', `gid' etc...
+  "Preconfigured `helm' for `gid' command line of `ID-Utils'.
+Need A database created with the command `mkid' above
+`default-directory'.
+Need id-utils as dependency which provide `mkid', `gid' etc..
 See <https://www.gnu.org/software/idutils/>."
   (interactive)
   (let* ((db (locate-dominating-file
@@ -112,7 +112,7 @@ See <https://www.gnu.org/software/idutils/>."
               helm-gid-db-file-name))
          (helm-grep-default-directory-fn
           (lambda () default-directory))
-         (helm--maybe-use-default-as-input t))
+         (helm-maybe-use-default-as-input t))
     (cl-assert db nil "No DataBase found, create one with `mkid'")
     (helm :sources (helm-make-source "Gid" 'helm-gid-source
                      :db-dir db)

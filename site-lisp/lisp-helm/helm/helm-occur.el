@@ -23,6 +23,12 @@
 (require 'helm-help)
 (require 'helm-utils)
 
+(declare-function helm-buffers-get-visible-buffers "helm-buffers")
+(declare-function helm-buffer-list "helm-buffers")
+(declare-function helm-grep-split-line "helm-grep")
+(declare-function helm-grep-highlight-match "helm-grep")
+(declare-function helm-comp-read "helm-mode")
+
 ;;; Internals
 ;;
 (defvar helm-source-occur nil)
@@ -118,12 +124,14 @@ Note that when using `buffer-substring' initialization will be slower."
 
 
 (defface helm-moccur-buffer
-    '((t (:foreground "DarkTurquoise" :underline t)))
+  `((t ,@(and (>= emacs-major-version 27) '(:extend t))
+       (:foreground "DarkTurquoise" :underline t)))
   "Face used to highlight occur buffer names."
   :group 'helm-occur)
 
 (defface helm-resume-need-update
-    '((t (:background "red")))
+  `((t ,@(and (>= emacs-major-version 27) '(:extend t))
+       (:background "red")))
   "Face used to flash occur buffer when it needs update."
   :group 'helm-occur)
 
@@ -143,7 +151,7 @@ buffers (i.e. a helm command using `helm-source-buffers-list' like
 `helm-mini') and use the multi occur buffers action.
 
 This is the helm implementation that collect lines matching pattern
-like vanilla emacs `occur' but have nothing to do with it, the search
+like vanilla Emacs `occur' but have nothing to do with it, the search
 engine beeing completely different and also much faster."
   (interactive)
   (setq helm-source-occur
@@ -152,7 +160,10 @@ engine beeing completely different and also much faster."
                            'helm-occur--buffer-tick
                            (list (buffer-chars-modified-tick (current-buffer))))
   (save-restriction
-    (let (def pos)
+    (let ((helm-sources-using-default-as-input
+           (unless (> (buffer-size) 2000000)
+             helm-sources-using-default-as-input))
+          def pos)
       (when (use-region-p)
         ;; When user mark defun with `mark-defun' with intention of
         ;; using helm-occur on this region, it is relevant to use the
@@ -175,8 +186,18 @@ engine beeing completely different and also much faster."
                  :truncate-lines helm-occur-truncate-lines)
         (deactivate-mark t)))))
 
+;;;###autoload
+(defun helm-occur-visible-buffers ()
+  "Run helm-occur on all visible buffers in frame."
+  (interactive)
+  (require 'helm-buffers)
+  (if (or (one-window-p) (region-active-p))
+      (call-interactively #'helm-occur)
+    (let ((buffers (helm-buffers-get-visible-buffers)))
+      (helm-multi-occur-1 (mapcar 'get-buffer buffers)))))
+
 (defun helm-occur-transformer (candidates source)
-  "Returns CANDIDATES prefixed with line number."
+  "Return CANDIDATES prefixed with line number."
   (cl-loop with buf = (helm-attr 'buffer-name source)
            for c in candidates collect
            (when (string-match helm-occur--search-buffer-regexp c)
@@ -197,7 +218,7 @@ engine beeing completely different and also much faster."
                    :initform nil)))
 
 (defun helm-occur-build-sources (buffers &optional source-name)
-  "Build sources for helm-occur for each buffer in BUFFERS list."
+  "Build sources for `helm-occur' for each buffer in BUFFERS list."
   (cl-loop for buf in buffers
            collect
            (helm-make-source (or source-name
@@ -227,7 +248,7 @@ engine beeing completely different and also much faster."
                                          #'buffer-substring-no-properties))
                                (contents (funcall bsfn (point-min) (point-max))))
                           (helm-attrset 'get-line bsfn)
-                          (with-current-buffer (helm-candidate-buffer 'local)
+                          (with-current-buffer (helm-candidate-buffer 'global)
                             (insert contents)
                             (goto-char (point-min))
                             (let ((linum 1))
@@ -251,14 +272,20 @@ engine beeing completely different and also much faster."
              :moccur-buffers buffers)))
 
 (defun helm-multi-occur-1 (buffers &optional input)
-  "Runs helm-occur on a list of buffers.
+  "Run `helm-occur' on a list of buffers.
 Each buffer's result is displayed in a separated source."
   (let* ((curbuf (current-buffer))
          (bufs (if helm-occur-always-search-in-current
                    (cons curbuf (remove curbuf buffers))
                  buffers))
+         (helm-sources-using-default-as-input
+           (unless (cl-loop with total_size = 0
+                            for b in bufs
+                            do (setq total_size (buffer-size b))
+                            finally return (> total_size 2000000))
+             helm-sources-using-default-as-input))
          (sources (helm-occur-build-sources bufs))
-         (helm--maybe-use-default-as-input
+         (helm-maybe-use-default-as-input
           (not (null (memq 'helm-source-moccur
                            helm-sources-using-default-as-input)))))
     (helm-set-local-variable 'helm-occur--buffer-list bufs
@@ -278,7 +305,7 @@ Each buffer's result is displayed in a separated source."
 (cl-defun helm-occur-action (lineno
                                   &optional (method (quote buffer)))
   "Jump to line number LINENO with METHOD.
-arg METHOD can be one of buffer, buffer-other-window, buffer-other-frame."
+METHOD can be one of buffer, buffer-other-window, buffer-other-frame."
   (require 'helm-grep)
   (let ((buf (if (eq major-mode 'helm-occur-mode)
                  (get-text-property (point) 'buffer-name)
@@ -346,7 +373,7 @@ Same as `helm-occur-goto-line' but go in new frame."
 (put 'helm-moccur-run-save-buffer 'helm-only t)
 
 (defun helm-occur-right ()
-  "helm-occur action for right arrow.
+  "`helm-occur' action for right arrow.
 This is used when `helm-occur-use-ioccur-style-keys' is enabled.
 If follow is enabled (default) go to next source, otherwise execute
 persistent action."
@@ -485,7 +512,7 @@ persistent action."
   (helm-multi-occur-1 helm-occur--buffer-list helm-occur-mode--last-pattern))
 
 (defun helm-occur-buffer-substring-with-linums ()
-  "Returns current-buffer contents as a string with all lines
+  "Return current-buffer contents as a string with all lines
 numbered.  The property 'buffer-name is added to the whole string."
   (let ((bufstr (buffer-substring-no-properties (point-min) (point-max)))
         (bufname (buffer-name)))
@@ -573,10 +600,9 @@ numbered.  The property 'buffer-name is added to the whole string."
                   ":"
                   (propertize lineno 'face 'helm-grep-lineno)
                   ":"
-                  (helm-grep-highlight-match str t))
+                  (helm-grep-highlight-match str))
           candidate)))
 
-;;;###autoload
 (define-derived-mode helm-occur-mode
     special-mode "helm-moccur"
     "Major mode to provide actions in helm moccur saved buffer.

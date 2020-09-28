@@ -35,7 +35,19 @@
           (const :tag "Show upgradable packages" upgrade)))
 
 (defcustom helm-el-truncate-lines t
-  "Truncate lines in helm-buffer when non--nil."
+  "Truncate lines in `helm-buffer' when non-nil."
+  :group 'helm-el-package
+  :type 'boolean)
+
+
+(defcustom helm-el-package-upgrade-on-start nil
+  "Show package upgrades on startup when non nil."
+  :group 'helm-el-package
+  :type 'boolean)
+
+(defcustom helm-el-package-autoremove-on-start nil
+  "Try to autoremove no more needed packages on startup.
+See `package-autoremove'."
   :group 'helm-el-package
   :type 'boolean)
 
@@ -48,15 +60,27 @@
 
 ;; Shutup bytecompiler for emacs-24*
 (defvar package-menu-async) ; Only available on emacs-25.
+(defvar helm-marked-buffer-name)
 (declare-function async-byte-recompile-directory "ext:async-bytecomp.el")
+(declare-function with-helm-display-marked-candidates "helm-utils.el")
+
 
 (defun helm-el-package--init ()
+  ;; In emacs-27 package-show-package-list returns an empty buffer
+  ;; until package-initialize have been called.
+  (unless (or package--initialized
+              (null (boundp 'package-quickstart)))
+    (package-initialize))
   (let (package-menu-async
         (inhibit-read-only t))
     (when (null package-alist)
       (setq helm-el-package--show-only 'all))
-    (when (setq helm-el-package--removable-packages
-                (package--removable-packages))
+    (unless (consp package-selected-packages)
+      (helm-aif (package--find-non-dependencies)
+          (setq package-selected-packages it)))
+    (when (and (setq helm-el-package--removable-packages
+                     (package--removable-packages))
+               helm-el-package-autoremove-on-start)
       (package-autoremove))
     (unwind-protect
          (progn
@@ -86,7 +110,8 @@
                    (message "Refreshing packages list done, [%d] package(s) to upgrade"
                             (length helm-el-package--upgrades))
                  (message "Refreshing packages list done, no upgrades available"))
-             (setq helm-el-package--show-only (if helm-el-package--upgrades
+             (setq helm-el-package--show-only (if (and helm-el-package-upgrade-on-start
+                                                       helm-el-package--upgrades)
                                                   'upgrade
                                                 helm-el-package-initial-filter))))
       (kill-buffer "*Packages*"))))
@@ -250,8 +275,10 @@
 (defun helm-el-package-upgrade-all ()
   (if helm-el-package--upgrades
       (with-helm-display-marked-candidates
-        helm-marked-buffer-name (mapcar (lambda (x) (symbol-name (car x)))
-                                        helm-el-package--upgrades)
+        helm-marked-buffer-name (helm-fast-remove-dups
+                                 (mapcar (lambda (x) (symbol-name (car x)))
+                                         helm-el-package--upgrades)
+                                 :test 'equal)
         (when (y-or-n-p "Upgrade all packages? ")
           (helm-el-package-upgrade-1 helm-el-package--tabulated-list)))
       (message "No packages to upgrade actually!")))
@@ -437,7 +464,7 @@
 
 ;;;###autoload
 (defun helm-list-elisp-packages (arg)
-  "Preconfigured helm for listing and handling emacs packages."
+  "Preconfigured `helm' for listing and handling Emacs packages."
   (interactive "P")
   (when arg (setq helm-el-package--initialized-p nil))
   (unless helm-source-list-el-package
@@ -450,10 +477,11 @@
 
 ;;;###autoload
 (defun helm-list-elisp-packages-no-fetch (arg)
-  "Preconfigured helm for emacs packages.
+  "Preconfigured Helm for Emacs packages.
 
-Same as `helm-list-elisp-packages' but don't fetch packages on remote.
-Called with a prefix ARG always fetch packages on remote."
+Same as `helm-list-elisp-packages' but don't fetch packages on
+remote.  Called with a prefix ARG always fetch packages on
+remote."
   (interactive "P")
   (let ((helm-el-package--initialized-p (null arg)))
     (helm-list-elisp-packages nil)))
