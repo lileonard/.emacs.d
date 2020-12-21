@@ -109,17 +109,18 @@
 ;; and do NOT forget CUDA & MPI &FFTW
 (defvar my-sys-c-include
   (list
-  "/mnt/Soft/LinuxSoft/mpich/include"
-  "/mnt/Soft/LinuxSoft/FFTW3/include"
-  "/mnt/Soft/LinuxSoft/QT/Qt-4.8.1/Desktop/Qt/4.8.1/gcc/include"
-  "/mnt/Soft/LinuxSoft/LeSeis/include"
-  "."
-  "/usr/lib/gcc/x86_64-redhat-linux/9/../../../../include/c++/9"
-  "/usr/lib/gcc/x86_64-redhat-linux/9/../../../../include/c++/9/x86_64-redhat-linux"
-  "/usr/lib/gcc/x86_64-redhat-linux/9/../../../../include/c++/9/backward"
-  "/usr/lib/gcc/x86_64-redhat-linux/9/include"
-  "/usr/local/include"
-  "/usr/include"))
+   "/home/lyh/Soft/mpich/include"
+   "/home/lyh/Soft/fftw3/include"
+   "/home/lyh/Soft/QT/Qt4.8.1/Desktop/Qt/4.8.1/gcc/include"
+   "/home/lyh/Soft/LeSeis/include"
+   "."
+   "/usr/lib/gcc/x86_64-redhat-linux/8/../../../../include/c++/8"
+   "/usr/lib/gcc/x86_64-redhat-linux/8/../../../../include/c++/8/x86_64-redhat-linux"
+   "/usr/lib/gcc/x86_64-redhat-linux/8/../../../../include/c++/8/backward"
+   "/usr/lib/gcc/x86_64-redhat-linux/8/include"
+   "/usr/local/include"
+   "/usr/include"
+   ))
 
 (defvar my-custom-include-dirs 
   (list

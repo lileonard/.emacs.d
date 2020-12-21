@@ -85,7 +85,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;cua settings c-c:copy c-x:cut c-v:paste
 (cua-mode t);;
-(setq cua-keep-region-after-copy t) ;; Standard Windows behaviour
+;;(setq cua-keep-region-after-copy t) ;; Standard Windows behaviour
 (require 'cua-rect)
 (require 'cua-base)
 (require 'cua-gmrk)

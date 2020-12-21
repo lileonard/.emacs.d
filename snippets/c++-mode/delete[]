@@ -1,5 +1,5 @@
 # -*- mode: snippet -*-
 # name: delete[]
-# key: dla
+# key: del
 # --
-delete[] ${1:arr};
+delete [] ${1:arr};
