@@ -3,7 +3,7 @@
 (eval-after-load 'python
   '(progn
      (require 'elpy)
-     (defconst python3-path "~/Soft/anaconda3/bin/python3")
+     (defconst python3-path "/mnt/Soft/LinuxSoft/anaconda3/bin/python3")
      (setq elpy-rpc-python-command python3-path
            pyvenv-virtualenvwrapper-python python3-path
            python-shell-interpreter python3-path)
