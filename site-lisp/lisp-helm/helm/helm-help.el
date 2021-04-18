@@ -1,6 +1,6 @@
 ;;; helm-help.el --- Help messages for Helm. -*- lexical-binding: t -*-
 
-;; Copyright (C) 2012 ~ 2019 Thierry Volpiatto <thierry.volpiatto@gmail.com>
+;; Copyright (C) 2012 ~ 2020 Thierry Volpiatto <thierry.volpiatto@gmail.com>
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -34,6 +34,7 @@
                                  helm-ff-help-message
                                  helm-read-file-name-help-message
                                  helm-generic-file-help-message
+                                 helm-fd-help-message
                                  helm-grep-help-message
                                  helm-pdfgrep-help-message
                                  helm-etags-help-message
@@ -110,13 +111,13 @@ Negation are supported i.e. \"!\".
 
 When you specify more than one of such patterns, it will match
 buffers with contents matching each of these patterns i.e. AND,
-not OR.  That's mean that if you specify \"@foo @bar\" the
-contents of buffer will have to be matched by foo AND bar.  If
-you specify \"@foo @!bar\" it means the contents of buffer have
-to be matched by foo but NOT bar.
+not OR.  That means that if you specify \"@foo @bar\" the contents
+of buffer will have to be matched by foo AND bar.  If you specify
+\"@foo @!bar\" it means the contents of the buffer have to be
+matched by foo but NOT bar.
 
 If you enter a pattern prefixed with an escaped \"@\", Helm searches for a
-buffer matching \"@pattern\" but does not search inside.
+buffer matching \"@pattern\" but does not search inside the buffer.
 
 **** Search by directory name
 
@@ -194,8 +195,8 @@ If buffer is associated to a file and is modified, it is by default colorized in
 see [[Meaning of colors and prefixes for buffers][Meaning of colors and prefixes for buffers]].
 You can save these buffers with \\<helm-buffer-map>\\[helm-buffer-save-persistent].
 If you want to save all these buffers, you can mark them with \\[helm-buffers-mark-similar-buffers]
-and save them with \\[helm-buffer-save-persistent], you can also do this in one step with
-\\[helm-buffer-run-save-some-buffers], note that you will not be asked for confirmation.
+and save them with \\[helm-buffer-save-persistent].  You can also do this in one step with
+\\[helm-buffer-run-save-some-buffers].  Note that you will not be asked for confirmation.
   
 *** Meaning of colors and prefixes for buffers
 
@@ -258,17 +259,17 @@ On a symlinked directory a prefix argument expands to its true name.
 
 ***** `DEL' behavior
 
-`DEL' by default is deleting char backward.
+`DEL' by default deletes char backward.
 
 But when `helm-ff-DEL-up-one-level-maybe' is non nil `DEL' behaves
-differently depending on the contents of helm-pattern. It goes up one
+differently depending on the contents of helm-pattern.  It goes up one
 level if the pattern is a directory ending with \"/\" or disables HFF
 auto update and delete char backward if the pattern is a filename or
 refers to a non existing path.  Going up one level can be disabled
 if necessary by deleting \"/\" at the end of the pattern using
 \\<helm-map>\\[backward-char] and \\[helm-delete-minibuffer-contents].
 
-Note that when deleting char backward, helm takes care of
+Note that when deleting char backward, Helm takes care of
 disabling update giving you the opportunity to edit your pattern for
 e.g. renaming a file or creating a new file or directory.
 When `helm-ff-auto-update-initial-value' is non nil you may want to
@@ -288,10 +289,10 @@ It behaves differently depending on `helm-selection' (current candidate in helm-
 - candidate is a file         => Open it.
 
 If you have marked candidates and you press RET on a directory,
-helm will navigate to this directory, if you want to exit with
-RET with default action with these marked candidates, press RET
-on a second time while you are on the root of this directory
-e.g. \"/home/you/dir/.\" or press RET on any file which is not a
+Helm will navigate to this directory.  If you want to exit with
+RET with default action with these marked candidates, press RET a
+second time while you are on the root of this directory e.g.
+\"/home/you/dir/.\" or press RET on any file which is not a
 directory.  You can also exit with default action at any moment
 with `f1'.
 
@@ -308,14 +309,21 @@ a new command for `TAB':
 
     (define-key helm-find-files-map (kbd \"C-i\") 'helm-ff-TAB)
 
-It will then behave slighly differently
-depending of `helm-selection':
+It will then behave slighly differently depending of
+`helm-selection':
 
 - candidate basename is \".\"  => open the action menu.
 - candidate is a directory     => expand it (behave as \\<helm-map>\\[helm-execute-persistent-action]).
 - candidate is a file          => open action menu.
 
 Called with a prefix arg open menu unconditionally.
+
+*** Filter out files or directories
+
+You can show files or directories only with respectively
+\\<helm-find-files-map>\\[helm-ff-toggle-dirs-only] and \\<helm-find-files-map>\\[helm-ff-toggle-files-only].
+These are toggle commands i.e. filter/show_all.
+Changing directory disable filtering.
 
 *** Sort directory contents
 
@@ -395,8 +403,6 @@ It starts from the third character of the pattern.
 For instance \"fob\" or \"fbr\" will complete \"foobar\" but \"fb\" needs a
 third character in order to complete it.
 
-*** Use `\\[universal-argument] \\[helm-execute-persistent-action]' or `\\[helm-follow-action-forward]' to display an image
-
 *** `\\[helm-execute-persistent-action]' on a filename expands to that filename in the Helm buffer
 
 Second hit displays the buffer filename.
@@ -405,10 +411,49 @@ Note: `\\[universal-argument] \\[helm-execute-persistent-action]' displays the b
 
 *** Browse images directories with `helm-follow-mode' and navigate up/down
 
+Before Emacs-27 Helm was using image-dired that works with
+external ImageMagick tools.  From Emacs-27 Helm use native
+display of images with image-mode by default for Emacs-27 (see `helm-ff-display-image-native'),
+this allows automatic resize when changing window size, zooming with `\\[helm-ff-increase-image-size-persistent]' and `\\[helm-ff-decrease-image-size-persistent]'
+and rotate images as before.
+
 You can also use `helm-follow-action-forward' and `helm-follow-action-backward' with
 `\\[helm-follow-action-forward]' and `\\[helm-follow-action-backward]' respectively.
+Note that these commands have different behavior when `helm-follow-mode'
+is enabled (go to next/previous line only).
 
-*** Toggle auto-completion with `\\[helm-ff-run-toggle-auto-update]'
+Use `\\[universal-argument] \\[helm-execute-persistent-action]' to display an image or kill its buffer.
+
+TIP: Use `\\<helm-map>\\[helm-toggle-resplit-and-swap-windows]' and `\\[helm-enlarge-window]' to display Helm window vertically
+and to enlarge it while viewing images.
+Note this may not work with exotic Helm windows settings such as the ones in Spacemacs.
+
+*** Open files externally
+
+- Open file with external program (`\\<helm-find-files-map>\\[helm-ff-run-open-file-externally]',`C-u' to choose).
+
+Helm is looking what is used by default to open file
+externally (mailcap files) but have its own variable
+`helm-external-programs-associations' to store external
+applications.  If you call the action or its binding without
+prefix arg Helm will see if there is an application suitable in
+`helm-external-programs-associations', otherwise it will look in
+mailcap files.  If you want to specify which external application
+to use (and its options) use a prefix arg.
+
+Note: What you configure for Helm in `helm-external-programs-associations'
+will take precedence on mailcap files.
+
+- Preview file with external program (`\\[helm-ff-run-preview-file-externally]').
+
+Same as above but doesn't quit Helm session, it is apersistent action.
+
+- Open file externally with default tool (`\\[helm-ff-run-open-file-with-default-tool]').
+
+This uses xdg-open which sucks most of the time, but perhaps it
+works fine on Windows.  This is why it is kept in Helm.
+
+*** Toggle auto-completion
 
 It is useful when trying to create a new file or directory and you don't want
 Helm to complete what you are writing.
@@ -429,7 +474,7 @@ Note that when you enter a new name, this one is prefixed with
 \[?] if you are in a writable directory.  If you are in a directory
 where you have no write permission the new file name is not
 prefixed and is colored in red.  There is not such distinction
-when using tramp, new filename just appear on top of buffer.
+when using Tramp, new filename just appears on top of buffer.
 
 *** Recursive search from Helm-find-files
 
@@ -449,7 +494,7 @@ List all the files under this directory and other subdirectories
 - With two prefix arguments:
 Same but the cache is refreshed.
 
-**** You can start a recursive search with \"locate\" or \"find\"
+**** You can start a recursive search with \"locate\", \"find\" or [[https://github.com/sharkdp/fd][Fd]]
 
 See \"Note\" in the [[Recursive completion on subdirectories][section on subdirectories]].
 
@@ -457,7 +502,7 @@ Using \"locate\", you can enable the local database with a prefix argument. If t
 local database doesn't already exists, you will be prompted for its creation.
 If it exists and you want to refresh it, give it two prefix args.
 
-When using locate the helm-buffer remains empty until you type something.
+When using locate the Helm buffer remains empty until you type something.
 Regardless Helm uses the basename of the pattern entered in the helm-find-files
 session by default.  Hitting `\\[next-history-element]' should just kick in the
 locate search with this pattern.  If you want Helm to automatically do this, add
@@ -489,6 +534,16 @@ the basedir as first argument of \"find\" and the subdir as the value for
 Examples:
 - \"find %s -type d -name '*%s*'\"
 - \"find %s -type d -regex .*%s.*$\"
+
+[[https://github.com/sharkdp/fd][Fd]] command is now also
+supported which is regexp based and very fast.  Here is the command
+line to use:
+
+- \"fd --hidden --type d .*%s.*$ %s\"
+
+You can use also a glob based search, in this case use the --glob option:
+
+- \"fd --hidden --type d --glob '*%s*' %s\"
 
 *** Insert filename at point or complete filename at point
 
@@ -1058,16 +1113,11 @@ NOTE: This will slow down helm, be warned.
 *** Helm-find-files is using a cache
 
 Helm is caching each directory files list in a hash table for
-faster search.  What is kept in the cache is defined by
-`helm-ff-keep-cached-candidates' variable.  By default HFF keep
-all in the cache between its sessions but you can customize
-`helm-ff-keep-cached-candidates', do not use setq for this.  When
-`helm-ff-keep-cached-candidates' is non nil HFF refreshes the
-cache automatically between its sessions when Emacs is idle, you
-should see a little icon brievly changing form when the cache is
-refreshed if you have set `helm-ff-cache-mode-lighter-updating'
-and `helm-ff-cache-mode-lighter-sleep' . You can also refresh a
-directory at anytime during your HFF sessions by hitting \\<helm-map>\\[helm-refresh].
+faster search, when a directory is modified it is removed from cache
+so that further visit in this directory refresh cache.
+You may have in some rare cases to refresh directory manually with `\\<helm-map>\\[helm-refresh]'
+for example when helm-find-files session is running and a file is modified/deleted
+in current visited directory by an external command from outside Emacs.
 
 ** Commands
 \\<helm-find-files-map>
@@ -1094,7 +1144,7 @@ directory at anytime during your HFF sessions by hitting \\<helm-map>\\[helm-ref
 \\[helm-ff-run-touch-files]\t\tTouch files.
 \\[helm-ff-run-kill-buffer-persistent]\t\tKill buffer candidate without leaving Helm.
 \\[helm-ff-persistent-delete]\t\tDelete file without leaving Helm.
-\\[helm-ff-run-switch-to-eshell]\t\tSwitch to Eshell.
+\\[helm-ff-run-switch-to-shell]\t\tSwitch to prefered shell.
 \\[helm-ff-run-eshell-command-on-file]\t\tEshell command on file (`\\[universal-argument]' to apply on marked files, otherwise treat them sequentially).
 \\[helm-ff-run-ediff-file]\t\tEdiff file.
 \\[helm-ff-run-ediff-merge-file]\t\tEdiff merge file.
@@ -1106,6 +1156,8 @@ directory at anytime during your HFF sessions by hitting \\<helm-map>\\[helm-ref
 \\[helm-ff-run-open-file-with-default-tool]\t\tOpen file externally with default tool.
 \\[helm-ff-rotate-left-persistent]\t\tRotate image left.
 \\[helm-ff-rotate-right-persistent]\t\tRotate image right.
+\\[helm-ff-increase-image-size-persistent]\t\tZoom in image.
+\\[helm-ff-decrease-image-size-persistent]\t\tZoom out image.
 \\[helm-find-files-up-one-level]\t\tGo to parent directory.
 \\[helm-find-files-history]\t\tSwitch to the visited-directory history.
 \\[helm-ff-file-name-history]\t\tSwitch to file name history.
@@ -1240,6 +1292,311 @@ C/\\[helm-cr-empty-string]\t\tReturn empty string unless `must-match' is non-nil
 \\[helm-previous-source]\t\tGo to previous source."
      name name)))
 
+;;; FD help
+;;
+;;
+(defvar helm-fd-help-message
+  "* Helm fd
+
+** Tips
+
+\[[https://github.com/sharkdp/fd][The Fd command line tool]] is very fast to search files recursively.
+You may have to wait several seconds at first usage when your
+hard drive cache is \"cold\", then once the cache is initialized
+searchs are very fast.  You can pass any [[https://github.com/sharkdp/fd#command-line-options][Fd options]] before pattern, e.g. \"-e py foo\".
+
+The [[https://github.com/sharkdp/fd][Fd]] command line can be customized with `helm-fd-switches' user variable.
+Always use =--color always= as option otherwise you will have no colors.
+To customize colors see [[https://github.com/sharkdp/fd#colorized-output][Fd colorized output]].
+
+NOTE:
+Starting from fd version 8.2.1, you have to provide the env var
+LS_COLORS to Emacs to have a colorized output, the easiest way is
+to add to your =~/.profile= file =eval $(dircolors)=.
+Another way is using =setenv= in your init file.
+This is not needed when running Emacs from a terminal either with =emacs -nw=
+or =emacs= because emacs inherit the env vars of this terminal.
+See [[https://github.com/sharkdp/fd/issues/725][fd bugref#725]]
+
+Search is (pcre) regexp based (see [[https://docs.rs/regex/1.0.0/regex/#syntax][Regexp syntax]]), multi patterns are _not_ supported.
+
+** Man page
+
+NAME
+       fd - find entries in the filesystem
+
+SYNOPSIS
+       fd  [-HIEsiaLp0hV]  [-d  depth] [-t filetype] [-e ext] [-E exclude] [-c
+       when] [-j num] [-x cmd] [pattern] [path...]
+
+DESCRIPTION
+       fd is a simple, fast and user-friendly alternative to find(1).
+
+OPTIONS
+       -H, --hidden
+              Include hidden files  and  directories  in  the  search  results
+              (default: hidden files and directories are skipped).
+
+       -I, --no-ignore
+              Show search results from files and directories that would other‐
+              wise be ignored by .gitignore, .ignore, .fdignore, or the global
+              ignore file.
+
+       -u, --unrestricted
+              Alias  for '--no-ignore'. Can be repeated; '-uu' is an alias for
+              '--no-ignore --hidden'.
+
+       --no-ignore-vcs
+              Show search results from files and directories that would other‐
+              wise be ignored by .gitignore files.
+
+       -s, --case-sensitive
+              Perform a case-sensitive search. By default, fd uses case-insen‐
+              sitive searches, unless the pattern contains an uppercase  char‐
+              acter (smart case).
+
+       -i, --ignore-case
+              Perform  a  case-insensitive  search.  By default, fd uses case-
+              insensitive searches, unless the pattern contains  an  uppercase
+              character (smart case).
+
+       -g, --glob
+              Perform  a  glob-based  search  instead  of a regular expression
+              search.
+
+       --regex
+              Perform a regular-expression based seach (default). This can  be
+              used to override --glob.
+
+       -F, --fixed-strings
+              Treat  the  pattern  as  a  literal  string instead of a regular
+              expression.
+
+       -a, --absolute-path
+              Shows the full path starting from the root as opposed  to  rela‐
+              tive paths.
+
+       -l, --list-details
+              Use a detailed listing format like 'ls -l'. This is basically an
+              alias  for  '--exec-batch  ls  -l'  with  some  additional  'ls'
+              options.  This can be used to see more metadata, to show symlink
+              targets and to achieve a deterministic sort order.
+
+       -L, --follow
+              By default, fd does  not  descend  into  symlinked  directories.
+              Using this flag, symbolic links are also traversed.
+
+       -p, --full-path
+              By default, the search pattern is only matched against the file‐
+              name (or directory  name).  Using  this  flag,  the  pattern  is
+              matched against the full path.
+
+       -0, --print0
+              Separate  search  results by the null character (instead of new‐
+              lines). Useful for piping results to xargs.
+
+       --max-results count
+              Limit the number of search results to 'count' and  quit  immedi‐
+              ately.
+
+       -1     Limit  the  search to a single result and quit immediately. This
+              is an alias for '--max-results=1'.
+
+       --show-errors
+              Enable the display of filesystem errors for situations  such  as
+              insufficient permissions or dead symlinks.
+
+       --one-file-system, --mount, --xdev
+              By  default,  fd  will  traverse  the file system tree as far as
+              other options dictate. With this flag, fd ensures that  it  does
+              not descend into a different file system than the one it started
+              in. Comparable to the -mount or -xdev filters of find(1).
+
+       -h, --help
+              Print help information.
+
+       -V, --version
+              Print version information.
+
+       -d, --max-depth d
+              Limit directory traversal to at  most  d  levels  of  depth.  By
+              default, there is no limit on the search depth.
+
+       --min-depth d
+              Only  show search results starting at the given depth. See also:
+              '--max-depth' and '--exact-depth'.
+
+       --exact-depth d
+              Only show search results at the exact given depth.  This  is  an
+              alias for '--min-depth <depth> --max-depth <depth>'.
+
+       -t, --type filetype
+              Filter search by type:
+
+              f, file
+                     regular files
+
+              d, directory
+                     directories
+
+              l, symlink
+                     symbolic links
+
+              x, executable
+                     executable (files)
+
+              e, empty
+                     empty files or directories
+
+              s, socket
+                     sockets
+
+              p, pipe
+                     named pipes (FIFOs)
+
+              This  option  can  be used repeatedly to allow for multiple file
+              types.
+
+       -e, --extension ext
+              Filter search results by file extension ext.  This option can be
+              used repeatedly to allow for multiple possible file extensions.
+
+       -E, --exclude pattern
+              Exclude  files/directories  that  match  the given glob pattern.
+              This overrides any other ignore logic.   Multiple  exclude  pat‐
+              terns can be specified.
+
+       --ignore-file path
+              Add  a  custom  ignore-file in '.gitignore' format.  These files
+              have a low precedence.
+
+       -c, --color when
+              Declare when to colorize search results:
+
+              auto   Colorize output when standard output is connected to terminal (default).
+
+              never  Do not colorize output.
+
+              always Always colorize output.
+
+       -j, --threads num
+              Set number of threads to use for searching & executing (default:
+              number of available CPU cores).
+
+       -S, --size size
+              Limit results based on  the  size  of  files  using  the  format
+              <+-><NUM><UNIT>
+
+              '+'    file size must be greater than or equal to this
+
+              '-'    file size must be less than or equal to this
+
+              'NUM'  The numeric size (e.g. 500)
+
+              'UNIT' The  units for NUM. They are not case-sensitive.  Allowed
+                     unit values:
+
+                     'b'    bytes
+
+                     'k'    kilobytes (base ten, 10^3 = 1000 bytes)
+
+                     'm'    megabytes
+
+                     'g'    gigabytes
+
+                     't'    terabytes
+
+                     'ki'   kibibytes (base two, 2^10 = 1024 bytes)
+
+                     'mi'   mebibytes
+
+                     'gi'   gibibytes
+
+                     'ti'   tebibytes
+
+       --changed-within date|duration
+              Filter results based on the file modification time. The argument
+              can  be  provided  as  a  specific  point  in  time  (YYYY-MM-DD
+              HH:MM:SS) or as a duration (10h,  1d,  35min).   --change-newer-
+              than can be used as an alias.
+
+              Examples:
+                --changed-within 2weeks
+                --change-newer-than \"2018-10-27 10:00:00\"
+
+       --changed-before date|duration
+              Filter results based on the file modification time. The argument
+              can  be  provided  as  a  specific  point  in  time  (YYYY-MM-DD
+              HH:MM:SS)  or  as  a duration (10h, 1d, 35min).  --change-older-
+              than can be used as an alias.
+
+              Examples:
+                --changed-before \"2018-10-27 10:00:00\"
+                --change-older-than 2weeks
+
+       -o, --owner [user][:group]
+              Filter   files   by   their   user   and/or    group.    Format:
+              [(user|uid)][:(group|gid)].  Either  side  is  optional. Precede
+              either side with a '!' to exclude files instead.
+
+              Examples:
+                --owner john
+                --owner :students
+                --owner \"!john:students\"
+
+       -x, --exec command
+              Execute command for each search result. The following placehold‐
+              ers  are  substituted  by a path derived from the current search
+              result:
+
+              {}     path
+
+              {/}    basename
+
+              {//}   parent directory
+
+              {.}    path without file extension
+
+              {/.}   basename without file extension
+
+       -X, --exec-batch command
+              Execute command with all  search  results  at  once.   A  single
+              occurence  of  the following placeholders is authorized and
+              sub stituted by the paths derived from the search results before the
+              command is executed:
+
+              {}     path
+
+              {/}    basename
+
+              {//}   parent directory
+
+              {.}    path without file extension
+
+              {/.}   basename without file extension
+
+** Commands
+\\<helm-fd-map>
+\\[helm-ff-run-grep]\t\tRun grep (`\\[universal-argument]' to recurse).
+\\[helm-ff-run-zgrep]\t\tRun zgrep.
+\\[helm-ff-run-pdfgrep]\t\tRun PDFgrep on marked files.
+\\[helm-ff-run-copy-file]\t\tCopy file(s)
+\\[helm-ff-run-rename-file]\t\tRename file(s).
+\\[helm-ff-run-symlink-file]\t\tSymlink file(s).
+\\[helm-ff-run-hardlink-file]\t\tHardlink file(s).
+\\[helm-ff-run-delete-file]\t\tDelete file(s).
+\\[helm-ff-run-byte-compile-file]\t\tByte compile Elisp file(s) (`\\[universal-argument]' to load).
+\\[helm-ff-run-load-file]\t\tLoad Elisp file(s).
+\\[helm-ff-run-ediff-file]\t\tEdiff file.
+\\[helm-ff-run-ediff-merge-file]\t\tEdiff-merge file.
+\\[helm-ff-run-switch-other-window]\t\tSwitch to other window.
+\\[helm-ff-properties-persistent]\t\tShow file properties.
+\\[helm-ff-run-open-file-externally]\t\tOpen file with external program (`\\[universal-argument]' to choose).
+\\[helm-ff-run-open-file-with-default-tool]\t\tOpen file externally with default tool.
+\\[helm-ff-run-insert-org-link]\t\tInsert org link.
+\\[helm-fd-previous-directory]\t\tMove to previous directory.
+\\[helm-fd-next-directory]\tMove to next directory.")
+
 ;;; Generic file help - Used by locate.
 ;;
 ;;
@@ -1291,7 +1648,6 @@ than 1 megabyte:
 \\[helm-ff-run-toggle-basename]\t\tToggle basename.
 \\[helm-ff-run-grep]\t\tRun grep (`\\[universal-argument]' to recurse).
 \\[helm-ff-run-zgrep]\t\tRun zgrep.
-\\[helm-ff-run-gid]\t\tRun GID (id-utils).
 \\[helm-ff-run-pdfgrep]\t\tRun PDFgrep on marked files.
 \\[helm-ff-run-copy-file]\t\tCopy file(s)
 \\[helm-ff-run-rename-file]\t\tRename file(s).
@@ -1304,7 +1660,6 @@ than 1 megabyte:
 \\[helm-ff-run-ediff-merge-file]\t\tEdiff-merge file.
 \\[helm-ff-run-switch-other-window]\t\tSwitch to other window.
 \\[helm-ff-properties-persistent]\t\tShow file properties.
-\\[helm-ff-run-etags]\t\tRun etags (`\\[universal-argument]' to use tap, `\\[universal-argument] \\[universal-argument]' to reload the database).
 \\[helm-ff-run-open-file-externally]\t\tOpen file with external program (`\\[universal-argument]' to choose).
 \\[helm-ff-run-open-file-with-default-tool]\t\tOpen file externally with default tool.
 \\[helm-ff-run-insert-org-link]\t\tInsert org link.")
@@ -1615,6 +1970,12 @@ prefix arg to ensure you run only one command on all marked async.
 
 ** Tips
 
+*** Searching in many buffers
+
+Start from `helm-buffers-list' or `helm-mini', mark some buffers and hit \\<helm-buffer-map\\[helm-buffers-run-occur].
+A prefix arg will change the behavior of `helm-occur-always-search-in-current'
+i.e. add current buffer or not to the list of buffers to search in.
+
 *** Matching
 
 Multiple regexp matching is allowed, simply enter a space to separate the regexps.
@@ -1625,10 +1986,25 @@ save and edit these results, i.e. add text to the empty line.
 
 *** Automatically match symbol at point
 
-Helm can automatically match the symbol at point while keeping the minibuffer
-empty, ready to be written to.  This behaviour is disabled by default.  To
-enable this you need to add `helm-source-occur' and `helm-source-moccur' to
+Helm can automatically match the symbol at point while keeping
+the minibuffer empty, ready to be written to when
+`helm-source-occur' and `helm-source-moccur' are member of
 `helm-sources-using-default-as-input'.
+
+*** Yank word at point in minibuffer
+
+Use `C-w' as many times as needed, undo with =C-_=.  Note that
+=C-w= and =C-_= are not standard keybindings, but bindings
+provided with special helm feature
+`helm-define-key-with-subkeys'.
+
+*** Preselection
+
+When helm-occur search symbol at point the current line is
+preselected in the source related to current-buffer.  When
+`helm-occur-keep-closest-position' is non nil helm-occur will
+select the line which is the closest from the current line in
+current-buffer after updating.
 
 *** Jump to the corresponding line in the searched buffer
 
@@ -1838,7 +2214,7 @@ duplicates in your helm-M-x history set `history-delete-duplicates' to non nil."
 - End the kmacro recording with `f4'.
 - Run `helm-execute-kmacro' to list all your kmacros.
 
-Use persistent action to run your kmacro as many time as needed.
+Use persistent action to run your kmacro as many times as needed.
 You can browse the kmacros with `helm-next-line' and `helm-previous-line'.
 
 Note: You can't record keys running Helm commands except `helm-M-x', under the

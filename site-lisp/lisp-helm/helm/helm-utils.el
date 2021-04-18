@@ -1,6 +1,6 @@
 ;;; helm-utils.el --- Utilities Functions for helm. -*- lexical-binding: t -*-
 
-;; Copyright (C) 2012 ~ 2019 Thierry Volpiatto <thierry.volpiatto@gmail.com>
+;; Copyright (C) 2012 ~ 2020 Thierry Volpiatto <thierry.volpiatto@gmail.com>
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -20,14 +20,14 @@
 (require 'cl-lib)
 (require 'helm)
 (require 'helm-help)
-(eval-when-compile (require 'dired))
 
 (declare-function helm-find-files-1 "helm-files" (fname &optional preselect))
 (declare-function helm-grep-split-line "helm-grep" (line))
 (declare-function popup-tip "ext:popup")
-(declare-function markdown-show-subtree "outline")
+(declare-function markdown-show-entry "ext:markdown-mode.el")
 (declare-function outline-show-subtree "outline")
 (declare-function org-reveal "org")
+(declare-function hs-show-block "hideshow.el")
 (declare-function tab-bar-tabs "tab-bar")
 (declare-function tab-bar-select-tab "tab-bar")
 (declare-function dired-goto-file "dired")
@@ -35,13 +35,17 @@
 (declare-function package-installed-p "package")
 (declare-function package-desc-dir "package")
 
+(defvar hs-minor-mode)
+(defvar hs-show-hook)
 (defvar org-directory)
 (defvar winner-boring-buffers)
 (defvar bookmark-alist)
+(defvar dired-buffers)
 (defvar helm-show-completion-overlay)
 (defvar helm-buffers-maybe-switch-to-tab)
 (defvar helm-ff-transformer-show-only-basename)
 (defvar helm-popup-tip-mode)
+
 
 
 (defgroup helm-utils nil
@@ -93,8 +97,7 @@ Possible value are:
   :group 'helm-utils
   :type 'integer)
 
-(defcustom helm-sources-using-help-echo-popup '("Moccur" "Imenu in all buffers"
-                                                "Ack-Grep" "AG" "RG" "Gid" "Git-Grep")
+(defcustom helm-sources-using-help-echo-popup '("Ack-Grep" "AG" "RG" "Gid" "Git-Grep")
   "Show the buffer name or the filename in a popup at selection."
   :group 'helm-utils
   :type '(repeat (choice string)))
@@ -480,12 +483,16 @@ Default is `helm-current-buffer'."
                   ((and (boundp 'outline-minor-mode)
                         outline-minor-mode)
                    #'outline-show-subtree)
+                  ((and (boundp 'hs-minor-mode)
+                    hs-minor-mode)
+                   #'hs-show-block)
                   ((and (boundp 'markdown-mode-map)
                         (derived-mode-p 'markdown-mode))
-                   #'markdown-show-subtree))))
+                   #'markdown-show-entry)))
+        (hs-show-hook (list (lambda () (goto-char loc)))))
     ;; outline may fail in some conditions e.g. with markdown enabled
-    ;; (issue #1919).
-    (condition-case nil
+    ;; (Bug#1919).
+    (condition-case-unless-debug nil
         (and fn (funcall fn))
       (error nil))))
 
@@ -589,7 +596,7 @@ from its directory."
             (grep-line (and (stringp sel)
                             (helm-grep-split-line sel)))
             (occur-fname (helm-aand (numberp sel)
-                                    (helm-attr 'buffer-name)
+                                    (helm-get-attr 'buffer-name)
                                     (buffer-file-name (get-buffer it))))
             (bmk-name  (and (stringp sel)
                             (not grep-line)
@@ -1055,6 +1062,7 @@ Assume regexp is a pcre based regexp."
 (defun helm-open-dired (file)
   "Open a dired buffer in FILE's directory.
 If FILE is a directory, open this directory."
+  (require 'dired)
   (if (file-directory-p file)
       (dired file)
     (dired (file-name-directory file))

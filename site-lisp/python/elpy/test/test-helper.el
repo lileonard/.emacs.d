@@ -1,5 +1,9 @@
 ;; -*- lexical-binding: t -*-
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Load Elpy
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'f)
 (let ((elpy-dir (f-parent (f-dirname (f-this-file)))))
   (add-to-list 'load-path elpy-dir)
@@ -8,9 +12,55 @@
 					    (getenv "PYTHONPATH")))
   (add-to-list 'process-environment "ELPY_TEST=1"))
 (require 'elpy)
+;; Avoid asking stuff during tests
+(defun yes-or-no-p (&rest args) t)
+(defun y-or-n-p (&rest args) t)
+;; Avoid verbose during test
+(setq python-indent-guess-indent-offset-verbose nil)
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Travis
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Travis is using virtualenvs to test specific version of python
+;; we need to use it as the system environment
+(advice-add 'elpy-rpc-get-virtualenv-path
+            :around (lambda (fun &rest args)
+                      (if (and (getenv "TRAVIS")
+                               (or (eq elpy-rpc-virtualenv-path 'global)  ;; for backward compatibility
+                                   (eq elpy-rpc-virtualenv-path 'system)))
+                          (expand-file-name
+                           (concat
+                            "~/virtualenv/"
+                            "python"
+                            (getenv "TRAVIS_PYTHON_VERSION")))
+                        (apply fun args))))
+
 ;; Travis regularly has some lag for some reason.
 (setq elpy-rpc-timeout 10)
+;; Print elpy configuration
+(when (getenv "TRAVIS")
+  (elpy-config)
+  (with-current-buffer "*Elpy Config*"
+    (message (buffer-substring-no-properties (point-min) (point-max)))))
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Virtual environments
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; If the environment variable `ELPY_TEST_DONT_USE_VIRTUALENV' is
+;; defined, don't check for features involving virtualenvs.
+;; This permits testing on platforms that do not allow virtualenvs
+;; (for the Debian package for example)
+(setq elpy-test-dont-use-virtualenv (getenv "ELPY_TEST_DONT_USE_VIRTUALENV"))
+(when elpy-test-dont-use-virtualenv
+  (message "ELPY_TEST_DONT_USE_VIRTUALENV is set, skipping tests using virtualenvs.")
+  (setq elpy-rpc-virtualenv-path 'system))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Test helper
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defmacro mletf* (bindings &rest body)
   "Liket `cl-letf*', just with a slightly more concise function syntax.
 
@@ -48,11 +98,11 @@ Run BODY with that binding."
        (unwind-protect
            (progn ,@body)
          (dolist (proc (process-list))
-           (when (not (member proc ,old-process-list))
+           (unless (member proc ,old-process-list)
              (kill-process proc)))
          (let ((kill-buffer-query-functions nil))
            (dolist (buf (buffer-list))
-             (when (not (member buf ,old-buffer-list))
+             (unless (member buf ,old-buffer-list)
                (kill-buffer buf))))))))
 
 (defun elpy-testcase-transform-spec (speclist body)
@@ -69,7 +119,7 @@ Run BODY with that binding."
               ,(elpy-testcase-transform-spec (cdr speclist)
                                              body))))
         (`:emacs-required
-         (when (not (version< emacs-version (cadr spec)))
+         (unless (version< emacs-version (cadr spec))
            (elpy-testcase-transform-spec (cdr speclist)
 					 body)))
         (`:teardown
@@ -77,7 +127,7 @@ Run BODY with that binding."
               ,(elpy-testcase-transform-spec (cdr speclist)
                                              body)
             ,@ (cdr spec)))
-        (t
+        (_
          (error "Bad environment specifier %s" (car spec)))))))
 
 (defmacro elpy-testcase (spec &rest body)
@@ -96,11 +146,14 @@ itself a list where the car indicates the type of environment.
   names, possibly including directory names."
   (declare (indent 1))
   `(save-buffer-excursion
+    (when elpy-enabled-p
+      (message "Elpy was not deactivated by the previous test, deactivating...")
+      (elpy-disable))
      (with-temp-buffer
        (setq elpy-rpc-timeout 100)
        ,(elpy-testcase-transform-spec spec body))
-     (when (and (boundp 'elpy-enable)
-                elpy-enable)
+     (when (and (boundp 'elpy-enabled-p)
+                elpy-enabled-p)
        (elpy-disable))))
 
 (defun elpy-testcase-create-files (basedir filespec)
@@ -118,7 +171,7 @@ for that file."
                        (cadr spec)))
            (fullname (format "%s/%s" basedir filename))
            (dirname (file-name-directory fullname)))
-      (when (not (file-directory-p dirname))
+      (unless (file-directory-p dirname)
         (make-directory dirname t))
       (write-region contents nil fullname))))
 
@@ -128,10 +181,8 @@ for that file."
   (goto-char end))
 
 (defun elpy/wait-for-output (output &optional max-wait)
-  (when (not max-wait)
-    (setq max-wait 10))
   (let ((end (time-add (current-time)
-                       (seconds-to-time max-wait))))
+                       (seconds-to-time (or max-wait 10)))))
     (while (and (time-less-p (current-time)
                              end)
                 (save-excursion
@@ -171,6 +222,12 @@ for that file."
   `(buffer-contents-differ ,(apply #'source-string lines)
                            ,(buffer-string-with-point)))
 (put 'buffer-be 'ert-explainer 'buffer-be-explainer)
+
+(defun elpy-get-overlay-at (start kind)
+  (dolist (tmp-overlay overlays overlay)
+    (when (and (= (overlay-start tmp-overlay) start)
+               (eq (overlay-get tmp-overlay 'hs) kind))
+      (setq overlay tmp-overlay))))
 
 (setq yas-verbosity 0)
 (setq yas-snippet-dirs ())

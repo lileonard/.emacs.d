@@ -8,7 +8,7 @@
 
 @copying
 @ifnottex
-Ivy manual, version 0.12.0
+Ivy manual, version 0.13.4
 
 Ivy is an interactive interface for completion in Emacs. Emacs uses
 completion mechanism in a variety of contexts: code, menus, commands,
@@ -20,18 +20,16 @@ final candidate is either through simple keyboard character inputs or
 through powerful regular expressions.
 @end ifnottex
 
-Copyright (C) 2015-2019 Free Software Foundation, Inc.
+Copyright (C) 2015--2021 Free Software Foundation, Inc.
 
 @quotation
 Permission is granted to copy, distribute and/or modify this document
-under the terms of the GNU Free Documentation License, Version 1.3 or
-any later version published by the Free Software Foundation; with no
-Invariant Sections, with the Front-Cover Texts being ``A GNU Manual,''
-and with the Back-Cover Texts as in (a) below.  A copy of the license
-is included in the section entitled ``GNU Free Documentation License.''
+under the terms of the GNU Free Documentation License, Version 1.3
+or any later version published by the Free Software Foundation;
+with no Invariant Sections, no Front-Cover Texts, and no Back-Cover Texts.
+A copy of the license is included in the section entitled "GNU
+Free Documentation License".
 
-(a) The FSF's Back-Cover Text is: ``You have the freedom to copy and
-modify this GNU manual.''
 @end quotation
 @end copying
 
@@ -217,15 +215,18 @@ version that runs Ivy with fancy faces display.
 @node Installing from Emacs Package Manager
 @section Installing from Emacs Package Manager
 
-@kbd{M-x} @code{package-install} @kbd{RET} @code{ivy} @kbd{RET}
+@kbd{M-x} @code{package-install} @kbd{RET} @code{counsel} @kbd{RET}
 
-Ivy is installed as part of @code{ivy} package, which is available from two
-different package archives, GNU ELPA and MELPA. For the latest stable
-version, use the GNU ELPA archives using the above M-x command.
+Ivy is installed as part of the @code{counsel} package, which is available
+from two different package archives, GNU ELPA and MELPA@.  For the
+latest stable version, use the GNU ELPA archives.  For current hourly
+builds, use the MELPA archives.
 
-For current hourly builds, use the MELPA archives. In MELPA, Ivy is
-split into three packages: @code{ivy}, @code{swiper} and @code{counsel}; you can simply
-install @code{counsel} which will bring in the other two as dependencies.
+Ivy is split into three packages: @code{ivy}, @code{swiper} and @code{counsel}; by
+installing @code{counsel}, the other two are brought in as dependencies.
+If you are not interested in the extra functionality provided by
+@code{swiper} and @code{counsel}, you can install only @code{ivy}.
+
 See the code below for adding MELPA to the list of package archives:
 
 @lisp
@@ -516,12 +517,16 @@ keystrokes followed by @kbd{C-m}.
 @subsection Key bindings for multiple selections and actions, keep minibuffer open
 
 For repeatedly applying multiple actions or acting on multiple
-candidates, Ivy does not close the minibuffer between commands. It
+candidates, Ivy does not close the minibuffer between commands.  It
 keeps the minibuffer open for applying subsequent actions.
 
 Adding an extra meta key to the normal key chord invokes the special
 version of the regular commands that enables applying multiple
 actions.
+
+Note that these operations are supported only by completion sessions
+that use the @code{ivy-read} API, rather than the built-in
+@code{completing-read}.
 
 @subsubheading @kbd{C-M-m} (@code{ivy-call})
 @vindex ivy-call
@@ -573,6 +578,7 @@ Recalls the state of the completion session just before its last
 exit.
 
 Useful after an accidental @kbd{C-m} (@code{ivy-done}).
+Use it with @code{universal-argument} to resume any previous session.
 @end indentedblock
 
 @node Key bindings that alter the minibuffer input
@@ -1100,6 +1106,8 @@ i.e., when @kbd{DEL} is typed at the beginning of the minibuffer.
 
 The default behavior is to quit the completion after @kbd{DEL} -- a
 handy key to invoke after mistakenly triggering a completion.
+
+Another common option is @code{ignore}, which does nothing.
 @end defopt
 
 @node Actions
@@ -1358,6 +1366,12 @@ Switch to the home directory.
 @indentedblock
 If the current input matches an existing directory name exactly,
 switch the completion to that directory.
+@end indentedblock
+@subsubheading @kbd{C-M-y} (@code{ivy-insert-current-full})
+@vindex ivy-insert-current-full
+@kindex C-M-y
+@indentedblock
+Insert the current full path, in case you want to edit a part of it.
 @end indentedblock
 @subsubheading @kbd{M-r} (@code{ivy-toggle-regexp-quote})
 @vindex ivy-toggle-regexp-quote
@@ -1639,7 +1653,6 @@ later use yourself. However, it's recommended that you use the
 	    :preselect (ivy-thing-at-point)
 	    :history 'counsel-describe-symbol-history
 	    :require-match t
-	    :sort t
 	    :action (lambda (x)
 		      (describe-function
 		       (intern x)))
@@ -1667,14 +1680,6 @@ separate from the common history in @code{ivy-history}.
 @item
 The @code{require-match} is set to @code{t} since it doesn't make sense to
 call @code{describe-function} on an un-interned symbol.
-@item
-The @code{sort} argument is set to @code{t} so choosing between similar
-candidates becomes easier. Sometimes, the collection size will
-exceed @code{ivy-sort-max-size}, which is 30000 by default. In that case
-the sorting will not happen to avoid delays.
-
-Adjust this variable to choose between sorting time and completion
-start-up time.
 @item
 The @code{action} argument calls @code{describe-function} on the interned
 selected candidate.
@@ -1813,12 +1818,12 @@ then retrieves that value and displays it.
 @end itemize
 
 @node Variable Index
-@unnumbered Variable Index
+@chapter Variable Index
 
 @printindex vr
 
 @node Keystroke Index
-@unnumbered Keystroke Index
+@chapter Keystroke Index
 
 @printindex ky
 

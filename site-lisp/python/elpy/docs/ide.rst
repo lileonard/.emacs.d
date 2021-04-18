@@ -29,10 +29,11 @@ inside the project root.
    ``tests`` subdirectory. If the current file is already called
    ``test_foo.py``, it will try and find a ``foo.py`` nearby.
 
-   This command uses `find-file-in-project`_ under the hood, so see
-   there for more options.
+   This command uses `projectile`_ or `find-file-in-project`_ under the hood, so you
+   need one of them to be installed.
 
 .. _find-file-in-project: https://github.com/technomancy/find-file-in-project
+.. _projectile: https://github.com/bbatsov/projectile
 
 .. command:: elpy-rgrep-symbol
    :kbd: C-c C-s
@@ -106,19 +107,18 @@ documentation is a good place for further information.
 
 .. option:: elpy-get-info-from-shell
 
-    If t, use the shell to gather docstrings and completions. Normally elpy
+    If `t`, use the shell to gather docstrings and completions. Normally elpy
     provides completion and documentation using static code analysis (from
-    jedi). With this option set to t, elpy will add the completion candidates
-    and the docstrings from the associated python shell. This allows to have
-    decent completion candidates and documentation when the static code analysis
-    fails. the static code analysis fails.
+    jedi). With this option, elpy will add the completion candidates
+    and the docstrings from the associated python shell; This activates
+    fallback completion candidates for cases when the static code analysis
+    fails.
 
 
 Navigation
 ==========
 
-Elpy supports some advanced navigation features inside Python
-projects.
+Elpy supports advanced navigation features.
 
 .. command:: elpy-goto-definition
    :kbd: M-.
@@ -147,8 +147,15 @@ projects.
 
    Search the buffer for a list of definitions of classes and functions.
 
+.. command:: elpy-goto-assignment
 
-If you use an Emacs version superior to 25, elpy will define the
+   Go to the location where the identifier at point is assigned.
+   It is not bound by default, so you will have to bind it manually.
+   You can also use it as a replacement to ``elpy-goto-definition`` (see `Jumping to assignment`_).
+
+.. _Jumping to assignment: http://elpy.readthedocs.org/en/latest/customization_tips.html#jumping-to-assignment
+
+If you use an Emacs version superior to 25, Elpy will define the
 necessary backends for the `xref`_ package.
 
 .. command:: xref-find-definitions
@@ -242,6 +249,14 @@ you, you may also try:
    As an IPython_ user, you might be interested in the `Emacs IPython
    Notebook`_ or an `Elpy layer`_ for Spacemacs_, too.
 
+Note for MacOS users:
+In some configurations, display artifacts (lines of ``^G`` s) can
+appear in the shell. This can be fixed by prepending ``-c
+exec('__import__(\\'readline\\')')`` to
+``python-shell-interpeter-args`` (e.g. ``(setq
+python-shell-interpreter-args "-c exec('__import__(\\'readline\\')')
+-i")`` for python)
+
 .. _IPython: http://ipython.org/
 .. _Emacs IPython Notebook: https://tkf.github.io/emacs-ipython-notebook/
 .. _Elpy layer: https://github.com/rgemulla/spacemacs-layers/tree/master/%2Blang/elpy
@@ -259,7 +274,14 @@ The Shell Buffer
    By default, Elpy tries to find the root directory of the current project
    (git, svn or hg repository, python package or projectile project) and
    starts the python interpreter here. This behaviour can be suppressed
-   with the option ``elpy-shell-use-project-root``.
+   with the option ``elpy-shell-starting-directory``.
+
+.. option:: elpy-shell-starting-directory
+
+   Govern the directory in which Python shells will be started.
+   Can be ``'project-root`` (default) to use the current project root,
+   ``'current-directory`` to use the buffer current directory, or a
+   string indicating a specific path.
 
 .. command:: elpy-shell-toggle-dedicated-shell
 
@@ -317,8 +339,9 @@ for each combination of: whether or not the point should move after sending
 
    Send the current statement to the Python shell and keep point position. Here
    statement refers to the Python statement the point is on, including
-   potentially nested statements and, if point is on an if/elif/else clause, the
-   entire if statement (with all its elif/else clauses).
+   potentially nested statements. If point is on an if/elif/else clause send the
+   entire if statement (with all its elif/else clauses). If point is on a
+   decorated function, send the decorator as well.
 
 .. command:: elpy-shell-send-statement-and-step
    :kbd: C-c C-y C-e
@@ -394,6 +417,12 @@ accidental code execution, e.g.:
    :kbd:`C-u`.
 
    Also bound to :kbd:`C-c C-c`.
+
+.. option:: elpy-shell-add-to-shell-history
+
+   If `t`, Elpy will make the code sent available in the shell
+   history. This allows to use `comint-previous-input` (:kbd:`C-up`)
+   in the python shell to get back the pieces of code sent by Elpy.
 
 The list of remaining commands to send code fragments is:
 
@@ -544,13 +573,96 @@ Elpy provides a single interface to documentation.
    With a prefix argument, Elpy will skip all the guessing and just
    prompt the user for a string to look up in pydoc.
 
-If the `autodoc` module is enabled (not the case by default) the
+If the `autodoc` module is enabled (not by default) the
 documentation is automatically updated with the symbol at point or the
 currently selected company candidate.
 
 .. option:: elpy-autodoc-delay
 
    The idle delay in seconds until documentation is updated automatically.
+
+
+Snippets
+========
+
+Elpy uses yasnippet_ to provide code templates that helps writing common pieces of code faster.
+You can access a template by typing a "template key" and hitting ``TAB`` to expand it.
+You may then be asked to fill some fields in the template, just hit ``TAB`` when you are done to proceed to the next field.
+
+The sequel presents a list of templates provided by Elpy.
+
+.. _yasnippet: https://github.com/joaotavora/yasnippet
+
+
+Special methods
+---------------
+
+Elpy provides a large range of templates for special class methods (``__init__``, ``__call__``, ``__add__``, ...).
+To call them, simply type ``_`` followed by the method name (for example ``_init``) and hit ``TAB``.
+
+
+Other useful snippets
+---------------------
+
+- ``enc``: Encoding statement
+- ``env``: Hashbang statement
+- ``from``: Import statement
+- ``pdb``: Snippet to run pdb at the current script position
+- ``super``: Super statement to call parent methods
+- ``def``: Function definition
+- ``class``: Class definition
+- ``defs``: Class method definition
+
+
+Folding
+=======
+
+Elpy offers code folding by enhancing the builtin folding minor mode ``Hideshow``.
+
+When opening a python buffer, Elpy will indicate foldable things with an arrow in the left fringe.
+Clicking on an arrow will fold the corresponding code blocks.
+Folded code blocks can be unfolded by clicking on the `...` button at the end of the line.
+
+If you don't want to use your mouse, you can achieve the same thing with the function
+
+.. command:: elpy-folding-toggle-at-point
+   :kbd: C-c @ C-c
+
+   Toggle folding for the thing at point, it can be a docstring, a comment or a code block.
+
+The display of arrows in the fringe can be disable with the option
+
+.. option:: elpy-folding-fringe-indicators
+
+   If elpy should display folding fringe indicators or not.
+
+Elpy also provides some other useful features:
+
+.. command:: elpy-folding-toggle-docstrings
+   :kbd: C-c @ C-b
+
+   Toggle folding of all python docstrings.
+
+.. command:: elpy-folding-toggle-comments
+   :kbd: C-c @ C-m
+
+   Toggle folding of all comments.
+
+.. command:: elpy-folding-hide-leafs
+   :kbd: C-c @ C-f
+
+   Hide all code leafs, i.e. code blocks that do not contains any other blocks.
+
+The classical keybindings for hideshow are also available, e.g.:
+
+.. command:: hs-show-all
+   :kbd: C-c @ C-a
+
+   Unfold everything.
+
+(see `Hideshow`_ documentation for more information)
+
+.. _Hideshow: https://www.emacswiki.org/emacs/HideShow
 
 
 Debugging
@@ -562,7 +674,7 @@ Note that this interface is only available for Emacs 25 and above.
 .. _pdb: https://docs.python.org/3/library/pdb.html
 
 .. command:: elpy-pdb-debug-buffer
-   :kbd: C-c C-g g
+   :kbd: C-c C-u d
 
    Run pdb on the current buffer. If no breakpoints has been set using
    :command:`elpy-pdb-toggle-breakpoint-at-point`, the debugger will
@@ -576,7 +688,7 @@ Note that this interface is only available for Emacs 25 and above.
 .. _pdb commands: https://docs.python.org/3/library/pdb.html#debugger-commands
 
 .. command:: elpy-pdb-toggle-breakpoint-at-point
-   :kbd: C-c C-g b
+   :kbd: C-c C-u b
 
    Add (or remove) a breakpoint on the current line. Elpy adds a red
    circle to the fringe to indicate the presence of a breakpoint. You
@@ -586,12 +698,12 @@ Note that this interface is only available for Emacs 25 and above.
    With a prefix argument :kbd:`C-u`, remove all the breakpoints.
 
 .. command:: elpy-pdb-break-at-point
-   :kbd: C-c C-g p
+   :kbd: C-c C-u p
 
    Run pdb on the current buffer and pause at the cursor position.
 
 .. command:: elpy-pdb-debug-last-exception
-   :kbd: C-c C-g e
+   :kbd: C-c C-u e
 
    Run post-mortem pdb on the last exception.
 
@@ -619,9 +731,9 @@ advantages this brings.
 .. command:: elpy-set-test-runner
 
    This changes the current test runner. Elpy supports the standard
-   unittest discovery runner, the Django discovery runner, nose and
-   py.test. You can also write your own, as described in :ref:`Writing
-   Test Runners`.
+   unittest discovery runner, the Django discovery runner, nose,
+   green, py.test and Twisted trial. You can also write your own, as
+   described in :ref:`Writing Test Runners`.
 
    Note on Django runners: Elpy tries to find `manage.py` within your project
    structure. If it's unable to find it, it falls back to `django-admin.py`.
@@ -646,8 +758,6 @@ your last compile command whenever you save a file.
 Refactoring
 ===========
 
-Elpy supports various forms of refactoring Python code.
-
 .. command:: elpy-multiedit-python-symbol-at-point
    :kbd: C-c C-e
 
@@ -671,27 +781,38 @@ Elpy supports various forms of refactoring Python code.
 
    Format code using the available formatter.
 
-   This command formats code using `yapf`_ , `autopep8`_ or `black`_
-   formatter. If a region is selected, only that region is formatted.
+   If a region is selected, only that region is formatted.
    Otherwise current buffer is formatted.
+
+.. option:: elpy-formatter
+
+   Allow to select the formatter you want to use amongst
+   `yapf`_ , `autopep8`_ and `black`_.
 
    `yapf`_ and `autopep8`_ can be configured with style files placed in
    the project root directory (determined by ``elpy-project-root``).
+   `black`_ can be configured in the ``pyproject.toml`` file of your project.
 
 .. _autopep8: https://github.com/hhatto/autopep8
 .. _yapf: https://github.com/google/yapf
 .. _black: https://github.com/ambv/black
 
 
-.. command:: elpy-refactor
-   :kbd: C-c C-r r
 
-   Run the Elpy refactoring interface for Python code.
+Profiling
+=========
 
-   This command uses `rope`_ package and provides various refactoring
-   options depending on the context.
+Elpy allows one to profile python scripts asynchronously using `cProfile`.
 
-.. _rope: https://github.com/python-rope/rope
+.. command:: elpy-profile-buffer-or-region
+
+   Send the current buffer or region to the profiler and display the result with
+   ``elpy-profile-visualizer``.
+   The default visualizer is `snakeviz`_, a browser-based graphical profile viewer that can be installed with `pip install snakeviz`. `RunSnakeRun`_ (Python-2 only GTK GUI) and `pyprof2calltree`_ (uses QCacheGrind or KCacheGrind for display) are supported alternatives and can be similarly installed with pip.
+
+.. _snakeviz: https://jiffyclub.github.io/snakeviz
+.. _RunSnakeRun: https://www.vrplumber.com/programming/runsnakerun
+.. _pyprof2calltree: https://github.com/pwaller/pyprof2calltree
 
 
 Django
@@ -705,6 +826,8 @@ Can also start `runserver` automatically and you can give an ip address and port
    :kbd: C-c C-x c
 
    Choose what command you'd like to run via `django-admin.py` or `manage.py`.
+   Please note that for compatibility reasons, the `shell` command will use
+   python (instead of ipython by default).
 
 .. command:: elpy-django-runserver
    :kbd: C-c C-x r
@@ -713,17 +836,3 @@ Can also start `runserver` automatically and you can give an ip address and port
    Start the development server command, `runserver`. Default arguments are `127.0.0.1` for
    ip address and `8000` for port. These can be changed via ``elpy-django-server-ipaddr`` and
    ``elpy-django-server-port``.
-
-
-Profiling
-=========
-
-Elpy allows one to profile asynchronously python scripts using `cProfile`.
-
-.. command:: elpy-profile-buffer-or-region
-
-   Send the current buffer or region to the profiler and display the result with
-   ``elpy-profile-visualizer``.
-   The default visualizer is `snakeviz`_, a browser-based graphical profile viewer that can be installed with `pip install snakeviz`.
-   If the profiling fails, the python error output is displayed.
-.. _snakeviz: https://jiffyclub.github.io/snakeviz/

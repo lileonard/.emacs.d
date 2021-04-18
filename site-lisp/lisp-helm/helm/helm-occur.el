@@ -1,6 +1,6 @@
 ;;; helm-occur.el --- Incremental Occur for Helm. -*- lexical-binding: t -*-
 
-;; Copyright (C) 2012 ~ 2019 Thierry Volpiatto <thierry.volpiatto@gmail.com>
+;; Copyright (C) 2012 ~ 2020 Thierry Volpiatto <thierry.volpiatto@gmail.com>
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -31,7 +31,9 @@
 
 ;;; Internals
 ;;
-(defvar helm-source-occur nil)
+(defvar helm-source-occur nil
+  "This will be the name of the source related to `current-buffer'.
+Don't use it as it value changes always.")
 (defvar helm-source-moccur nil
   "This is just a flag to add to `helm-sources-using-default-as-input'.
 Don't set it to any value, it will have no effect.")
@@ -41,7 +43,7 @@ Don't set it to any value, it will have no effect.")
 (defvar helm-occur--search-buffer-regexp "\\`\\([0-9]*\\)\\s-\\{1\\}\\(.*\\)\\'"
   "The regexp matching candidates in helm-occur candidate buffer.")
 (defvar helm-occur-mode--last-pattern nil)
-
+(defvar helm-occur--initial-pos 0)
 
 (defvar helm-occur-map
   (let ((map (make-sparse-keymap)))
@@ -122,20 +124,57 @@ Note that when using `buffer-substring' initialization will be slower."
                 :value-type (radio (const :tag "With text properties" buffer-substring)
                                    (const :tag "Without text properties" buffer-substring-no-properties))))
 
+(defcustom helm-occur-keep-closest-position t
+  "When non nil select closest candidate from point after update.
+This happen only in `helm-source-occur' which is always related to `current-buffer'."
+  :group 'helm-regexp
+  :type 'boolean)
 
 (defface helm-moccur-buffer
   `((t ,@(and (>= emacs-major-version 27) '(:extend t))
-       (:foreground "DarkTurquoise" :underline t)))
+       :foreground "DarkTurquoise" :underline t))
   "Face used to highlight occur buffer names."
   :group 'helm-occur)
 
 (defface helm-resume-need-update
   `((t ,@(and (>= emacs-major-version 27) '(:extend t))
-       (:background "red")))
+       :background "red"))
   "Face used to flash occur buffer when it needs update."
   :group 'helm-occur)
 
 
+(defun helm-occur--select-closest-candidate ()
+  ;; Prevent error with `with-helm-window' when switching to help.
+  (unless (or (not (get-buffer-window helm-buffer 'visible))
+              (string-equal helm-pattern ""))
+    (with-helm-window
+      (let ((lst '())
+            (name (helm-get-attr 'name helm-source-occur))
+            closest beg end)
+        (while-no-input
+          (goto-char (point-min))
+          (if (string= name "Helm occur")
+              (setq beg (point)
+                    end (point-max))
+            (helm-awhile (helm-get-next-header-pos)
+              (when (string= name (buffer-substring-no-properties
+                                   (point-at-bol) (point-at-eol)))
+                (forward-line 1)
+                (setq beg (point)
+                      end (or (helm-get-next-header-pos) (point-max)))
+                (cl-return))))
+          (save-excursion
+            (when (and beg end)
+              (goto-char beg)
+              (while (re-search-forward "^[0-9]+" end t)
+                (push (string-to-number (match-string 0)) lst))
+              (setq closest (helm-closest-number-in-list
+                             helm-occur--initial-pos lst))))
+          (when (and closest (re-search-forward (format "^%s" closest) end t))
+            (helm-mark-current-line)
+            (goto-char (overlay-start
+                        helm-selection-overlay))))))))
+
 ;;;###autoload
 (defun helm-occur ()
     "Preconfigured helm for searching lines matching pattern in `current-buffer'.
@@ -159,6 +198,13 @@ engine beeing completely different and also much faster."
   (helm-set-local-variable 'helm-occur--buffer-list (list (current-buffer))
                            'helm-occur--buffer-tick
                            (list (buffer-chars-modified-tick (current-buffer))))
+  (helm-set-attr 'header-name (lambda (_name)
+                                (format "HO [%s]"
+                                        (buffer-name helm-current-buffer)))
+                 helm-source-occur)
+  (when helm-occur-keep-closest-position
+    (setq helm-occur--initial-pos (line-number-at-pos))
+    (add-hook 'helm-after-update-hook 'helm-occur--select-closest-candidate))
   (save-restriction
     (let ((helm-sources-using-default-as-input
            (unless (> (buffer-size) 2000000)
@@ -184,7 +230,8 @@ engine beeing completely different and also much faster."
                                  (format "^%d:" (line-number-at-pos
                                                  (or pos (point)))))
                  :truncate-lines helm-occur-truncate-lines)
-        (deactivate-mark t)))))
+        (deactivate-mark t)
+        (remove-hook 'helm-after-update-hook 'helm-occur--select-closest-candidate)))))
 
 ;;;###autoload
 (defun helm-occur-visible-buffers ()
@@ -198,7 +245,7 @@ engine beeing completely different and also much faster."
 
 (defun helm-occur-transformer (candidates source)
   "Return CANDIDATES prefixed with line number."
-  (cl-loop with buf = (helm-attr 'buffer-name source)
+  (cl-loop with buf = (helm-get-attr 'buffer-name source)
            for c in candidates collect
            (when (string-match helm-occur--search-buffer-regexp c)
              (let ((linum (match-string 1 c))
@@ -220,12 +267,14 @@ engine beeing completely different and also much faster."
 (defun helm-occur-build-sources (buffers &optional source-name)
   "Build sources for `helm-occur' for each buffer in BUFFERS list."
   (cl-loop for buf in buffers
+           for bname = (buffer-name buf)
            collect
-           (helm-make-source (or source-name
-                                 (format "HO [%s]"
-                                         (buffer-name buf)))
+           (helm-make-source (or source-name bname)
                'helm-moccur-class
-             :buffer-name (buffer-name buf)
+             :header-name (lambda (name)
+                            (format "HO [%s]" (if (string= name "Helm occur")
+                                                  bname name)))
+             :buffer-name bname
              :match-part
              (lambda (candidate)
                ;; The regexp should match what is in candidate buffer,
@@ -247,7 +296,7 @@ engine beeing completely different and also much faster."
                                                helm-occur-buffer-substring-fn-for-modes))
                                          #'buffer-substring-no-properties))
                                (contents (funcall bsfn (point-min) (point-max))))
-                          (helm-attrset 'get-line bsfn)
+                          (helm-set-attr 'get-line bsfn)
                           (with-current-buffer (helm-candidate-buffer 'global)
                             (insert contents)
                             (goto-char (point-min))
@@ -284,7 +333,9 @@ Each buffer's result is displayed in a separated source."
                             do (setq total_size (buffer-size b))
                             finally return (> total_size 2000000))
              helm-sources-using-default-as-input))
-         (sources (helm-occur-build-sources bufs))
+         (sources (helm-occur-build-sources bufs (and (eql curbuf (car bufs))
+                                                      (not (cdr bufs))
+                                                      "Helm occur")))
          (helm-maybe-use-default-as-input
           (not (null (memq 'helm-source-moccur
                            helm-sources-using-default-as-input)))))
@@ -293,12 +344,23 @@ Each buffer's result is displayed in a separated source."
                              (cl-loop for b in bufs collect
                                       (buffer-chars-modified-tick
                                        (get-buffer b))))
-    (helm :sources sources
-          :buffer "*helm moccur*"
-          :history 'helm-occur-history
-          :default (helm-aif (thing-at-point 'symbol) (regexp-quote it))
-          :input input
-          :truncate-lines helm-occur-truncate-lines)))
+    (when (and helm-occur-always-search-in-current
+               helm-occur-keep-closest-position)
+      (setq helm-source-occur
+            (cl-loop for s in sources
+                     when (eql helm-current-buffer
+                               (get-buffer (helm-get-attr 'buffer-name s)))
+                     return s))
+      (setq helm-occur--initial-pos (line-number-at-pos))
+      (add-hook 'helm-after-update-hook 'helm-occur--select-closest-candidate))
+    (unwind-protect
+        (helm :sources sources
+              :buffer "*helm moccur*"
+              :history 'helm-occur-history
+              :default (helm-aif (thing-at-point 'symbol) (regexp-quote it))
+              :input input
+              :truncate-lines helm-occur-truncate-lines)
+      (remove-hook 'helm-after-update-hook 'helm-occur--select-closest-candidate))))
 
 ;;; Actions
 ;;
@@ -309,7 +371,7 @@ METHOD can be one of buffer, buffer-other-window, buffer-other-frame."
   (require 'helm-grep)
   (let ((buf (if (eq major-mode 'helm-occur-mode)
                  (get-text-property (point) 'buffer-name)
-               (helm-attr 'buffer-name)))
+               (helm-get-attr 'buffer-name)))
         (split-pat (helm-mm-split-pattern helm-input)))
     (cl-case method
       (buffer              (switch-to-buffer buf))
@@ -378,7 +440,7 @@ This is used when `helm-occur-use-ioccur-style-keys' is enabled.
 If follow is enabled (default) go to next source, otherwise execute
 persistent action."
   (interactive)
-  (if (helm-aand (helm-attr 'follow) (> it 0))
+  (if (helm-aand (helm-get-attr 'follow) (> it 0))
       (helm-next-source)
     (helm-execute-persistent-action)))
 (put 'helm-occur-right 'helm-only t)
@@ -628,8 +690,8 @@ Special commands:
                     when (buffer-live-p (get-buffer b))
                     collect b))
       (setq buffer-is-modified (/= (length helm-occur--buffer-list)
-                                   (length (helm-attr 'moccur-buffers))))
-      (helm-attrset 'moccur-buffers helm-occur--buffer-list)
+                                   (length (helm-get-attr 'moccur-buffers))))
+      (helm-set-attr 'moccur-buffers helm-occur--buffer-list)
       (setq new-tick-ls (cl-loop for b in helm-occur--buffer-list
                                  collect (buffer-chars-modified-tick
                                           (get-buffer b))))
@@ -683,7 +745,10 @@ To use this bind it to a key in `isearch-mode-map'."
   (let ((input (if isearch-regexp
                    isearch-string
                  (regexp-quote isearch-string)))
-        (bufs (list (current-buffer))))
+        (bufs (list (current-buffer)))
+        ;; Use `helm-occur-always-search-in-current' as a flag for
+        ;; `helm-occur--select-closest-candidate'.
+        (helm-occur-always-search-in-current t))
     (isearch-exit)
     (helm-multi-occur-1 bufs input)))
 

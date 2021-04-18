@@ -1,6 +1,6 @@
 ;;; helm-info.el --- Browse info index with helm -*- lexical-binding: t -*-
 
-;; Copyright (C) 2012 ~ 2019 Thierry Volpiatto <thierry.volpiatto@gmail.com>
+;; Copyright (C) 2012 ~ 2020 Thierry Volpiatto <thierry.volpiatto@gmail.com>
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -50,7 +50,7 @@ files with `helm-info-at-point'."
 
 ;;; Build info-index sources with `helm-info-source' class.
 
-(cl-defun helm-info-init (&optional (file (helm-attr 'info-file)))
+(cl-defun helm-info-init (&optional (file (helm-get-attr 'info-file)))
   ;; Allow reinit candidate buffer when using edebug.
   (helm-aif (and debug-on-error
                  (helm-candidate-buffer))
@@ -67,7 +67,7 @@ files with `helm-info-at-point'."
           (while (search-forward "\n* " nil t)
             (unless (search-forward "Menu:\n" (1+ (point-at-eol)) t)
               (setq start (point-at-bol)
-                    ;; Fix issue #1503 by getting the invisible
+                    ;; Fix Bug#1503 by getting the invisible
                     ;; info displayed on next line in long strings.
                     ;; e.g "* Foo.\n   (line 12)" instead of
                     ;;     "* Foo.(line 12)"
@@ -92,7 +92,7 @@ files with `helm-info-at-point'."
   (and (string-match
         ;; This regexp is stolen from Info-apropos-matches
         "\\* +\\([^\n]*.+[^\n]*\\):[ \t]+\\([^\n]*\\)\\.\\(?:[ \t\n]*(line +\\([0-9]+\\))\\)?" line)
-       (cons (format "(%s)%s" (helm-attr 'info-file) (match-string 2 line))
+       (cons (format "(%s)%s" (helm-get-attr 'info-file) (match-string 2 line))
              (string-to-number (or (match-string 3 line) "1")))))
 
 (defclass helm-info-source (helm-source-in-buffer)
@@ -154,7 +154,7 @@ Elements of the list are strings of Info file names without
 extensions (e.g., \"emacs\" for file \"emacs.info.gz\").  Info
 files are found by searching directories in
 `Info-directory-list'."
-  (info-initialize) ; Build Info-directory-list from INFOPATH (Issue #2118)
+  (info-initialize) ; Build Info-directory-list from INFOPATH (Bug#2118)
   (let ((files (cl-loop for d in (or Info-directory-list
                                      Info-default-directory-list)
                         when (file-directory-p d)

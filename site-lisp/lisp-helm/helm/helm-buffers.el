@@ -1,6 +1,6 @@
 ;;; helm-buffers.el --- helm support for buffers. -*- lexical-binding: t -*-
 
-;; Copyright (C) 2012 ~ 2019 Thierry Volpiatto <thierry.volpiatto@gmail.com>
+;; Copyright (C) 2012 ~ 2020 Thierry Volpiatto <thierry.volpiatto@gmail.com>
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -28,6 +28,8 @@
 
 (declare-function helm-comp-read "helm-mode")
 (declare-function helm-browse-project "helm-files")
+
+(defvar dired-buffers)
 
 
 (defgroup helm-buffers nil
@@ -273,21 +275,21 @@ Note that this variable is buffer-local.")
 
 (defun helm-buffers-list--init ()
   (require 'dired)
-  ;; Issue #51 Create the list before `helm-buffer' creation.
+  ;; Bug#51 Create the list before `helm-buffer' creation.
   ;; We were using a global cache in the past and 'candidates was
   ;; bound to this cache, this was a problem when using more than one
   ;; source with a different 'buffer-list fn as the same cache was
-  ;; reused in each source (issue #1907), now 'candidates attr is set
+  ;; reused in each source (Bug#1907), now 'candidates attr is set
   ;; directly so that each list of candidates is local to source.
-  (helm-attrset 'candidates (funcall (helm-attr 'buffer-list)))
+  (helm-set-attr 'candidates (funcall (helm-get-attr 'buffer-list)))
   (let ((result (cl-loop with allbufs = (memq 'helm-shadow-boring-buffers
                                               (helm-attr
                                                'filtered-candidate-transformer
                                                helm-source-buffers-list))
                          for b in (if allbufs
-                                      (helm-attr 'candidates)
+                                      (helm-get-attr 'candidates)
                                     (helm-skip-boring-buffers
-                                     (helm-attr 'candidates)
+                                     (helm-get-attr 'candidates)
                                      helm-source-buffers-list))
                          maximize (length b) into len-buf
                          maximize (length (helm-buffer--format-mode-name b))
@@ -579,11 +581,11 @@ buffers)."
     (let* ((buf (helm-get-selection))
            (preselect (helm-buffer--get-preselection buf)))
       (setq helm-buffer-details-flag (not helm-buffer-details-flag))
-      (helm-update (lambda ()
-                     (helm-awhile (re-search-forward preselect nil t)
-                       (helm-mark-current-line)
-                       (when (equal buf (helm-get-selection))
-                         (cl-return t))))))))
+      (helm-force-update (lambda ()
+                           (helm-awhile (re-search-forward preselect nil t)
+                             (helm-mark-current-line)
+                             (when (equal buf (helm-get-selection))
+                               (cl-return t))))))))
 (put 'helm-toggle-buffers-details 'helm-only t)
 
 (defun helm-buffers--pattern-sans-filters (&optional separator)
@@ -791,7 +793,7 @@ If REGEXP-FLAG is given use `query-replace-regexp'."
   "Toggle diff buffer without quitting helm."
   (interactive)
   (with-helm-alive-p
-    (helm-attrset 'diff-action 'helm-buffer-toggle-diff)
+    (helm-set-attr 'diff-action 'helm-buffer-toggle-diff)
     (helm-execute-persistent-action 'diff-action)))
 (put 'helm-buffer-diff-persistent 'helm-only t)
 
@@ -810,13 +812,13 @@ If REGEXP-FLAG is given use `query-replace-regexp'."
                       (helm-get-selection))))
       (cl-loop for buf in marked do (helm-revert-buffer buf))
       (when helm-marked-candidates (helm-unmark-all))
-      (helm-update preselect))))
+      (helm-force-update preselect))))
 
 (defun helm-buffer-revert-persistent ()
   "Revert buffer without quitting helm."
   (interactive)
   (with-helm-alive-p
-    (helm-attrset 'revert-action '(helm-buffer-revert-and-update . never-split))
+    (helm-set-attr 'revert-action '(helm-buffer-revert-and-update . never-split))
     (helm-execute-persistent-action 'revert-action)))
 (put 'helm-buffer-revert-persistent 'helm-only t)
 
@@ -830,7 +832,7 @@ If REGEXP-FLAG is given use `query-replace-regexp'."
                (with-current-buffer (get-buffer buf)
                  (when (buffer-file-name) (save-buffer))))
       (when helm-marked-candidates (helm-unmark-all))
-      (helm-update (regexp-quote preselect)))))
+      (helm-force-update (regexp-quote preselect)))))
 
 (defun helm-buffer-save-some-buffers (_candidate)
   (helm-buffers-mark-similar-buffers-1 'mod)
@@ -840,7 +842,7 @@ If REGEXP-FLAG is given use `query-replace-regexp'."
   "Save unsaved file buffers without quitting Helm."
   (interactive)
   (with-helm-alive-p
-    (helm-attrset 'save-some-action '(helm-buffer-save-some-buffers . never-split))
+    (helm-set-attr 'save-some-action '(helm-buffer-save-some-buffers . never-split))
     (helm-execute-persistent-action 'save-some-action)))
 (put 'helm-buffer-run-save-some-buffers 'helm-only t)
 
@@ -848,7 +850,7 @@ If REGEXP-FLAG is given use `query-replace-regexp'."
   "Save buffer without quitting Helm."
   (interactive)
   (with-helm-alive-p
-    (helm-attrset 'save-action '(helm-buffer-save-and-update . never-split))
+    (helm-set-attr 'save-action '(helm-buffer-save-and-update . never-split))
     (helm-execute-persistent-action 'save-action)))
 (put 'helm-buffer-save-persistent 'helm-only t)
 
@@ -883,7 +885,7 @@ If REGEXP-FLAG is given use `query-replace-regexp'."
   "Kill buffer without quitting Helm."
   (interactive)
   (with-helm-alive-p
-    (helm-attrset 'kill-action '(helm-buffers-persistent-kill . never-split))
+    (helm-set-attr 'kill-action '(helm-buffers-persistent-kill . never-split))
     (helm-execute-persistent-action 'kill-action)))
 (put 'helm-buffer-run-kill-persistent 'helm-only t)
 
@@ -945,12 +947,18 @@ If REGEXP-FLAG is given use `query-replace-regexp'."
     (helm-exit-and-execute-action 'switch-to-buffer-other-frame)))
 (put 'helm-buffer-switch-other-frame 'helm-only t)
 
+(defun helm-buffers-switch-to-buffer-other-tab (_candidate)
+  (when (fboundp 'switch-to-buffer-other-tab)
+    (let ((bufs (helm-marked-candidates)))
+      (cl-loop for buf in bufs
+               do (switch-to-buffer-other-tab buf)))))
+
 (defun helm-buffers-switch-to-buffer-new-tab ()
   "Run switch to buffer in other tab action from `helm-source-buffers-list'."
   (interactive)
   (cl-assert (fboundp 'tab-bar-mode) nil "Tab-bar-mode not available")
   (with-helm-alive-p
-    (helm-exit-and-execute-action 'switch-to-buffer-other-tab)))
+    (helm-exit-and-execute-action 'helm-buffers-switch-to-buffer-other-tab)))
 (put 'helm-buffers-switch-to-buffer-new-tab 'helm-only t)
 
 (defun helm-buffer-switch-buffers (_candidate)
@@ -1095,15 +1103,15 @@ Can be used by any source that list buffers."
 (defun helm-buffers-toggle-show-hidden-buffers ()
   (interactive)
   (with-helm-alive-p
-    (let ((filter-attrs (helm-attr 'filtered-candidate-transformer
+    (let ((filter-attrs (helm-get-attr 'filtered-candidate-transformer
                                    helm-source-buffers-list)))
       (if (memq 'helm-shadow-boring-buffers filter-attrs)
-          (helm-attrset 'filtered-candidate-transformer
+          (helm-set-attr 'filtered-candidate-transformer
                         (cons 'helm-skip-boring-buffers
                               (remove 'helm-shadow-boring-buffers
                                       filter-attrs))
                         helm-source-buffers-list)
-        (helm-attrset 'filtered-candidate-transformer
+        (helm-set-attr 'filtered-candidate-transformer
                       (cons 'helm-shadow-boring-buffers
                             (remove 'helm-skip-boring-buffers
                                     filter-attrs))

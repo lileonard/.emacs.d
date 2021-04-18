@@ -58,7 +58,7 @@ ivy-ox.el then ~C-c C-e i t~ in the ivy.org buffer.
 :CUSTOM_ID: copying
 :END:
 #+TEXINFO: @ifnottex
-Ivy manual, version 0.12.0
+Ivy manual, version 0.13.4
 
 Ivy is an interactive interface for completion in Emacs. Emacs uses
 completion mechanism in a variety of contexts: code, menus, commands,
@@ -70,18 +70,15 @@ final candidate is either through simple keyboard character inputs or
 through powerful regular expressions.
 #+TEXINFO: @end ifnottex
 
-Copyright (C) 2015-2019 Free Software Foundation, Inc.
+Copyright (C) 2015--2021 Free Software Foundation, Inc.
 
 #+BEGIN_QUOTE
 Permission is granted to copy, distribute and/or modify this document
-under the terms of the GNU Free Documentation License, Version 1.3 or
-any later version published by the Free Software Foundation; with no
-Invariant Sections, with the Front-Cover Texts being ``A GNU Manual,''
-and with the Back-Cover Texts as in (a) below.  A copy of the license
-is included in the section entitled ``GNU Free Documentation License.''
-
-(a) The FSF's Back-Cover Text is: ``You have the freedom to copy and
-modify this GNU manual.''
+under the terms of the GNU Free Documentation License, Version 1.3
+or any later version published by the Free Software Foundation;
+with no Invariant Sections, no Front-Cover Texts, and no Back-Cover Texts.
+A copy of the license is included in the section entitled "GNU
+Free Documentation License".
 #+END_QUOTE
 
 #+HTML: <a href="https://github.com/abo-abo/swiper/blob/master/doc/ivy.org">This manual source</a>
@@ -151,15 +148,18 @@ version that runs Ivy with fancy faces display.
 :CUSTOM_ID: installing-from-emacs-package-manager
 :END:
 
-~M-x~ =package-install= ~RET~ =ivy= ~RET~
+~M-x~ =package-install= ~RET~ =counsel= ~RET~
 
-Ivy is installed as part of =ivy= package, which is available from two
-different package archives, GNU ELPA and MELPA. For the latest stable
-version, use the GNU ELPA archives using the above M-x command.
+Ivy is installed as part of the =counsel= package, which is available
+from two different package archives, GNU ELPA and MELPA.  For the
+latest stable version, use the GNU ELPA archives.  For current hourly
+builds, use the MELPA archives.
 
-For current hourly builds, use the MELPA archives. In MELPA, Ivy is
-split into three packages: =ivy=, =swiper= and =counsel=; you can simply
-install =counsel= which will bring in the other two as dependencies.
+Ivy is split into three packages: =ivy=, =swiper= and =counsel=; by
+installing =counsel=, the other two are brought in as dependencies.
+If you are not interested in the extra functionality provided by
+=swiper= and =counsel=, you can install only =ivy=.
+
 See the code below for adding MELPA to the list of package archives:
 
 #+begin_src elisp
@@ -405,12 +405,16 @@ extends usability of lists in Emacs.
 :END:
 
 For repeatedly applying multiple actions or acting on multiple
-candidates, Ivy does not close the minibuffer between commands. It
+candidates, Ivy does not close the minibuffer between commands.  It
 keeps the minibuffer open for applying subsequent actions.
 
 Adding an extra meta key to the normal key chord invokes the special
 version of the regular commands that enables applying multiple
 actions.
+
+Note that these operations are supported only by completion sessions
+that use the =ivy-read= API, rather than the built-in
+=completing-read=.
 
 - ~C-M-m~ (=ivy-call=) ::
      Is the non-exiting version of ~C-m~ (=ivy-done=).
@@ -448,6 +452,7 @@ actions.
      exit.
 
      Useful after an accidental ~C-m~ (=ivy-done=).
+     Use it with =universal-argument= to resume any previous session.
 
 *** Key bindings that alter the minibuffer input
 :PROPERTIES:
@@ -827,6 +832,8 @@ installed.
      The default behavior is to quit the completion after ~DEL~ -- a
      handy key to invoke after mistakenly triggering a completion.
 
+     Another common option is =ignore=, which does nothing.
+
 ** Actions
 :PROPERTIES:
 :CUSTOM_ID: actions
@@ -1027,6 +1034,8 @@ bindings that work here:
 - ~/~ (=self-insert-command=) ::
      If the current input matches an existing directory name exactly,
      switch the completion to that directory.
+- ~C-M-y~ (=ivy-insert-current-full=) ::
+     Insert the current full path, in case you want to edit a part of it.
 - ~M-r~ (=ivy-toggle-regexp-quote=) ::
      Toggle between input as regexp or not.
 
@@ -1242,7 +1251,6 @@ later use yourself. However, it's recommended that you use the
             :preselect (ivy-thing-at-point)
             :history 'counsel-describe-symbol-history
             :require-match t
-            :sort t
             :action (lambda (x)
                       (describe-function
                        (intern x)))
@@ -1263,13 +1271,6 @@ Here are the interesting features of the above function, in the order that they 
   separate from the common history in =ivy-history=.
 - The =require-match= is set to =t= since it doesn't make sense to
   call =describe-function= on an un-interned symbol.
-- The =sort= argument is set to =t= so choosing between similar
-  candidates becomes easier. Sometimes, the collection size will
-  exceed =ivy-sort-max-size=, which is 30000 by default. In that case
-  the sorting will not happen to avoid delays.
-
-  Adjust this variable to choose between sorting time and completion
-  start-up time.
 - The =action= argument calls =describe-function= on the interned
   selected candidate.
 - The =caller= argument identifies this completion session. This is

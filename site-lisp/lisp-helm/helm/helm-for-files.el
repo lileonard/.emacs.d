@@ -1,6 +1,6 @@
 ;;; helm-for-files.el --- helm-for-files and related. -*- lexical-binding: t -*-
 
-;; Copyright (C) 2012 ~ 2019 Thierry Volpiatto <thierry.volpiatto@gmail.com>
+;; Copyright (C) 2012 ~ 2020 Thierry Volpiatto <thierry.volpiatto@gmail.com>
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -174,7 +174,7 @@ Colorize only symlinks, directories and files."
            ;; Call file-attributes only if:
            ;; - file is not remote
            ;; - helm-for-files--tramp-not-fancy is nil and file is remote AND
-           ;; connected. (Issue #1679)
+           ;; connected. (Bug#1679)
            for type = (and (or (null isremote)
                                (and (null helm-for-files-tramp-not-fancy)
                                     (file-remote-p i nil t)))

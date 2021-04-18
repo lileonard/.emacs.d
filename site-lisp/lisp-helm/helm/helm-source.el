@@ -1,6 +1,6 @@
 ;;; helm-source.el --- Helm source creation. -*- lexical-binding: t -*-
 
-;; Copyright (C) 2015 ~ 2019  Thierry Volpiatto <thierry.volpiatto@gmail.com>
+;; Copyright (C) 2015 ~ 2020  Thierry Volpiatto <thierry.volpiatto@gmail.com>
 
 ;; Author: Thierry Volpiatto <thierry.volpiatto@gmail.com>
 ;; URL: http://github.com/emacs-helm/helm
@@ -48,7 +48,7 @@
   "Advice for `cl--print-table' to make readable class slots docstrings."
   (let ((format "%s\n\n  Initform=%s\n\n%s"))
     (dolist (row rows)
-      (setcar row (propertize (car row) 'face 'italic))
+      (setcar row (propertize (car row) 'face 'bold))
       (setcdr row (nthcdr 1 (cdr row)))
       (insert "\n* " (apply #'format format row) "\n"))))
 
@@ -102,6 +102,9 @@
     "  Specifies how to retrieve candidates from the source.
   It can either be a variable name, a function called with no parameters
   or the actual list of candidates.
+
+  Do NOT use this for asynchronous sources, use `candidates-process'
+  instead.
 
   The list must be a list whose members are strings, symbols
   or (DISPLAY . REAL) pairs.
@@ -201,7 +204,7 @@
        \"Delete current candidate without quitting.\"
        (interactive)
        (with-helm-alive-p
-         (helm-attrset 'quick-delete '(helm-ff-quick-delete . never-split))
+         (helm-set-attr 'quick-delete '(helm-ff-quick-delete . never-split))
          (helm-execute-persistent-action 'quick-delete)))
 
   This function is then bound in `helm-find-files-map'.")
@@ -266,7 +269,7 @@
 
    (requires-pattern
     :initarg :requires-pattern
-    :initform nil
+    :initform 0
     :custom integer
     :documentation
     "  If present matches from the source are shown only if the
@@ -450,10 +453,17 @@
   functions, respectively.
 
   This attribute has no effect for asynchronous sources (see
-  attribute `candidates'), since they perform pattern matching
-  themselves.
+  attribute `candidates'), and sources using `match-dynamic'
+  since they perform pattern matching themselves.
 
   Note that FUZZY-MATCH slot will overhide value of this slot.")
+
+   (match-on-real
+    :initarg :match-on-real
+    :initform nil
+    :custom boolean
+    :documentation
+    "  Match the real value of candidates when non nil.")
 
    (fuzzy-match
     :initarg :fuzzy-match
@@ -644,6 +654,22 @@
     "  This slot have no more effect and is just kept for backward compatibility.
   Please don't use it.")
 
+   (must-match
+    :initarg :must-match
+    :initform nil
+    :custom symbol
+    :documentation
+    "  Same as `completing-read' require-match arg.
+  Possible values are:
+  - `t' which prevent exiting with an empty helm-buffer i.e. no matches.
+  - `confirm' which ask for confirmation i.e. need to press a second
+     time RET.
+  - `nil' is the default and is doing nothing i.e. returns nil when
+    pressing RET with an empty helm-buffer.
+  - Any other non nil values e.g. `ignore' allow exiting with
+    minibuffer contents as candidate value (in this case helm-buffer
+    is empty).")
+
    (group
     :initarg :group
     :initform helm
@@ -708,7 +734,10 @@ Matching is done basically with `string-match' against each candidate.")
     :custom function
     :documentation
     "  This attribute is used to define a process as candidate.
-  The value must be a process.
+  The function called with no arguments must return a process
+  i.e. `processp', it use typically `start-process' or `make-process',
+  see (info \"(elisp) Asynchronous Processes\").
+  
 
   NOTE:
   When building the source at runtime you can give directly a process
@@ -848,7 +877,7 @@ See `helm-candidates-in-buffer' for more infos.")
 
 (defclass helm-source-in-file (helm-source-in-buffer)
   ((init :initform (lambda ()
-                     (let ((file (helm-attr 'candidates-file))
+                     (let ((file (helm-get-attr 'candidates-file))
                            (count 1))
                        (with-current-buffer (helm-candidate-buffer 'global)
                          (insert-file-contents file)
@@ -889,7 +918,7 @@ Where OBJECT is an instance of an eieio class."
   (cl-loop for s in (object-slots object)
            for slot-val = (slot-value object s)
            when slot-val
-           collect (cons s (unless (eq t slot-val) slot-val))))
+           collect (cons s slot-val)))
 
 (defun helm-make-source (name class &rest args)
   "Build a `helm' source named NAME with ARGS for CLASS.
@@ -999,7 +1028,7 @@ an eieio class."
                         (if (stringp (car action))
                             (car action)
                             ;; It comes from :persistent-action
-                            ;; (function . 'nosplit) Fix Issue #788.
+                            ;; (function . 'nosplit) Fix Bug#788.
                             (if (or (symbolp action)
                                     (functionp action))
                                 (helm-symbol-name action)))))
@@ -1016,12 +1045,25 @@ an eieio class."
     (warn "Deprecated usage of helm `delayed' slot in `%s'"
           (slot-value source 'name)))
   (helm-aif (slot-value source 'keymap)
-      (and (symbolp it) (setf (slot-value source 'keymap) (symbol-value it))))
+      (let* ((map (if (symbolp it)
+                      (symbol-value it)
+                    it))
+             (must-match-map (when (slot-value source 'must-match)
+                               (let ((map (make-sparse-keymap)))
+                                 (define-key map (kbd "RET")
+                                   'helm-confirm-and-exit-minibuffer)
+                                 map)))
+             (loc-map (if must-match-map
+                          (make-composed-keymap
+                           must-match-map map)
+                        map)))
+        (setf (slot-value source 'keymap) loc-map)))
   (helm-aif (slot-value source 'persistent-help)
       (setf (slot-value source 'header-line)
             (helm-source--persistent-help-string it source))
     (setf (slot-value source 'header-line) (helm-source--header-line source)))
-  (when (and (slot-value source 'fuzzy-match) helm-fuzzy-sort-fn)
+  (when (slot-value source 'fuzzy-match)
+    (cl-assert helm-fuzzy-sort-fn nil "Wrong type argument functionp: nil")
     (setf (slot-value source 'filtered-candidate-transformer)
           (helm-aif (slot-value source 'filtered-candidate-transformer)
               (append (helm-mklist it)
@@ -1038,7 +1080,12 @@ an eieio class."
           (helm-aif (slot-value source 'filtered-candidate-transformer)
               (append (helm-mklist it)
                       (list #'helm-multiline-transformer))
-            (list #'helm-multiline-transformer)))))
+            (list #'helm-multiline-transformer))))
+  (helm-aif (slot-value source 'requires-pattern)
+      (let ((val (if (symbolp it)
+                     (symbol-value it)
+                   it)))
+        (setf (slot-value source 'requires-pattern) val))))
 
 (defmethod helm-setup-user-source ((_source helm-source)))
 
@@ -1060,6 +1107,7 @@ an eieio class."
                       '(helm-mm-3-migemo-match)))))
   (when (slot-value source 'match-dynamic)
     (setf (slot-value source 'match) 'identity)
+    (setf (slot-value source 'match-part) nil)
     (setf (slot-value source 'multimatch) nil)
     (setf (slot-value source 'fuzzy-match) nil)
     (setf (slot-value source 'volatile) t)))
@@ -1160,7 +1208,7 @@ Args ARGS are keywords provided by `helm-source-dummy'."
 Arg FILE is a filename, the contents of this file will be
 used as candidates in buffer.
 Args ARGS are keywords provided by `helm-source-in-file'."
-  (declare (indent 1))
+  (declare (indent 2))
   `(helm-make-source ,name 'helm-source-in-file
      :candidates-file ,file ,@args))
 

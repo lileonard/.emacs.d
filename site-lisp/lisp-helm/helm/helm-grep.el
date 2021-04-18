@@ -1,6 +1,6 @@
 ;;; helm-grep.el --- Helm Incremental Grep. -*- lexical-binding: t -*-
 
-;; Copyright (C) 2012 ~ 2019 Thierry Volpiatto <thierry.volpiatto@gmail.com>
+;; Copyright (C) 2012 ~ 2020 Thierry Volpiatto <thierry.volpiatto@gmail.com>
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -434,7 +434,7 @@ It is intended to use as a let-bound variable, DON'T set this globaly.")
                  ;; When user mark files and use recursion with grep
                  ;; backend enabled, the loop collect on each marked
                  ;; candidate its `file-name-directory' and we endup with
-                 ;; duplicates (Issue #1714). FIXME: For now as a quick fix
+                 ;; duplicates (Bug#1714). FIXME: For now as a quick fix
                  ;; I just remove dups here but I should handle this inside
                  ;; the cond above.
                  (setq files (helm-fast-remove-dups files :test 'equal))
@@ -818,7 +818,7 @@ If N is positive go forward otherwise go backward."
       (setq default-directory (or helm-ff-default-directory
                                   (helm-default-directory)
                                   default-directory))
-      (setq-local helm-grep-mode-use-pcre (helm-attr 'pcre src))
+      (setq-local helm-grep-mode-use-pcre (helm-get-attr 'pcre src))
       (setq buffer-read-only t)
       (let ((inhibit-read-only t)
             (map (make-sparse-keymap)))
@@ -954,7 +954,7 @@ Special commands:
   "Return a list of known ack-grep types."
   (with-temp-buffer
     ;; "--help-types" works with both 1.96 and 2.1+, while
-    ;; "--help types" works only with 1.96 Issue #422.
+    ;; "--help types" works only with 1.96 Bug#422.
     ;; `helm-grep-command' should return the ack executable
     ;; when this function is used in the right context
     ;; i.e After checking is we are using ack-grep with
@@ -1220,7 +1220,7 @@ matching `helm-zgrep-file-extension-regexp' only."
                      ;; Filename should always be provided as a local
                      ;; path, if the root directory is remote, the
                      ;; tramp prefix will be added before executing
-                     ;; action, see `helm-grep-action' and issue #2032.
+                     ;; action, see `helm-grep-action' and Bug#2032.
                      (expand-file-name (car split)
                                        (or (file-remote-p root 'localname)
                                            root))
@@ -1265,7 +1265,7 @@ matching `helm-zgrep-file-extension-regexp' only."
                             (and (null (eq major-mode 'helm-grep-mode))
                                  (helm-default-directory))
                             default-directory))))
-        (pcre (helm-attr 'pcre source)))
+        (pcre (helm-get-attr 'pcre source)))
     (cl-loop for c in candidates
              collect (helm-grep--filter-candidate-1 c nil pcre))))
 
@@ -1274,7 +1274,7 @@ matching `helm-zgrep-file-extension-regexp' only."
   (let (beg end)
     (condition-case-unless-debug nil
         (with-temp-buffer
-          (insert (propertize str 'read-only nil)) ; Fix (#1176)
+          (insert (propertize str 'read-only nil)) ; Fix bug#1176
           (goto-char (point-min))
           (cl-loop for reg in
                    (cl-loop for r in (helm-mm-split-pattern

@@ -1,6 +1,6 @@
 ;;; helm-locate.el --- helm interface for locate. -*- lexical-binding: t -*-
 
-;; Copyright (C) 2012 ~ 2019 Thierry Volpiatto <thierry.volpiatto@gmail.com>
+;; Copyright (C) 2012 ~ 2020 Thierry Volpiatto <thierry.volpiatto@gmail.com>
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -419,13 +419,17 @@ Sort is done on basename of CANDIDATES."
 (defun helm-locate-init-subdirs ()
   (with-temp-buffer
     (call-process-shell-command
-     (format helm-locate-recursive-dirs-command
-	     (if (string-match-p "\\`es" helm-locate-recursive-dirs-command)
-                 ;; Fix W32 paths.
-		 (replace-regexp-in-string
-                  "/" "\\\\\\\\" (helm-attr 'basedir))
-                 (helm-attr 'basedir))
-	     (helm-attr 'subdir))
+     (if (string-match-p "\\`fd" helm-locate-recursive-dirs-command)
+         (format helm-locate-recursive-dirs-command
+                 ;; fd pass path at end.
+                 (helm-get-attr 'subdir) (helm-get-attr 'basedir))
+       (format helm-locate-recursive-dirs-command
+	       (if (string-match-p "\\`es" helm-locate-recursive-dirs-command)
+                   ;; Fix W32 paths.
+		   (replace-regexp-in-string
+                    "/" "\\\\\\\\" (helm-get-attr 'basedir))
+                 (helm-get-attr 'basedir))
+	       (helm-get-attr 'subdir)))
      nil t nil)
     (buffer-string)))
 

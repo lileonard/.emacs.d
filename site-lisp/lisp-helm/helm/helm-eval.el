@@ -1,6 +1,6 @@
 ;;; helm-eval.el --- eval expressions from helm. -*- lexical-binding: t -*-
 
-;; Copyright (C) 2012 ~ 2019 Thierry Volpiatto <thierry.volpiatto@gmail.com>
+;; Copyright (C) 2012 ~ 2020 Thierry Volpiatto <thierry.volpiatto@gmail.com>
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -148,9 +148,13 @@ Should take one arg: the string to display."
   (helm-build-dummy-source "Calculation Result"
     :filtered-candidate-transformer (lambda (_candidates _source)
                                       (list
-                                       (condition-case nil
-                                           (calc-eval helm-pattern)
-                                         (error "error"))))
+                                       (condition-case err
+                                           (let ((result (calc-eval helm-pattern)))
+                                             (if (listp result)
+                                                 (error "At pos %s: %s"
+                                                        (car result) (cadr result))
+                                               result))
+                                         (error (cdr err)))))
     :nohighlight t
     :action '(("Copy result to kill-ring" . (lambda (candidate)
                                               (kill-new candidate)

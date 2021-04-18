@@ -4,7 +4,7 @@
 
 ;; Author: Jorgen Schaefer <contact@jorgenschaefer.de>, Gaby Launay <gaby.launay@protonmail.com>
 ;; URL: https://github.com/jorgenschaefer/elpy
-;; Version: 1.34.0
+;; Version: 1.35.0
 ;; Keywords: Python, IDE, Languages, Tools
 ;; Package-Requires: ((company "0.9.10") (emacs "24.4") (highlight-indentation "0.7.0") (pyvenv "1.20") (yasnippet "0.13.0") (s "1.12.0"))
 
@@ -53,7 +53,7 @@
 (require 'elpy-rpc)
 (require 'pyvenv)
 
-(defconst elpy-version "1.34.0"
+(defconst elpy-version "1.35.0"
   "The version of the Elpy Lisp code.")
 
 ;;;;;;;;;;;;;;;;;;;;;;
@@ -278,6 +278,18 @@ option is `pdb'."
 (defcustom elpy-disable-backend-error-display t
   "Non-nil if Elpy should disable backend error display."
   :type 'boolean
+  :group 'elpy)
+
+
+(defcustom elpy-formatter nil
+  "Auto formatter used by `elpy-format-code'.
+
+if nil, use the first formatter found amongst
+`yapf' , `autopep8' and `black'."
+  :type '(choice (const :tag "First one found" nil)
+                 (const :tag "Yapf" yapf)
+                 (const :tag "autopep8" autopep8)
+                 (const :tag "Black" black))
   :group 'elpy)
 
 (defcustom elpy-syntax-check-command "flake8"
@@ -534,12 +546,19 @@ This option need to bet set through `customize' or `customize-set-variable' to b
     (add-hook 'pyvenv-post-deactivate-hooks 'elpy-rpc--disconnect)
     (add-hook 'inferior-python-mode-hook 'elpy-shell--enable-output-filter)
     (add-hook 'python-shell-first-prompt-hook 'elpy-shell--send-setup-code t)
+    ;; Add codecell boundaries highligting
+    (font-lock-add-keywords
+     'python-mode
+     `((,(replace-regexp-in-string "\\\\" "\\\\"
+                                   elpy-shell-cell-boundary-regexp)
+        0 'elpy-codecell-boundary prepend)))
     ;; Enable Elpy-mode in the opened python buffer
     (setq elpy-enabled-p t)
     (dolist (buffer (buffer-list))
       (and (not (string-match "^ ?\\*" (buffer-name buffer)))
            (with-current-buffer buffer
              (when (string= major-mode 'python-mode)
+               (python-mode)  ;; update codecell fontification
                (elpy-mode t)))))
     ))
 
@@ -553,6 +572,12 @@ This option need to bet set through `customize' or `customize-set-variable' to b
   (remove-hook 'pyvenv-post-deactivate-hooks 'elpy-rpc--disconnect)
   (remove-hook 'inferior-python-mode-hook 'elpy-shell--enable-output-filter)
   (remove-hook 'python-shell-first-prompt-hook 'elpy-shell--send-setup-code)
+  ;; Remove codecell boundaries highligting
+  (font-lock-remove-keywords
+   'python-mode
+   `((,(replace-regexp-in-string "\\\\" "\\\\"
+                                 elpy-shell-cell-boundary-regexp)
+      0 'elpy-codecell-boundary prepend)))
   (setq elpy-enabled-p nil))
 
 ;;;###autoload
@@ -806,10 +831,9 @@ item in another window.\n\n")
     (when (and (gethash "rpc_python_executable" config)
                (not (gethash "virtual_env" config)))
       (elpy-insert--para
-       "You have not activated a virtual env. While Elpy supports this, "
-       "it is often a good idea to work inside a virtual env. You can use "
-       "M-x pyvenv-activate or M-x pyvenv-workon to activate a virtual "
-       "env.\n\n"))
+       "You have not activated a virtual env. It is not mandatory but"
+       " often a good idea to work inside a virtual env. You can use "
+       "`M-x pyvenv-activate` or `M-x pyvenv-workon` to activate one.\n\n"))
 
     ;; No virtual env, but ~/.local/bin not in PATH
     (when (and (not (memq system-type '(ms-dos windows-nt)))
@@ -909,8 +933,9 @@ item in another window.\n\n")
     (when (and (gethash "rpc_python_executable" config)
                (not (gethash "jedi_version" config)))
       (elpy-insert--para
-       "The jedi package is not available. Completion and code navigation will"
-       " not work.\n")
+       "The Jedi package is not currently installed. "
+       "This package is needed for code completion, code navigation "
+       "and access to documentation.\n")
       (insert "\n")
       (widget-create 'elpy-insert--pip-button
                      :package "jedi")
@@ -937,14 +962,24 @@ item in another window.\n\n")
       (insert "\n\n"))
 
 
-    ;; No autopep8 available
-    (unless (gethash "autopep8_version" config)
+    ;; No auto formatting tool available
+    (unless (or
+             (gethash "autopep8_version" config)
+             (gethash "yapf_version" config)
+             (gethash "black_version" config))
       (elpy-insert--para
-       "The autopep8 package is not available. Commands using this will "
-       "not work.\n")
+       "No autoformatting package is currently installed. "
+       "At least one is needed (Autopep8, Yapf or Black) "
+       "to perform autoformatting (`C-c C-r f` in a python buffer).\n")
       (insert "\n")
       (widget-create 'elpy-insert--pip-button
                      :package "autopep8")
+      (insert "\n")
+      (widget-create 'elpy-insert--pip-button
+                     :package "yapf")
+      (insert "\n")
+      (widget-create 'elpy-insert--pip-button
+                     :package "black")
       (insert "\n\n"))
 
     ;; Newer version of autopep8 available
@@ -957,16 +992,6 @@ item in another window.\n\n")
                      :package "autopep8" :upgrade t)
       (insert "\n\n"))
 
-    ;; No yapf available
-    (unless (gethash "yapf_version" config)
-      (elpy-insert--para
-       "The yapf package is not available. Commands using this will "
-       "not work.\n")
-      (insert "\n")
-      (widget-create 'elpy-insert--pip-button
-                     :package "yapf")
-      (insert "\n\n"))
-
     ;; Newer version of yapf available
     (when (and (gethash "yapf_version" config)
                (gethash "yapf_latest" config))
@@ -975,16 +1000,6 @@ item in another window.\n\n")
       (insert "\n")
       (widget-create 'elpy-insert--pip-button
                      :package "yapf" :upgrade t)
-      (insert "\n\n"))
-
-    ;; No black available
-    (unless (gethash "black_version" config)
-      (elpy-insert--para
-       "The black package is not available. Commands using this will "
-       "not work.\n")
-      (insert "\n")
-      (widget-create 'elpy-insert--pip-button
-                     :package "black")
       (insert "\n\n"))
 
     ;; Newer version of black available
@@ -1000,13 +1015,14 @@ item in another window.\n\n")
     ;; Syntax checker not available
     (unless (executable-find (car (split-string elpy-syntax-check-command)))
       (elpy-insert--para
-       "The configured syntax checker could not be found. Elpy uses this "
-       "program to provide syntax checks of your programs, so you might "
-       "want to install one. Elpy by default uses flake8.\n")
+       (format
+        "The configured syntax checker (%s) could not be found. Elpy uses this "
+        (car (split-string elpy-syntax-check-command)))
+       "program to provide syntax checks of your code. You can either "
+       "install it, or select another one using `elpy-syntax-check-command`.\n")
       (insert "\n")
       (widget-create 'elpy-insert--pip-button :package "flake8" :norpc t)
       (insert "\n\n"))
-
     ))
 
 (defun elpy-config--package-available-p (package)
@@ -2281,21 +2297,25 @@ prefix argument is given, prompt for a symbol from the user."
 ;;;;;;;;;;;;;;;;;;;;;
 ;;; Code reformatting
 
+
 (defun elpy-format-code ()
   "Format code using the available formatter."
   (interactive)
-  (cond
-   ((elpy-config--package-available-p "yapf")
-    (when (interactive-p) (message "Autoformatting code with yapf."))
-    (elpy-yapf-fix-code))
-   ((elpy-config--package-available-p "autopep8")
-    (when (interactive-p) (message "Autoformatting code with autopep8."))
-    (elpy-autopep8-fix-code))
-   ((elpy-config--package-available-p "black")
-    (when (interactive-p) (message "Autoformatting code with black."))
-    (elpy-black-fix-code))
-   (t
-    (message "Install yapf/autopep8 to format code."))))
+  (let ((elpy-formatter (or elpy-formatter
+                            (catch 'available
+                              (dolist (formatter '(yapf autopep8 black))
+                                (when (elpy-config--package-available-p
+                                       formatter)
+                                  (throw 'available formatter)))))))
+    (unless elpy-formatter
+      (error "No formatter installed, please install one using `elpy-config'"))
+    (unless (elpy-config--package-available-p elpy-formatter)
+      (error "The '%s' formatter is not installed, please install it using `elpy-config' or choose another one using `elpy-formatter'"
+             elpy-formatter))
+    (when (interactive-p) (message "Autoformatting code with %s."
+                                   elpy-formatter))
+    (funcall (intern (format "elpy-%s-fix-code" elpy-formatter)))))
+
 
 (defun elpy-yapf-fix-code ()
   "Automatically formats Python code with yapf.
@@ -3000,10 +3020,11 @@ and return the list."
             (cl-loop
              for pytel-cand in new-candidate-names
              for pytel-cand = (replace-regexp-in-string "($" "" pytel-cand)
-             for pytel-cand = (replace-regexp-in-string "^.*\\." ""
-                                                        pytel-cand)
-             if (not (member pytel-cand candidate-names))
-             do (push (list (cons 'name pytel-cand)) candidates)))
+             for pytel-cand = (replace-regexp-in-string "^.*\\." "" pytel-cand)
+             for pytel-cand = (string-trim pytel-cand)
+             unless (member pytel-cand candidate-names)
+               do (push (list (cons 'name pytel-cand)) candidates)
+             ))
           candidates)))))
 
 (defun elpy-company-backend (command &optional arg &rest ignored)
@@ -3106,7 +3127,8 @@ and return the list."
      (set (make-local-variable 'company-frontends)
           (remq 'company-echo-metadata-frontend company-frontends))
      ;; New (Emacs >= 28) vs old eldoc API
-     (if (boundp 'eldoc-documentation-functions)
+     (if (and (version< "28.0.0" emacs-version)
+              (boundp 'eldoc-documentation-functions))
          (add-hook 'eldoc-documentation-functions
                    'elpy-eldoc-documentation nil t)
        (set (make-local-variable 'eldoc-documentation-function)
@@ -3284,6 +3306,11 @@ documentation (only used for Emacs >= 28)."
 (defvar elpy-docstring-block-start-regexp
   "^\\s-*[uU]?[rR]?\"\"\"\n?\\s-*"
   "Version of `hs-block-start-regexp' for docstrings.")
+
+(defface elpy-codecell-boundary '((t :inherit 'highlight))
+  "Face for elpy codecell boundary."
+  :group 'elpy-mode)
+
 
 ;; Indicators
 (defun elpy-folding--display-code-line-counts (ov)

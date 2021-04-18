@@ -4,24 +4,6 @@ Concepts
 
 .. default-domain:: el
 
-Configuration
-=============
-
-You can easily configure Elpy to your own preferences. All *Customize
-Options* below are accessible via this interface. Elpy builds heavily
-upon existing extensions for Emacs. The configuration interface tries
-to include the options for those as well.
-
-.. command:: elpy-config
-
-   Show the current Elpy configuration, point out possible problems,
-   and provide a quick interface to relevant customization options.
-
-   Missing packages can be installed right from this interface. Be
-   aware that this does use your currently-selected virtual env. If
-   there is no current virtual env, it will suggest installing
-   packages globally. This is rarely what you want.
-
 The RPC Process
 ===============
 
@@ -35,6 +17,13 @@ Every project and virtual env combination gets their own RPC process.
 You can see them both in the process list (:kbd:`M-x list-process`) as
 well as in the buffer list (:kbd:`C-x C-b`) as buffers named
 ``*elpy-rpc[...]*``.
+
+RPC processes are used to provide code completion, documentation and
+other features. To do so, they use python packages (jedi, yapf, rope, ...)
+that are installed in a dedicated virtualenv
+(``.emacs.d/elpy/rpc-venv`` by default). Those packages can be updated
+through the configuration panel (accessible with :kbd:`M-x
+elpy-config`).
 
 By default, Elpy will also find the :index:`library root` of the
 current file and pass that to the RPC functions. The library root is
@@ -50,11 +39,28 @@ There are a few options and commands related to the RPC process.
 .. option:: elpy-rpc-python-command
 
    The Python interpreter Elpy should use to run the RPC process. This
-   defaults to ``"python"``, which should be correct for most cases,
-   as a virtual env should make that the right interpreter.
+   defaults to ``"python"``, which should be correct for most cases.
 
    Please do note that this is *not* an interactive interpreter, so do
-   not set this to ``"ipython"`` or similar.
+   not set this to ``"ipython"``, ``"jupyter"`` or similar.
+
+   As the RPC should be independent of any virtual environment, Elpy
+   will try to use the system interpreter if it exists. If you wish
+   to use a specific python interpreter (from a virtual environment
+   for example), set this to the full interpreter path.
+
+.. option:: elpy-rpc-virtualenv-path
+
+   Path to the virtualenv used by the RPC.
+
+   Can be `'default` (create a dedicated virtualenv
+   ``.emacs.d/elpy/rpc-venv``), `'system` (use the system
+   environment), `'current` (use the currently active environment), a
+   virtualenv path or a function returning a virtualenv path.
+
+   If the default virtual environment does not exist, it will be
+   created using `elpy-rpc-python-command` and populated with the
+   needed packages from `elpy-rpc--get-package-list`.
 
 .. option:: elpy-rpc-large-buffer-size
 
@@ -80,11 +86,13 @@ Backends
 ========
 
 For introspection and analysis of Python sources, Elpy mainly relies
-on `Jedi`_.
-`Jedi`_ is known to have some problems coping with badly-formatted
-Python.
+on `Jedi`_, a python package for static code analysis.
+
+Due to the dynamic nature of python and its minimalist structure syntax, python code can be difficult to understand in certain situations.
+Jedi documentation provides some tips_ to make jedi job easier.
 
 .. _Jedi: https://github.com/davidhalter/jedi/
+.. _tips: https://jedi.readthedocs.io/en/latest/docs/features.html#recipes
 
 
 Virtual Envs

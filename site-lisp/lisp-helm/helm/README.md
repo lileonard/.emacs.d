@@ -1,6 +1,8 @@
-<p align="center"><a href="http://www.gnu.org/licenses/gpl-3.0.txt"><img src="https://img.shields.io/badge/license-GPL_3-green.svg" alt="License GPL 3" /></a>
+<p align="center">
+  <a href="http://www.gnu.org/licenses/gpl-3.0.txt"><img src="https://img.shields.io/badge/license-GPL_3-green.svg" alt="License GPL 3" /></a>
   <a href="https://melpa.org/#/helm"><img alt="MELPA" src="https://melpa.org/packages/helm-badge.svg"/></a>
   <a href="https://stable.melpa.org/#/helm"><img alt="MELPA Stable" src="https://stable.melpa.org/packages/helm-badge.svg"/></a>
+  <a href="https://travis-ci.org/emacs-helm/helm"><img alt="Travis CI" src="https://travis-ci.org/emacs-helm/helm.svg?branch=master"/></a>
 </p>
 
 
@@ -29,43 +31,6 @@
   <a href="https://github.com/emacs-helm/helm/wiki"><b>Helm wiki</b></a> |
   <a href="https://github.com/emacs-helm/helm/wiki/FAQ"><b>FAQ</b></a>
 </p>
-
-***
-
-<p align="center">
-  Maintaining Helm requires a <a href="https://github.com/emacs-helm/helm/commits?author=thierryvolpiatto"><b>lot of work</b></a>,
-  which I have done voluntarily since 2011.<br>
-  As it demands lots of my time it gets increasingly difficult<br>
-  maintaining it without financial help.<br>
-  Thanks to all the people that are helping or have helped Helm development,<br>
-  but they are actually too few to continue serenely.<br>
-  By the way, after the release of version 3.0 I will have to stop<br>
-  developing Helm seriously until I get enough financial support,<br>
-  only providing a minimal bugfix maintenance.<br>
-  Thanks for your understanding<br>
-  If you feel Helm is making your daily work easier,<br>
-  <b>please consider making a donation.</b><br>
-
-</p>
-
-<p align="center">
-  <i>Thank you! &mdash; Thierry Volpiatto</i>
-</p>
-
-<div align="center">
-  <a href="https://www.paypal.me/tvolpiatto">
-    <img title="Donate with Paypal"
-         alt="Donate with Paypal"
-         style="height: 50px; width: auto;"
-         src="https://github.com/emacs-helm/helm/blob/master/images/paypal.png?raw=true"></a>
-  &nbsp;&nbsp;
-  <a href="https://patreon.com/preview/30231724baf440fabe80d44d0ee77067">
-    <img title="Donate monthly using Patreon"
-         alt="Donate monthly using Patreon"
-         style="height: 50px; width: auto;"
-         src="https://github.com/emacs-helm/helm/blob/master/images/patreon-25x.png?raw=true"></a>
-  &nbsp;&nbsp;
-</div>
 
 ***
 

@@ -1,6 +1,6 @@
 ;;; helm-font --- Font and ucs selection for Helm -*- lexical-binding: t -*-
 
-;; Copyright (C) 2012 ~ 2019 Thierry Volpiatto <thierry.volpiatto@gmail.com>
+;; Copyright (C) 2012 ~ 2020 Thierry Volpiatto <thierry.volpiatto@gmail.com>
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -259,28 +259,28 @@ name."
 (defun helm-ucs-persistent-forward ()
   (interactive)
   (with-helm-alive-p
-    (helm-attrset 'action-forward 'helm-ucs-forward-char)
+    (helm-set-attr 'action-forward 'helm-ucs-forward-char)
     (helm-execute-persistent-action 'action-forward)))
 (put 'helm-ucs-persistent-forward 'helm-only t)
 
 (defun helm-ucs-persistent-backward ()
   (interactive)
   (with-helm-alive-p
-    (helm-attrset 'action-back 'helm-ucs-backward-char)
+    (helm-set-attr 'action-back 'helm-ucs-backward-char)
     (helm-execute-persistent-action 'action-back)))
 (put 'helm-ucs-persistent-backward 'helm-only t)
 
 (defun helm-ucs-persistent-delete ()
   (interactive)
   (with-helm-alive-p
-    (helm-attrset 'action-delete 'helm-ucs-delete-backward)
+    (helm-set-attr 'action-delete 'helm-ucs-delete-backward)
     (helm-execute-persistent-action 'action-delete)))
 (put 'helm-ucs-persistent-delete 'helm-only t)
 
 (defun helm-ucs-persistent-insert-space ()
   (interactive)
   (with-helm-alive-p
-    (helm-attrset 'action-insert-space 'helm-ucs-insert-space)
+    (helm-set-attr 'action-insert-space 'helm-ucs-insert-space)
     (helm-execute-persistent-action 'action-insert-space)))
 
 (defvar helm-source-ucs-recent

@@ -1,45 +1,62 @@
-=======================================
-Elpy, the Emacs Lisp Python Environment
-=======================================
 
-Elpy is an Emacs package to bring powerful Python editing to Emacs. It
-combines and configures a number of other packages, both written in
-Emacs Lisp as well as Python.
-
-.. image:: https://secure.travis-ci.org/jorgenschaefer/elpy.png?branch=master
+.. image:: https://secure.travis-ci.org/jorgenschaefer/elpy.svg?branch=master
    :target: http://travis-ci.org/jorgenschaefer/elpy?branch=master
 
-.. image:: https://coveralls.io/repos/jorgenschaefer/elpy/badge.png?branch=master
+.. image:: https://readthedocs.org/projects/elpy/badge/?version=latest
+   :target: https://elpy.readthedocs.io/en/latest/?badge=latest
+   :alt: Documentation Status
+
+.. image:: https://coveralls.io/repos/jorgenschaefer/elpy/badge.svg?branch=master
    :target: https://coveralls.io/r/jorgenschaefer/elpy?branch=master
 
-Documentation
-=============
+.. image:: https://melpa.org/packages/elpy-badge.svg
+   :target: https://melpa.org/#/elpy
 
-Elpy is fully documented at readthedocs.io:
+.. image:: https://stable.melpa.org/packages/elpy-badge.svg
+   :target: https://stable.melpa.org/#/elpy
 
-https://elpy.readthedocs.io/en/latest/index.html
 
-Quick Installation
-==================
+==========================
+Elpy, the Emacs Python IDE
+==========================
 
-Python packages
----------------
+Elpy is an Emacs package to bring powerful Python editing to Emacs.
+It combines and configures a number of other packages, both written in
+Emacs Lisp as well as Python. Elpy is fully documented at `Readthedocs`_.
 
-First, install the required Python packages:::
+.. _Readthedocs: https://elpy.readthedocs.io/en/latest/index.html
 
-  # Completion and code navigation
-  pip install jedi
-  # Code checks
-  pip install flake8
-  # Automatic formatting (PEP8, Yapf or Black)
-  pip install autopep8
-  pip install yapf
-  pip install black
+Features
+========
 
-One-line install: **pip install jedi flake8 autopep8 black yapf**
+- `Code completion`_
+- `Code Navigation`_
+- `Interactive Python shell`_
+- `Virtualenv support`_
+- `On-the-fly syntax checking`_
+- `Access to documentation`_
+- `Debugging`_
+- `Testing`_
+- `Profiling`_
+- `Snippet Expansion`_
+- Code hinting
 
-With `use-package`
-------------------
+.. _Code completion: https://elpy.readthedocs.io/en/latest/ide.html#completion
+.. _Code Navigation: https://elpy.readthedocs.io/en/latest/ide.html#navigation
+.. _On-the-fly syntax checking: https://elpy.readthedocs.io/en/latest/ide.html#syntax-checking
+.. _Interactive Python shell: https://elpy.readthedocs.io/en/latest/ide.html#interactive-python
+.. _Access to documentation: https://elpy.readthedocs.io/en/latest/ide.html#documentation
+.. _Debugging: https://elpy.readthedocs.io/en/latest/ide.html#debugging
+.. _Testing: https://elpy.readthedocs.io/en/latest/ide.html#testing
+.. _Profiling: https://elpy.readthedocs.io/en/latest/ide.html#profiling
+.. _Virtualenv support: https://elpy.readthedocs.io/en/latest/concepts.html#virtual-envs
+.. _Snippet Expansion: https://elpy.readthedocs.io/en/latest/ide.html#snippets
+
+
+Installation
+============
+
+Elpy is available on Melpa, the most straightforward way to install it is to use `use-package`:
 
 .. code-block:: elisp
 
@@ -48,55 +65,35 @@ With `use-package`
     :init
     (elpy-enable))
 
-Or if you want to defer Elpy loading:
+For other installation alternatives, see the `documentation`_.
 
-.. code-block:: elisp
-
-  (use-package elpy
-    :ensure t
-    :defer t
-    :init
-    (advice-add 'python-mode :before 'elpy-enable))
-
-Manually from Melpa
--------------------
-
-Evaluate this in your ``*scratch*`` buffer:
-
-.. code-block:: elisp
-
-  (require 'package)
-  (add-to-list 'package-archives
-               '("melpa-stable" . "https://stable.melpa.org/packages/"))
+.. _documentation: https://elpy.readthedocs.io/en/latest/introduction.html#installation
 
 
-Then run ``M-x package-refresh-contents`` to load the contents of the
-new repository, and ``M-x package-install RET elpy RET`` to install
-elpy.
+Quickstart
+==========
 
-Elpy can then be activated by running ``M-x elpy-enable``.
-This can be made automatic by adding the following to your ``.emacs``:
+Once installed, Elpy will automatically provide code completion, syntax error highlighting and code hinting (in the modeline) for python files. Elpy offers a lot of features, but the following keybindings should be enough to get started:
 
-.. code-block:: elisp
+- :kbd:`C-c C-c` evaluates the current python script (or region if something is selected) in an interactive python shell. The python shell is automatically displayed aside of your script.
+- :kbd:`C-RET` evaluates the current statement (current line plus the following nested lines).
+- :kbd:`C-c C-z` switches between your script and the interactive shell.
+- :kbd:`C-c C-d` displays documentation for the thing under cursor. The documentation will pop in a different buffer, that can be closed with :kbd:`q`.
 
-  (elpy-enable)
+Please have a look at the documentation at `Readthedocs`_ if you want to know more about what Elpy can do.
 
-From apt (Debian ≥10 an Ubuntu ≥18.10)
---------------------------------------
+.. _Readthedocs: https://elpy.readthedocs.io/en/latest/index.html
 
-Users of Debian ≥10 or Ubuntu ≥18.10 can skip the instructions above
-this line and may simply install Elpy and all of its recommended
-dependencies with the following command:::
+External resources
+===================
+ 
+- `Emacs: The Best Python Editor?`_ by Jon Fincher
+- `Managing a Python development environment in Emacs`_ by Diego Fernández Giraldo
+- `Configuring GNU emacs with elpy on MacOS`_ by Kenneth H. East
 
-  sudo apt install elpa-elpy
-
-Elpy can then be activated by running ``M-x elpy-enable``.
-This can be made automatic by adding the following to your ``.emacs``:
-
-.. code-block:: elisp
-
-  (elpy-enable)
-
+.. _Managing a Python development environment in Emacs: https://medium.com/analytics-vidhya/managing-a-python-development-environment-in-emacs-43897fd48c6a
+.. _Emacs\: The Best Python Editor?: https://realpython.com/emacs-the-best-python-editor
+.. _Configuring GNU emacs with elpy on MacOS: https://east.fm/posts/configuring-gnu-emacs-with-elpy-on-macos/index.html#
 
 Contact
 =======
@@ -107,22 +104,8 @@ github`_ or visit us on IRC, channel ``#emacs-elpy`` on
 
 .. _issue on github: https://github.com/jorgenschaefer/elpy/issues/new
 
-License
-=======
-
-This project is free software: You can redistribute it and/or modify
-it under the terms of the `GNU General Public License`__, either
-version 3 of the License, or (at your option) any later version.
-
-.. __: LICENSE
-
-Thank You
-=========
-
 If you would like to support this work, you can become a patreon:
-
 https://www.patreon.com/jorgenschaefer
-
 Please note that this is completely voluntary, and does not make you
 more important than others when it comes to issues, feature requests
 or anything. I appreciate donations, but do not feel compelled to
