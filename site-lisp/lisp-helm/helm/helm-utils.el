@@ -142,6 +142,7 @@ last position is added to the register `helm-save-pos-before-jump-register'.")
     ("&brvbar;" . 166)  ;; ¦
     ("&sect;"   . 167)  ;; §
     ("&uml;"    . 32)   ;; SPC
+    ("&nbsp;"   . 160)  ;;   (non breaking space)
     ("&copy;"   . 169)  ;; ©
     ("&ordf;"   . 97)   ;; a
     ("&laquo;"  . 171)  ;; «
@@ -230,7 +231,8 @@ last position is added to the register `helm-save-pos-before-jump-register'.")
     ("&reg;"    . 174)  ;; ®
     ("&shy;"    . 173)) ;; ­
 
-  "Table of html character entities and values.")
+  "Table of html character entities and values.
+See https://www.freeformatter.com/html-entities.html")
 
 (defvar helm-find-many-files-after-hook nil
   "Hook that runs at end of `helm-find-many-files'.")
@@ -1146,11 +1148,5 @@ When unable to decode ENTITY returns nil."
       (buffer-string))))
 
 (provide 'helm-utils)
-
-;; Local Variables:
-;; byte-compile-warnings: (not obsolete)
-;; coding: utf-8
-;; indent-tabs-mode: nil
-;; End:
 
 ;;; helm-utils.el ends here

@@ -158,11 +158,14 @@ at point."
                                     (setq helm-eshell--quit-flag t)
                                     (message "No completions of %s" pcomplete-stub))
               for i in comps
-              ;; Transform the related names to abs names.
+              ;; Transform the relative names to abs names.
               for file-cand = (and exp-entry
                                    (if (file-remote-p i) i
                                      (expand-file-name
-                                      i (file-name-directory entry))))
+                                      i (file-name-directory
+                                         (if (directory-name-p pcomplete-stub)
+                                             entry
+                                           (directory-file-name entry))))))
               ;; Compare them to avoid dups.
               for file-entry-p = (and (stringp exp-entry)
                                       (stringp file-cand)
@@ -204,7 +207,11 @@ at point."
     (lambda ()
       (with-helm-current-buffer
         (cl-loop for c from 0 to (ring-length eshell-history-ring)
-                 collect (eshell-get-history c)))))
+                 for elm = (eshell-get-history c)
+                 unless (and (member elm lst)
+                             eshell-hist-ignoredups)
+                 collect elm into lst
+                 finally return lst))))
    (nomark :initform t)
    (multiline :initform t)
    (keymap :initform helm-eshell-history-map)
@@ -491,11 +498,5 @@ See `helm-eshell-prompts-list'."
         :buffer "*helm Eshell all prompts*"))
 
 (provide 'helm-eshell)
-
-;; Local Variables:
-;; byte-compile-warnings: (not obsolete)
-;; coding: utf-8
-;; indent-tabs-mode: nil
-;; End:
 
 ;;; helm-eshell ends here

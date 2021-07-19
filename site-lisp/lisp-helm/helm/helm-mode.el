@@ -241,7 +241,7 @@ Second call deletes backward char in current-buffer and quits helm completion,
 letting the user start a new completion with a new prefix."
   '(helm-mode-delete-char-backward-1 helm-mode-delete-char-backward-2) 1)
 
-(defcustom helm-completion-style 'emacs
+(defcustom helm-completion-style 'helm
   "Style of completion to use in `completion-in-region'.
 
 This affects only `completion-at-point' and friends, and
@@ -267,11 +267,16 @@ There are three possible values to use:
   is not available (Emacs<27) helm provides `helm-flex' style which is similar to
   `flex' and helm fuzzy matching.
 
-For a better experience, if you don't know what to use, set
+For a better experience with emacs style, if you don't know what to use, set
 `completion-styles' to '(flex) if you are using emacs-27 or to
 \'(helm-flex) if you are using emacs-26 and keep 'emacs as default
 value for `helm-completion-style'.  Advanced users can also have a
 look to `completion-category-overrides' to set styles according to category.
+You can as well use `helm-completion-styles-alist' to override
+`helm-completion-style' in specific modes.
+
+Of course when using `helm' of `helm-fuzzy' as `helm-completion-style'
+emacs `completion-styles' have no effect.
 
 Please use custom interface or `customize-set-variable' to set this,
 NOT `setq'."
@@ -397,7 +402,11 @@ If COLLECTION is an `obarray', a TEST should be needed. See `obarray'."
   ;; only in the context of current-buffer (Bug#1030) .
   (with-helm-current-buffer
     (let ((cands
-           (cond ((vectorp collection)
+           (cond ((and alistp (hash-table-p collection))
+                  (cl-loop for k being the hash-keys of collection
+                           using (hash-values v)
+                           collect (cons k v)))
+                 ((vectorp collection)
                   (all-completions input collection test))
                  ((and (symbolp collection) (boundp collection)
                        ;; Bug#324 history is let-bounded and given
@@ -566,7 +575,9 @@ It is helm `completing-read' equivalent.
 
 - PROMPT is the prompt name to use.
 
-- COLLECTION can be a list, vector, obarray or hash-table.
+- COLLECTION can be a list, alist, vector, obarray or hash-table.
+  For alists and hash-tables their car are use as real value of
+  candidate unless ALISTP is non-nil.
   It can be also a function that receives three arguments:
   the values string, predicate and t. See `all-completions' for more details.
 
@@ -640,7 +651,12 @@ Keys description:
 
 - NOMARK: When non--nil don't allow marking candidates.
 
-- ALISTP: (default is non--nil) See `helm-comp-read-get-candidates'.
+- ALISTP:
+  When non-nil (default) pass the value of (DISPLAY . REAL)
+  candidate in COLLECTION to action when COLLECTION is an alist or a
+  hash-table, otherwise DISPLAY is always returned as result on exit,
+  which is the default when using `completing-read'.
+  See `helm-comp-read-get-candidates'.
 
 - CANDIDATES-IN-BUFFER: when non--nil use a source build with
   `helm-source-in-buffer' which is much faster.
@@ -1041,15 +1057,17 @@ This handler uses dynamic matching which allows honouring `completion-styles'."
      init hist default inherit-input-method
      name buffer)
   "Default `helm-mode' handler for all `completing-read'."
-  (let* ((standard (memq helm-completion-style '(helm helm-fuzzy)))
+  (let* (;; Standard will be used as CANDS-IN-BUFFER arg.
+         (standard (and (memq helm-completion-style '(helm helm-fuzzy)) t))
          (fn (if standard
                  #'helm-completing-read-default-1
                #'helm-completing-read-default-2))
          (helm-mode-fuzzy-match (eq helm-completion-style 'helm-fuzzy)))
-    (apply fn
-           prompt collection test require-match
-           init hist default inherit-input-method
-           name buffer standard)))
+    (funcall fn
+             prompt collection test require-match
+             init hist default inherit-input-method name buffer
+             ;; CANDS-IN-BUFFER
+             standard)))
 
 (defun helm-mode--read-buffer-to-switch (prompt)
   "[INTERNAL] This is used to advice `read-buffer-to-switch'.
@@ -1330,7 +1348,9 @@ Keys description:
          (result (helm
                   :sources (if helm-mode-reverse-history
                                (reverse src-list) src-list)
-                  :input (expand-file-name initial-input)
+                  :input (if (string-match helm-ff-url-regexp initial-input)
+                             initial-input
+                           (expand-file-name initial-input))
                   :prompt prompt
                   :candidate-number-limit candidate-number-limit
                   :resume 'noresume
@@ -1466,7 +1486,9 @@ Don't use it directly, use instead `helm-read-file-name' in your programs."
                        :buffer buf-name
                        :default default-filename
                        ;; Helm handlers should always have a non nil INITIAL arg.
-                       :initial-input (expand-file-name init dir)
+                       :initial-input (if (string-match helm-ff-url-regexp init)
+                                          init
+                                        (expand-file-name init dir))
                        :alistp nil
                        :nomark (null helm-comp-read-use-marked)
                        :marked-candidates helm-comp-read-use-marked
@@ -1581,8 +1603,9 @@ Actually does nothing."
 (defun helm-completion-all-completions (string table pred point)
   "The all completions function for `completing-styles-alist'."
   ;; FIXME: No need to bind all these value.
-  (cl-multiple-value-bind (all _pattern prefix _suffix _carbounds)
-      (helm-completion--multi-all-completions string table pred point)
+  ;; (cl-multiple-value-bind (all _pattern prefix _suffix _carbounds)
+  (pcase-let ((`(,all ,_pattern ,prefix ,_suffix ,_carbounds)
+               (helm-completion--multi-all-completions string table pred point)))
     (when all (nconc all (length prefix)))))
 
 (defun helm-completion--multi-all-completions-1 (string collection &optional predicate)
@@ -1649,7 +1672,12 @@ Actually does nothing."
          (prefix (substring beforepoint 0 (car bounds)))
          (suffix (substring afterpoint (cdr bounds)))
          (all (helm-completion--multi-all-completions-1
-               (regexp-quote string) table pred)))
+               ;; Using `regexp-quote' on STRING fixes bug#2355 but
+               ;; breaks regexp matching in multi match, actually with
+               ;; Helm-3.7.1 and emacs-27+ it seems using plain STRING
+               ;; works for both so use it.
+               ;;(regexp-quote string)
+               string table pred)))
     (list all string prefix suffix point)))
 
 ;; The adjust-metadata functions run only in emacs-27, they are NOT
@@ -1675,8 +1703,8 @@ Actually does nothing."
   ;; It is needed here to make minibuffer-complete work in emacs-26,
   ;; e.g. with regular M-x.
   (unless (string-match-p " " string)
-    (cl-multiple-value-bind (all pattern prefix suffix _carbounds)
-        (helm-completion--flex-all-completions string table pred point)
+    (pcase-let ((`(,all ,pattern ,prefix ,suffix ,_carbounds)
+                 (helm-completion--flex-all-completions string table pred point)))
       (when minibuffer-completing-file-name
         (setq all (completion-pcm--filename-try-filter all)))
       (completion-pcm--merge-try pattern all prefix suffix))))
@@ -1685,10 +1713,10 @@ Actually does nothing."
   "The all completions function for `completing-styles-alist'."
   ;; FIXME: No need to bind all these value.
   (unless (string-match-p " " string)
-    (cl-multiple-value-bind (all pattern prefix _suffix _carbounds)
-        (helm-completion--flex-all-completions
-         string table pred point
-         #'helm-completion--flex-transform-pattern)
+    (pcase-let ((`(,all ,pattern ,prefix ,_suffix ,_carbounds)
+                 (helm-completion--flex-all-completions
+                  string table pred point
+                  #'helm-completion--flex-transform-pattern)))
       (let ((regexp (completion-pcm--pattern->regex pattern 'group)))
         (when all (nconc (helm-flex-add-score-as-prop all regexp)
                          (length prefix)))))))
@@ -2068,11 +2096,5 @@ Note: This mode is incompatible with Emacs23."
       (advice-remove 'read-buffer-to-switch #'helm-mode--read-buffer-to-switch))))
 
 (provide 'helm-mode)
-
-;; Local Variables:
-;; byte-compile-warnings: (not obsolete)
-;; coding: utf-8
-;; indent-tabs-mode: nil
-;; End:
 
 ;;; helm-mode.el ends here

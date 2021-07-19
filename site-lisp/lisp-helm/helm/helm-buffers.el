@@ -180,6 +180,12 @@ you want to keep the recentest order when narrowing candidates."
   "Face used for modified buffers."
   :group 'helm-buffers-faces)
 
+(defface helm-no-file-buffer-modified
+  `((t ,@(and (>= emacs-major-version 27) '(:extend t))
+       :foreground "orange" :background "black"))
+  "Face used for modified buffers."
+  :group 'helm-buffers-faces)
+
 (defface helm-buffer-size
   `((((background dark))
      ,@(and (>= emacs-major-version 27) '(:extend t))
@@ -228,6 +234,8 @@ Such programs may want to record tick counter after visiting
 their buffers like this:
 
     (setq helm-buffers-tick-counter (buffer-modified-tick))
+
+See bug#1917.
 
 Note that this variable is buffer-local.")
 (make-variable-buffer-local 'helm-buffers-tick-counter)
@@ -499,13 +507,13 @@ The list is reordered with `helm-buffer-list-reorder-fn'."
            (helm-buffer--show-details
             name name-prefix file-name size mode dir
             'helm-buffer-file 'helm-buffer-process nil details 'filebuf))
-          ;; A non-file, modified buffer
+          ;; A non-file, modified buffer See bug#1917
           ((with-current-buffer name
              (and helm-buffers-tick-counter
                   (/= helm-buffers-tick-counter (buffer-modified-tick))))
            (helm-buffer--show-details
             name (and proc name-prefix) dir size mode dir
-            'helm-buffer-modified 'helm-buffer-process proc details 'nofile-mod))
+            'helm-no-file-buffer-modified 'helm-buffer-process proc details 'nofile-mod))
           ;; Any non--file buffer.=>italic
           (t
            (helm-buffer--show-details
@@ -627,7 +635,8 @@ buffers)."
       (helm-mark-current-line)
       (helm-display-mode-line src t)
       (when helm-marked-candidates
-        (message "%s candidates marked" (length helm-marked-candidates))))))
+        (message "%s candidates marked" (length helm-marked-candidates))
+        (set-window-margins (selected-window) 1)))))
 
 (defun helm-buffers-mark-similar-buffers ()
     "Mark All buffers that have same property `type' than current.
@@ -1183,11 +1192,5 @@ displayed with the `file-name-shadow' face if available."
     (helm-run-after-exit 'helm-mini)))
 
 (provide 'helm-buffers)
-
-;; Local Variables:
-;; byte-compile-warnings: (not obsolete)
-;; coding: utf-8
-;; indent-tabs-mode: nil
-;; End:
 
 ;;; helm-buffers.el ends here

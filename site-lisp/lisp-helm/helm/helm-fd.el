@@ -23,7 +23,7 @@
 (defvar helm-fd-executable "fd"
   "The fd shell command executable.")
 
-(defcustom helm-fd-switches '("--hidden" "--type" "f" "--type" "d" "--color" "always")
+(defcustom helm-fd-switches '("--no-ignore" "--hidden" "--type" "f" "--type" "d" "--color" "always")
   "A list of options to pass to fd shell command."
   :type '(repeat string)
   :group 'helm-files)
@@ -77,11 +77,11 @@
   "Initialize fd process in an helm async source."
   (let* (process-connection-type
          (cmd (append helm-fd-switches (split-string helm-pattern " ")))
-         (proc (apply #'start-process "fd" nil "fd" cmd))
+         (proc (apply #'start-process "fd" nil helm-fd-executable cmd))
          (start-time (float-time))
          (fd-version (replace-regexp-in-string
                       "\n" ""
-                      (shell-command-to-string "fd --version"))))
+                      (shell-command-to-string (concat helm-fd-executable " --version")))))
     (helm-log "Fd command:\nfd %s" (mapconcat 'identity cmd " "))
     (helm-log "VERSION: %s" fd-version)
     (prog1
@@ -122,11 +122,5 @@
 
 
 (provide 'helm-fd)
-
-;; Local Variables:
-;; byte-compile-warnings: (not obsolete)
-;; coding: utf-8
-;; indent-tabs-mode: nil
-;; End:
 
 ;;; helm-fd.el ends here

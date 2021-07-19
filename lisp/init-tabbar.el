@@ -14,8 +14,7 @@
          (tabbar-buffer-mode-derived-p
           major-mode '(comint-mode compilation-mode)))
      "Process"
-     )
-    ((member (buffer-name)
+     )    ((member (buffer-name)
              '("*scratch*" "*Messages*" "*Help*"))
      "Common"
      )

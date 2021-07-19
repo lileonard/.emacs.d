@@ -26,7 +26,7 @@
 ;;
 ;;
 (defvar dired-buffers)
-(defvar dired-re-no-dot)
+(defvar directory-files-no-dot-files-regexp)
 (defun helm-files-in-all-dired-candidates ()
   "Return a list of files from live `dired' buffers."
   (save-excursion
@@ -34,7 +34,7 @@
           when (buffer-live-p b)
           append (let ((dir (with-current-buffer b dired-directory)))
                    (if (listp dir) (cdr dir)
-                     (directory-files f t dired-re-no-dot))))))
+                     (directory-files f t directory-files-no-dot-files-regexp))))))
 
 ;; (dired '("~/" "~/.emacs.d/.emacs-custom.el" "~/.emacs.d/.emacs.bmk"))
 
@@ -123,11 +123,5 @@ with the tracker desktop search.")
   "Source for retrieving files via Spotlight's command line utility mdfind.")
 
 (provide 'helm-x-files)
-
-;; Local Variables:
-;; byte-compile-warnings: (not obsolete)
-;; coding: utf-8
-;; indent-tabs-mode: nil
-;; End:
 
 ;;; helm-x-files.el ends here

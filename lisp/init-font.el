@@ -44,7 +44,7 @@ If set/leave chinese-font-size to nil, it will follow english-font-size"
     (dolist (charset '(kana han symbol cjk-misc bopomofo))
       (set-fontset-font (frame-parameter nil 'font)
                         charset zh-font))))
-;; this is on the 4k screen
+;;this is on the 4k screen
 ;; (qiang-set-font
 ;;  '("Consolas"
 ;;    "Monaco"

@@ -464,9 +464,9 @@ If `browse-url-browser-function' is set to something else than
 
 (defclass helm-bookmark-override-inheritor (helm-source) ())
 
-(defmethod helm--setup-source ((source helm-bookmark-override-inheritor))
+(cl-defmethod helm--setup-source ((source helm-bookmark-override-inheritor))
   ;; Ensure `helm-source-in-buffer' method is called.
-  (call-next-method)
+  (cl-call-next-method)
   (setf (slot-value source 'action)
         (helm-append-at-nth
          (cl-loop for (name . action) in helm-type-bookmark-actions
@@ -736,11 +736,5 @@ if external addressbook-bookmark package is installed."
                        (buffer-name helm-current-buffer))))
 
 (provide 'helm-bookmark)
-
-;; Local Variables:
-;; byte-compile-warnings: (not obsolete)
-;; coding: utf-8
-;; indent-tabs-mode: nil
-;; End:
 
 ;;; helm-bookmark.el ends here

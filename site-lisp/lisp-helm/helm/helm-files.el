@@ -84,6 +84,7 @@
 (declare-function tramp-buffer-name "tramp")
 (declare-function tramp-make-tramp-file-name "tramp")
 (declare-function tramp-cleanup-connection "tramp-cmds")
+(declare-function dired-async-processes "ext:dired-async.el")
 
 (defvar term-char-mode-point-at-process-mark)
 (defvar term-char-mode-buffer-read-only)
@@ -94,7 +95,7 @@
 (defvar eshell-current-command)
 (defvar eshell-debug-command)
 (defvar eshell-current-command)
-
+(defvar tramp-archive-enabled)
 
 
 (defgroup helm-files nil
@@ -284,7 +285,7 @@ variable."
   :type 'boolean)
 
 (defcustom helm-ff-allow-non-existing-file-at-point nil
-  "Use file-at-point as initial input in `helm-find-files' even if it doesn't exists."
+  "Use non existing file-at-point as initial input in `helm-find-files'."
   :group 'helm-files
   :type 'boolean)
 
@@ -491,6 +492,17 @@ currently transfered in an help-echo in mode-line, if you use
 
 (defcustom helm-rsync-percent-sign "％"
   "Percentage unicode sign to use in Rsync reporter."
+  :type 'string
+  :group 'helm-files)
+
+(defcustom helm-trash-default-directory nil
+  "The default trash directory.
+You probably don't need to set this when using a Linux system using
+standard settings.
+Should be the directory file name i.e. don't add final slash.
+When nil helm will compute a default value according to freedesktop
+specs.
+It is generally \"~/.local/share/Trash\"."
   :type 'string
   :group 'helm-files)
 
@@ -820,6 +832,9 @@ than `helm-candidate-number-limit'.")
 (defvar helm-ff--trash-directory-regexp "\\.?Trash[/0-9]+files/?\\'")
 (defvar helm-ff--show-directories-only nil)
 (defvar helm-ff--show-files-only nil)
+(defvar helm-ff--trashed-files nil
+  "[INTERNAL] Files already trashed are stored here during file deletion.
+This is used only as a let binding.")
 
 ;;; Helm-find-files
 ;;
@@ -972,23 +987,29 @@ Should not be used among other sources.")
 
 Define the directory where you want to start navigating for the
 target directory when copying, renaming, etc..  You can use the
-`default-directory' of `next-window', the current
-`default-directory' or have completion on all the directories
-belonging to each window."
+`default-directory' of `next-window', the visited directory, the
+current `default-directory' or have completion on all the
+directories belonging to each visible windows."
   :group 'helm-files
   :type '(radio :tag "Define default target directory for file actions."
-          (const :tag "Directory belonging to next window" next-window)
-          (const :tag "Completion on directories belonging to each window" completion)
-          (const :tag "Use initial directory or `default-directory'" nil)))
+          (const :tag "Directory belonging to next window"
+                 next-window)
+          (const :tag "Completion on directories belonging to each window"
+                 completion)
+          (const :tag "Use initial directory or `default-directory'"
+                 default-directory)
+          (const :tag "Use visited directory"
+                 nil)))
 
 (defun helm-dwim-target-directory ()
   "Try to return a suitable directory according to `helm-dwim-target'."
-  (with-helm-current-buffer
-    (let* ((wins (remove (get-buffer-window helm-marked-buffer-name)
-                         (window-list)))
-           (num-windows (length wins)))
+  (with-selected-window (get-buffer-window helm-current-buffer)
+    (let ((wins (remove (get-buffer-window helm-marked-buffer-name)
+                        (window-list))))
       (expand-file-name
-       (cond ((and (> num-windows 1)
+       (cond (;; Provide completion on all the directory belonging to
+              ;; visible windows if some.
+              (and (cdr wins)
                    (eq helm-dwim-target 'completion))
               (helm-comp-read "Browse target starting from: "
                               (append (list (or (car-safe helm-ff-history)
@@ -997,11 +1018,17 @@ belonging to each window."
                                       (cl-loop for w in wins collect
                                                (with-selected-window w
                                                  default-directory)))))
-             ((and (> num-windows 1)
+             ;; Use default-directory of next-window.
+             ((and (cdr wins)
                    (eq helm-dwim-target 'next-window))
               (with-selected-window (next-window)
                 default-directory))
-             ((or (= num-windows 1)
+             ;; Always use default-directory when only one window.
+             ((and (null (cdr wins))
+                   (eq helm-dwim-target 'default-directory))
+              default-directory)
+             ;; Use the visited directory.
+             ((or (null (cdr wins))
                   (null helm-dwim-target))
               ;; Using the car of *ff-history allow
               ;; staying in the directory visited instead of
@@ -1024,7 +1051,7 @@ belonging to each window."
                                    else
                                    collect k)))
 
-(defun helm-find-files-do-action (action)
+(defun helm-find-files-do-action (action &optional target)
   "Generic function for creating actions from `helm-source-find-files'.
 ACTION can be `rsync' or any action supported by `helm-dired-action'."
   (require 'dired-async)
@@ -1062,20 +1089,21 @@ ACTION can be `rsync' or any action supported by `helm-dired-action'."
          ;; If HFF is using a frame use a frame as well.
          (helm-actions-inherit-frame-settings t)
          helm-use-frame-when-more-than-two-windows
-         (dest   (with-helm-display-marked-candidates
-                   helm-marked-buffer-name
-                   (helm-ff--count-and-collect-dups ifiles)
-                   (with-helm-current-buffer
-                     (helm-read-file-name
-                      prompt
-                      :preselect (unless (cdr ifiles)
-                                   (concat
-                                    "^"
-                                    (regexp-quote
-                                     (if helm-ff-transformer-show-only-basename
-                                         (helm-basename cand) cand))))
-                      :initial-input (helm-dwim-target-directory)
-                      :history (helm-find-files-history nil :comp-read nil)))))
+         (dest (or target
+                   (with-helm-display-marked-candidates
+                     helm-marked-buffer-name
+                     (helm-ff--count-and-collect-dups ifiles)
+                     (with-helm-current-buffer
+                       (helm-read-file-name
+                        prompt
+                        :preselect (unless (cdr ifiles)
+                                     (concat
+                                      "^"
+                                      (regexp-quote
+                                       (if helm-ff-transformer-show-only-basename
+                                           (helm-basename cand) cand))))
+                        :initial-input (helm-dwim-target-directory)
+                        :history (helm-find-files-history nil :comp-read nil))))))
          (dest-dir-p (file-directory-p dest))
          (dest-dir   (helm-basedir dest)))
     (unless (or dest-dir-p (file-directory-p dest-dir))
@@ -1505,7 +1533,8 @@ this working."
                        for fcmd = (replace-regexp-in-string
                                    "\\\\@" (regexp-quote (file-name-sans-extension file))
                                    (replace-regexp-in-string
-                                    "\\\\#" (format "%03d" n) command))
+                                    "\\\\#" (format "%03d" n) command t t)
+                                   t t)
                        for com = (if (string-match "%s" fcmd)
                                      ;; [1] This allow to enter other args AFTER filename
                                      ;; i.e <command %s some_more_args>
@@ -3171,7 +3200,9 @@ debugging purpose."
           ((string= path "") (helm-ff-directory-files "/"))
           ;; Check here if directory is accessible (not working on Windows).
           ((and (file-directory-p path) (not (file-readable-p path)))
-           (list (cons (format "file-error: Opening directory permission denied `%s'" path)
+           ;; Prefix error message with @@@@ for safety
+           ;; (some files may match file-error See bug#2400) 
+           (list (cons (format "@@@@file-error: Opening directory permission denied `%s'" path)
                        path)))
           ;; A fast expansion of PATH is made only if `helm-ff-auto-update-flag'
           ;; is enabled.
@@ -3297,6 +3328,18 @@ later in the transformer."
         (add-text-properties (point-min) (point-max) '(helm-ff-file t))
         (split-string (buffer-string) "\n" t)))))
 
+(defcustom helm-ff-use-notify t
+  "Watch directories visited with `helm-find-files' when non nil.
+If your system have no file notification package available turn this
+to nil to avoid error messages when using `helm-find-files'."
+  :type 'boolean
+  :group 'helm-files
+  :set (lambda (var val)
+	 (set-default var val)
+	 (unless (symbol-value var)
+           (cl-loop for dir being the hash-keys of helm-ff--file-notify-watchers
+                    do (remhash dir helm-ff--list-directory-cache)))))
+
 (defun helm-ff-directory-files (directory &optional force-update)
   "List contents of DIRECTORY.
 Argument FULL mean absolute path.
@@ -3320,9 +3363,11 @@ in cache."
                      ;; `helm-find-files-get-candidates' by `file-readable-p'.
                      (file-error
                       (prog1
-                          (list (format "%s:%s"
-                                        (car err)
-                                        (mapconcat 'identity (cdr err) " ")))
+                          ;; Prefix error message with @@@@ for safety
+                          ;; (some files may match file-error See bug#2400) 
+                        (list (format "@@@@%s:%s"
+                                      (car err)
+                                      (mapconcat 'identity (cdr err) " ")))
                         (setq file-error t)))))
              (dot  (concat directory "."))
              (dot2 (concat directory ".."))
@@ -3335,13 +3380,16 @@ in cache."
                               collect it)
                      helm-ff--list-directory-cache)
           ;; Put an inotify watcher to check directory modifications.
-          (unless (gethash directory helm-ff--file-notify-watchers)
-            (puthash directory
-                     (file-notify-add-watch
-                      directory
-                      '(change attribute-change)
-                      (helm-ff--inotify-make-callback directory))
-                     helm-ff--file-notify-watchers))))))
+          (unless (or (null helm-ff-use-notify)
+                      (gethash directory helm-ff--file-notify-watchers))
+            (condition-case-unless-debug err
+                (puthash directory
+                         (file-notify-add-watch
+                          directory
+                          '(change attribute-change)
+                          (helm-ff--inotify-make-callback directory))
+                         helm-ff--file-notify-watchers)
+              (file-notify-error (user-error "Error: %S %S" (car err) (cdr err)))))))))
 
 (defun helm-ff--inotify-make-callback (directory)
   "Return a callback for `file-notify-add-watch'."
@@ -3772,10 +3820,21 @@ If SKIP-BORING-CHECK is non nil don't filter boring files."
 
         ;; Highlight local files showing everything, symlinks, exe,
         ;; dirs etc...
-        (let* ((attr (file-attributes file))
+        (let* ((attr (condition-case err
+                         (file-attributes file)
+                       (file-error
+                        ;; Possible error not happening during listing
+                        ;; but when calling file-attributes see error
+                        ;; with sshfs bug#2405 
+                        (message "%s:%s" (car err) (cdr err)) nil)))
                (type (car attr))
                x-bit)
-          (cond ((string-match "file-error" file) file)
+          (cond (;; Not a file but the message error printed in
+                 ;; helm-buffer. Such a message should not have a
+                 ;; subdir so matching on bol should suffice, but to
+                 ;; be sure use @@@@ as prefix in file-error message
+                 ;; to be safe bug#2400.
+                 (string-match "\\`@@@@file-error:" file) file)
                 (;; A dead symlink.
                  (and (stringp type)
                       (not (helm-ff-valid-symlink-p file))
@@ -3845,7 +3904,8 @@ If SKIP-BORING-CHECK is non nil don't filter boring files."
       (setq actions (helm-append-at-nth
                      actions '(("Checksum File" . helm-ff-checksum)) 4)))
     (cond ((and (file-exists-p candidate)
-                (string-match helm-ff--trash-directory-regexp (helm-basedir candidate))
+                (string-match helm-ff--trash-directory-regexp
+                              (helm-basedir (expand-file-name candidate)))
                 (not (member (helm-basename candidate) '("." "..")))
                 (executable-find "trash"))
            (helm-append-at-nth
@@ -3896,10 +3956,20 @@ E.g. '(\"delete\" \"deleting\")
 
 ARGS are other arguments to be passed to FN."
   (let ((mkd (helm-marked-candidates))
-        errors)
+        errors aborted)
     (with-helm-display-marked-candidates
         helm-marked-buffer-name
-        (helm-ff--count-and-collect-dups (mapcar 'helm-basename mkd))
+        (if (and args (string= (car names) "restore"))
+            (cl-loop for f in mkd
+                     for bd = (helm-basename f)
+                     for assoc = (assoc bd (car args))
+                     when assoc
+                     collect (concat (truncate-string-to-width
+                                      (car assoc) 40 nil nil t)
+                                     " -> "
+                                     (truncate-string-to-width
+                                      (helm-basedir (cdr assoc)) 40 nil nil t)))
+          (helm-ff--count-and-collect-dups (mapcar 'helm-basename mkd)))
         (if (y-or-n-p (format "%s %s files from trash? "
                               (capitalize (car names))
                               (length mkd)))
@@ -3909,22 +3979,29 @@ ARGS are other arguments to be passed to FN."
                        (condition-case err
                            (apply fn f args)
                          (error (push (format "%s" (cadr err)) errors)
-                                nil)))
-              (if errors
-                  (display-warning 'helm
-                                   (with-temp-buffer
-                                     (insert (format-time-string "%Y-%m-%d %H:%M:%S\n"
-                                                                 (current-time)))
-                                     (insert (format
-                                              "Failed to %s %s/%s files from trash\n"
-                                              (car names) (length errors) (length mkd)))
-                                     (insert (mapconcat 'identity errors "\n") "\n")
-                                     (buffer-string))
-                                   :error
-                                   "*helm restore warnings*")
-                (message "%s %s files from trash done"
-                         (capitalize (cadr names)) (length mkd))))
-          (message "Restoring files from trash aborted")))))
+                                nil))))
+          (message "%s files from trash aborted" (capitalize (cadr names)))
+          (setq aborted t)))
+    ;; Handle errors from outside the
+    ;; with-helm-display-marked-candidates block otherwise warning is
+    ;; never displayed.
+    (if errors
+        (progn
+          (display-warning 'helm
+                           (with-temp-buffer
+                             (insert (format-time-string "%Y-%m-%d %H:%M:%S\n"
+                                                         (current-time)))
+                             (insert (format
+                                      "Failed to %s %s/%s files from trash\n"
+                                      (car names) (length errors) (length mkd)))
+                             (insert (mapconcat 'identity errors "\n") "\n")
+                             (buffer-string))
+                           :error
+                           "*helm restore warnings*")
+          (message "%s files from trash aborted" (capitalize (cadr names))))
+      (unless aborted
+        (message "%s %s files from trash done"
+                 (capitalize (cadr names)) (length mkd))))))
 
 (defun helm-ff-trash-rm (_candidate)
   "Delete marked-files from a Trash directory.
@@ -3955,7 +4032,7 @@ Trash/info directory."
 
 The Trash directory should be a directory compliant with
 <http://freedesktop.org/wiki/Specifications/trash-spec> and each
-file should have its '*.trashinfo' correspondent file in
+file should have its '*.trashinfo' corresponding file in
 Trash/info directory."
   (let* ((default-directory (file-name-as-directory
                              helm-ff-default-directory))
@@ -3995,35 +4072,42 @@ with `helm-ff-trash-list'."
 (defun helm-ff--get-dest-file-from-trash (trashed-files file)
   (assoc-default (helm-basename file) trashed-files))
 
-(defun helm-ff-trash-list ()
-  "Return an alist of trashed files basename and dest name."
-  ;; Files owned by root are trashed in /root/.local/share/Trash.
-  ;; Files owned by user and trashed by root are trashed in
-  ;; /home/.Trash.
-  ;; Files owned by user and trashed by user are trashed in
-  ;; ~/.local/share/Trash.
-  (cl-loop for f in (directory-files
-                     (expand-file-name
-                      ;; helm-ff-default-directory is actually the
-                      ;; trash directory.
-                      "info" (helm-basedir (directory-file-name helm-ff-default-directory)))
-                     t directory-files-no-dot-files-regexp)
-           collect (cons (helm-basename (replace-regexp-in-string "\\.trashinfo\\'" "" f))
-                         (with-temp-buffer
-                           (save-excursion
-                             (insert-file-contents f))
-                           (when (re-search-forward "^path=" nil t)
-                             (let ((path (helm-url-unhex-string
-                                          (buffer-substring-no-properties
-                                           (point) (point-at-eol)))))
-                               (if (string-match "\\`/" path)
-                                   ;; path is absolute
-                                   path
-                                 ;; When path is relative, assume the
-                                 ;; trash directory is located at
-                                 ;; /home/.Trash and path is the
-                                 ;; relative name of file from /home.
-                                 (expand-file-name path "/home"))))))))
+(defun helm-ff-trash-list (&optional trash-dir)
+  "Return an alist of trashed files basename and dest name.
+Assume the trash system in use is freedesktop compatible, see
+<http://freedesktop.org/wiki/Specifications/trash-spec> 
+This function is intended to be used from a trash directory i.e. it
+use `helm-ff-default-directory', but it may be used elsewhere by
+specifying the trash directory with TRASH-DIR arg."
+  (unless (fboundp 'system-move-file-to-trash)
+    ;; Files owned by root are trashed in /root/.local/share/Trash.
+    ;; Files owned by user and trashed by root are trashed in
+    ;; /home/.Trash.
+    ;; Files owned by user and trashed by user are trashed in
+    ;; ~/.local/share/Trash.
+    (cl-loop for f in (directory-files
+                       (expand-file-name
+                        ;; helm-ff-default-directory is actually the
+                        ;; trash directory.
+                        "info" (helm-basedir (directory-file-name
+                                              (or trash-dir helm-ff-default-directory))))
+                       t directory-files-no-dot-files-regexp)
+             collect (cons (helm-basename (replace-regexp-in-string "\\.trashinfo\\'" "" f))
+                           (with-temp-buffer
+                             (save-excursion
+                               (insert-file-contents f))
+                             (when (re-search-forward "^path=" nil t)
+                               (let ((path (helm-url-unhex-string
+                                            (buffer-substring-no-properties
+                                             (point) (point-at-eol)))))
+                                 (if (string-match "\\`/" path)
+                                     ;; path is absolute
+                                     path
+                                   ;; When path is relative, assume the
+                                   ;; trash directory is located at
+                                   ;; /home/.Trash and path is the
+                                   ;; relative name of file from /home.
+                                   (expand-file-name path "/home")))))))))
 
 (defun helm-ff-goto-linum (candidate)
   "Find file CANDIDATE and maybe jump to line number found in fname at point.
@@ -4529,6 +4613,26 @@ Show the first `helm-ff-history-max-length' elements of
         helm-ff-history))))
 (put 'helm-find-files-history 'helm-only t)
 
+(defvar helm-ff-drag-mouse-1-default-action 'copy
+  "Default action when dragging files.
+Possible values are `copy', `rsync' or `rename'.")
+
+(defun helm-ff-drag-mouse-1-fn (event)
+  (interactive "e")
+  (let* ((win-or-frame (posn-window (event-end event)))
+         (frame-p (framep win-or-frame))
+         (target (with-selected-window
+                     (if frame-p
+                         (frame-selected-window win-or-frame)
+                       win-or-frame)
+                   default-directory))
+         (ask (and frame-p (cdr (window-list win-or-frame 1)))))
+    (when (or (null ask)
+              (y-or-n-p (format "Copy file(s) to `%s'?" target)))
+      (helm-run-after-exit
+       #'helm-find-files-do-action
+       helm-ff-drag-mouse-1-default-action target))))
+
 (defun helm-find-files-1 (fname &optional preselect)
   "Find FNAME filename with PRESELECT filename preselected.
 
@@ -4552,7 +4656,8 @@ Use it for non-interactive calls of `helm-find-files'."
          (tap (thing-at-point 'filename))
          (def (and tap (or (file-remote-p tap)
                            (expand-file-name tap)))))
-    (helm-set-local-variable 'helm-follow-mode-persistent nil)
+    (helm-set-local-variable 'helm-follow-mode-persistent nil
+                             'helm-drag-mouse-1-fn 'helm-ff-drag-mouse-1-fn)
     (unless helm-source-find-files
       (setq helm-source-find-files (helm-make-source
                                     "Find Files" 'helm-source-ffiles)))
@@ -4628,20 +4733,23 @@ source is `helm-source-find-files'."
                    ("" nil)
                    (t it))))
     (unless (eq major-mode 'image-mode)
-      (or (and input (or (and (file-remote-p input) input)
-                         (expand-file-name input)))
-          (helm-find-files-input
-           (if (and helm-ff-allow-non-existing-file-at-point
-                    guesser
-                    (not (string-match ffap-url-regexp guesser)))
-               ;; Keep the ability of jumping to numbered lines even
-               ;; when allowing non existing filenames at point.
-               (helm-aand guesser
-                          (thing-at-point 'filename)
-                          (replace-regexp-in-string
-                           ":[0-9]+\\'" "" it))
-             guesser)
-           (thing-at-point 'filename))))))
+      (if input
+          (if (or (file-remote-p input)
+                  (string-match helm-ff-url-regexp input))
+              input
+            (expand-file-name input))
+        (helm-find-files-input
+         (if (and helm-ff-allow-non-existing-file-at-point
+                  guesser
+                  (not (string-match ffap-url-regexp guesser)))
+             ;; Keep the ability of jumping to numbered lines even
+             ;; when allowing non existing filenames at point.
+             (helm-aand guesser
+                        (thing-at-point 'filename)
+                        (replace-regexp-in-string
+                         ":[0-9]+\\'" "" it))
+           guesser)
+         (thing-at-point 'filename))))))
 
 (defun helm-ffap-guesser ()
   "Same as `ffap-guesser' but without gopher and machine support."
@@ -4768,13 +4876,13 @@ Find inside `require' and `declare-function' sexp."
              when (eq (car (file-attributes cd)) t)
              return cd)))
 
-(cl-defun helm-dired-action (candidate
+(cl-defun helm-dired-action (destination
                              &key action follow (files (dired-get-marked-files)))
-  "Execute ACTION on FILES to CANDIDATE.
+  "Execute ACTION on FILES to DESTINATION.
 Where ACTION is a symbol that can be one of:
 'copy, 'rename, 'symlink,'relsymlink, 'hardlink or 'backup.
 Argument FOLLOW when non-nil specifies to follow FILES to
-destination for the actions copy and rename."
+DESTINATION for the actions copy and rename."
   (require 'dired-async)
   (require 'dired-x) ; For dired-keep-marker-relsymlink
   (when (get-buffer dired-log-buffer) (kill-buffer dired-log-buffer))
@@ -4797,51 +4905,55 @@ destination for the actions copy and rename."
                   (hardlink             dired-keep-marker-hardlink)))
         (dirflag (and (= (length files) 1)
                       (file-directory-p (car files))
-                      (not (file-directory-p candidate))))
+                      (not (file-directory-p destination))))
         (dired-async-state (if (and (boundp 'dired-async-mode)
                                     dired-async-mode)
                                1 -1)))
     (and follow (fboundp 'dired-async-mode) (dired-async-mode -1))
-    (when (and (cdr files) (not (file-directory-p candidate)))
-      (error "%s: target `%s' is not a directory" action candidate))
+    (when (and (cdr files) (not (file-directory-p destination)))
+      (error "%s: target `%s' is not a directory" action destination))
     (unwind-protect
          (dired-create-files
           fn (symbol-name action) files
-          ;; CANDIDATE is the destination.
-          (if (file-directory-p candidate)
-              ;; When CANDIDATE is a directory, build file-name in this directory.
-              ;; Else we use CANDIDATE.
+          (if (file-directory-p destination)
+              ;; When DESTINATION is a directory, build file-name in this directory.
+              ;; Else we use DESTINATION.
               (lambda (from)
-                  (expand-file-name (file-name-nondirectory from) candidate))
-              (lambda (_from) candidate))
+                  (expand-file-name (file-name-nondirectory from) destination))
+              (lambda (_from) destination))
           marker)
       (and (fboundp 'dired-async-mode)
            (dired-async-mode dired-async-state)))
     (push (file-name-as-directory
-           (if (file-directory-p candidate)
-               (expand-file-name candidate)
-             (file-name-directory candidate)))
+           (if (file-directory-p destination)
+               (expand-file-name destination)
+             (file-name-directory destination)))
           helm-ff-history)
     ;; If follow is non--nil we should not be in async mode.
     (when (and follow
                (not (memq action '(symlink relsymlink hardlink)))
                (not (get-buffer dired-log-buffer)))
-      (let ((target (directory-file-name candidate)))
+      (let ((target (directory-file-name destination)))
         (unwind-protect
              (progn
                (setq helm-ff-cand-to-mark
-                     (helm-get-dest-fnames-from-list files candidate dirflag))
+                     (helm-get-dest-fnames-from-list files destination dirflag))
                (with-helm-after-update-hook (helm-ff-maybe-mark-candidates))
-               ;; Refresh directory even if helm-ff-cache-mode is
-               ;; enabled, it will not have the time to update
-               ;; destination directory.
-               (helm-ff-directory-files candidate t)
-               (if (and dirflag (eq action 'rename))
-                   (helm-find-files-1 (file-name-directory target)
-                                      (if helm-ff-transformer-show-only-basename
-                                          (helm-basename target) target))
-                 (helm-find-files-1 (file-name-as-directory
-                                     (expand-file-name candidate)))))
+               ;; Wait for the notify callback ends before calling HFF.
+               (run-at-time
+                0.1 nil
+                (lambda ()
+                  (if (and dirflag (eq action 'rename))
+                      (helm-find-files-1 (file-name-directory target)
+                                         (if helm-ff-transformer-show-only-basename
+                                             (helm-basename target) target))
+                    (helm-find-files-1 (if (file-directory-p destination)
+                                           (file-name-as-directory
+                                            (expand-file-name destination))
+                                         (expand-file-name (helm-basedir destination)))
+                                       (if helm-ff-transformer-show-only-basename
+                                           (helm-basename (car files))
+                                         (car files)))))))
           (setq helm-ff-cand-to-mark nil))))))
 
 (defun helm-get-dest-fnames-from-list (flist dest-cand rename-dir-flag)
@@ -4908,16 +5020,41 @@ Return non-nil when FILE needs to be trashed."
           (or (and remote helm-trash-remote-files)
               (null remote))))))
 
+(defun helm-trash-directory ()
+  "Try to find a trash directory.
+Return the files subdirectory of trash directory.
+When `helm-trash-default-directory' is set use it as trash directory."
+  (let ((xdg-data-dir
+         (or helm-trash-default-directory
+	     (directory-file-name
+	      (expand-file-name "Trash"
+			        (or (getenv "XDG_DATA_HOME")
+				    "~/.local/share"))))))
+    (expand-file-name "files" xdg-data-dir)))
+      
+(defun helm-ff-file-already-trashed (file &optional trash-alist)
+  "Return FILE when it is already in trash.
+
+Optional arg TRASH-ALIST should be an alist as what
+`helm-ff-trash-list' returns."
+  (unless (fboundp 'system-move-file-to-trash)
+    (let ((trash-files-dir (helm-trash-directory)))
+      (cl-loop for (_bn . fn) in (or trash-alist
+                                     (helm-ff-trash-list trash-files-dir))
+               thereis (file-equal-p file fn)))))
+
 (defun helm-ff-quick-delete (_candidate)
   "Delete file CANDIDATE without quitting.
 
 When a prefix arg is given, meaning of
 `delete-by-moving-to-trash' is the opposite."
   (with-helm-window
-    (let ((marked (helm-marked-candidates)))
+    (let* ((marked (helm-marked-candidates))
+           (trash (helm-ff--delete-by-moving-to-trash (car marked)))
+           (helm-ff--trashed-files
+            (and trash (helm-ff-trash-list (helm-trash-directory)))))
       (unwind-protect
-           (cl-loop with trash = (helm-ff--delete-by-moving-to-trash (car marked))
-                    for c in marked do
+           (cl-loop for c in marked do
                     (progn (helm-preselect
                             (concat "^" (regexp-quote
                                          (if (and helm-ff-transformer-show-only-basename
@@ -4927,9 +5064,16 @@ When a prefix arg is given, meaning of
                                   (format "Really %s file `%s'? "
                                           (if trash "Trash" "Delete")
                                           (abbreviate-file-name c)))
-                             (helm-delete-file
-                              c helm-ff-signal-error-on-dot-files 'synchro trash)
-                             (helm-delete-current-selection)
+                             (helm-acase (helm-delete-file
+                                          c helm-ff-signal-error-on-dot-files 'synchro trash)
+                               (skip
+                                ;; This happens only when trying to
+                                ;; trash a file already trashed.
+                                (helm-delete-visible-mark (helm-this-visible-mark))
+                                (if (helm-end-of-source-p)
+                                    (helm-previous-line)
+                                  (helm-next-line)))
+                               (t (helm-delete-current-selection)))
                              (message nil)
                              (helm--remove-marked-and-update-mode-line c))))
         (setq helm-marked-candidates nil
@@ -4968,9 +5112,18 @@ is nil."
           (helm--reading-passwd-or-string t)
           (file-attrs (file-attributes file))
           (trash (or trash (helm-ff--delete-by-moving-to-trash file)))
-          (delete-by-moving-to-trash trash))
-      (cond ((and (eq (nth 0 file-attrs) t)
-                  (directory-files file t dired-re-no-dot))
+          (delete-by-moving-to-trash trash)
+          (already-trashed
+           (and trash (helm-ff-file-already-trashed
+                       file helm-ff--trashed-files))))
+      (cond (already-trashed
+             ;; We use message here to avoid exiting loop when
+             ;; deleting more than one file.
+             (message "User error: `%s' is already trashed" file)
+             (sit-for 1.5)
+             (cl-return 'skip))
+            ((and (eq (nth 0 file-attrs) t)
+                  (directory-files file t directory-files-no-dot-files-regexp))
              ;; Synchro means persistent deletion from HFF.
              (if synchro
                  (when (or helm-ff-allow-recursive-deletes
@@ -5012,6 +5165,8 @@ When a prefix arg is given, meaning of
   (let* ((files (helm-marked-candidates :with-wildcard t))
          (len 0)
          (trash (helm-ff--delete-by-moving-to-trash (car files)))
+         (helm-ff--trashed-files
+          (and trash (helm-ff-trash-list (helm-trash-directory))))
          (prmt (if trash "Trash" "Delete"))
          (old--allow-recursive-deletes helm-ff-allow-recursive-deletes))
     (with-helm-display-marked-candidates
@@ -5070,6 +5225,15 @@ When a prefix arg is given, meaning of
     (sit-for 3)
     (force-mode-line-update)))
 
+(defun helm-delete-async-kill-process ()
+  "Kill async process created by helm delete files async."
+  (interactive)
+  (let* ((processes (dired-async-processes))
+         (proc (car (last processes))))
+    (and proc (delete-process proc))
+    (unless (> (length processes) 1)
+      (helm-ff--delete-async-modeline-mode -1))))
+
 (defun helm-delete-marked-files-async (_ignore)
   "Same as `helm-delete-marked-files' but async.
 
@@ -5113,7 +5277,13 @@ directories are always deleted with no warnings."
                          result (length files))))))
          ;; Workaround emacs-26 bug with tramp see
          ;; https://github.com/jwiegley/emacs-async/issues/80.
-         (async-quiet-switch "-q"))
+         (async-quiet-switch "-q")
+         (trash-alist (and trash (helm-ff-trash-list (helm-trash-directory))))
+         (already-trashed
+          (and trash
+               (cl-loop for f in files
+                        when (helm-ff-file-already-trashed f trash-alist)
+                        collect f))))
     (setq helm-ff--trash-flag trash)
     (with-helm-display-marked-candidates
       helm-marked-buffer-name
@@ -5122,6 +5292,7 @@ directories are always deleted with no warnings."
           (message "(No deletions performed)")
         (async-start
          `(lambda ()
+            (require 'cl-lib)
             ;; `delete-by-moving-to-trash' have to be set globally,
             ;; using the TRASH argument of delete-file or
             ;; delete-directory is not enough.
@@ -5129,7 +5300,11 @@ directories are always deleted with no warnings."
             (let ((result 0))
               (dolist (file ',files result)
                 (condition-case err
-                    (cond ((eq (nth 0 (file-attributes file)) t)
+                    (cond ((and ,trash
+                                (cl-loop for f in ',already-trashed
+                                         thereis (file-equal-p f file)))
+                           (error (format "`%s' is already trashed" file)))
+                          ((eq (nth 0 (file-attributes file)) t)
                            (delete-directory file 'recursive ,trash)
                            (setq result (1+ result)))
                           (t (delete-file file ,trash)
@@ -5463,7 +5638,7 @@ Use FD as backend."
   "Class to define a source in `helm-browse-project' handling non
 VC handled directories.")
 
-(defmethod helm--setup-source :after ((source helm-browse-project-override-inheritor))
+(cl-defmethod helm--setup-source :after ((source helm-browse-project-override-inheritor))
   (let ((actions (slot-value source 'action)))
     (setf (slot-value source 'action)
           (helm-append-at-nth
@@ -5616,7 +5791,9 @@ Don't call it from programs, use `helm-find-files-1' instead.
 This is the starting point for nearly all actions you can do on
 files."
   (interactive "P")
-  (let* ((hist            (and arg helm-ff-history (helm-find-files-history nil)))
+  (let* (tramp-archive-enabled ; Disable tramp-archive which is
+                               ; kicking in unexpectedly.
+         (hist            (and arg helm-ff-history (helm-find-files-history nil)))
          (smart-input     (or hist (helm-find-files-initial-input)))
          (default-input   (expand-file-name (helm-current-directory)))
          (input           (cond ((and (null hist)
@@ -5632,7 +5809,7 @@ files."
                                 ((and (not (string= smart-input ""))
                                       smart-input))
                                 (t default-input)))
-         (input-as-presel (null (nth 0 (file-attributes input))))
+         (input-as-presel (null (file-directory-p input)))
          (presel          (helm-aif (or hist
                                         (and input-as-presel input)
                                         (buffer-file-name (current-buffer))
@@ -5693,11 +5870,5 @@ once."
 
 
 (provide 'helm-files)
-
-;; Local Variables:
-;; byte-compile-warnings: (not obsolete)
-;; coding: utf-8
-;; indent-tabs-mode: nil
-;; End:
 
 ;;; helm-files.el ends here

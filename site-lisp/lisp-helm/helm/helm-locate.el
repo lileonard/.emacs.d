@@ -356,7 +356,7 @@ Sort is done on basename of CANDIDATES."
    (group :initform 'helm-locate)))
 
 ;; Override helm-type-file class keymap.
-(defmethod helm--setup-source :after ((source helm-locate-override-inheritor))
+(cl-defmethod helm--setup-source :after ((source helm-locate-override-inheritor))
   (setf (slot-value source 'keymap) helm-locate-map))
 
 (defvar helm-source-locate
@@ -472,11 +472,5 @@ Where db_path is a filename matched by
   (helm-locate-1 arg nil nil (thing-at-point 'filename)))
 
 (provide 'helm-locate)
-
-;; Local Variables:
-;; byte-compile-warnings: (not obsolete)
-;; coding: utf-8
-;; indent-tabs-mode: nil
-;; End:
 
 ;;; helm-locate.el ends here

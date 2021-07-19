@@ -17,7 +17,7 @@
 ;; GNU General Public License for more details.
 
 ;; You should have received a copy of the GNU General Public License
-;; along with GNU Emacs.  If not, see <http://www.gnu.org/licenses/>.
+;; along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.
 
 
 ;;; Commentary:
@@ -199,6 +199,7 @@ This variable affects both `company-dabbrev' and `company-dabbrev-code'."
        (if downcase-p
            (mapcar 'downcase words)
          words)))
+    (kind 'text)
     (ignore-case company-dabbrev-ignore-case)
     (duplicates t)))
 

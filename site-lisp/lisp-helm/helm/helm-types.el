@@ -23,6 +23,7 @@
 
 (require 'cl-lib)
 (require 'eieio)
+(eval-when-compile (require 'helm-source))
 
 (defvar helm-map)
 (defvar helm-mode-line-string)
@@ -36,7 +37,7 @@
 (defclass helm-type-file (helm-source) ()
   "A class to define helm type file.")
 
-(defmethod helm-source-get-action-from-type ((object helm-type-file))
+(cl-defmethod helm-source-get-action-from-type ((object helm-type-file))
   (slot-value object 'action))
 
 (defun helm-actions-from-type-file ()
@@ -75,7 +76,7 @@
 
 (defcustom helm-type-file-actions
   (helm-make-actions
-    "Find file"                               'helm-find-many-files
+    "Find file"                               'helm-find-file-or-marked
     "Find file as root"                       'helm-find-file-as-root
     "Find file other window"                  'helm-find-files-other-window
     "Find file other frame"                   'find-file-other-frame
@@ -105,9 +106,9 @@
   :group 'helm-files
   :type '(alist :key-type string :value-type function))
 
-(defmethod helm--setup-source :primary ((_source helm-type-file)))
+(cl-defmethod helm--setup-source ((_source helm-type-file)))
 
-(defmethod helm--setup-source :before ((source helm-type-file))
+(cl-defmethod helm--setup-source :before ((source helm-type-file))
   (setf (slot-value source 'action) 'helm-type-file-actions)
   (setf (slot-value source 'persistent-help) "Show this file")
   (setf (slot-value source 'action-transformer)
@@ -145,12 +146,12 @@
   :type '(alist :key-type string
                    :value-type function))
 
-(defmethod helm-source-get-action-from-type ((object helm-type-bookmark))
+(cl-defmethod helm-source-get-action-from-type ((object helm-type-bookmark))
   (slot-value object 'action))
 
-(defmethod helm--setup-source :primary ((_source helm-type-bookmark)))
+(cl-defmethod helm--setup-source ((_source helm-type-bookmark)))
 
-(defmethod helm--setup-source :before ((source helm-type-bookmark))
+(cl-defmethod helm--setup-source :before ((source helm-type-bookmark))
   (setf (slot-value source 'action) 'helm-type-bookmark-actions)
   (setf (slot-value source 'keymap) helm-bookmark-map)
   (setf (slot-value source 'mode-line) (list "Bookmark(s)" helm-mode-line-string))
@@ -200,12 +201,12 @@
   :group 'helm-buffers
   :type '(alist :key-type string :value-type function))
 
-(defmethod helm-source-get-action-from-type ((object helm-type-buffer))
+(cl-defmethod helm-source-get-action-from-type ((object helm-type-buffer))
   (slot-value object 'action))
 
-(defmethod helm--setup-source :primary ((_source helm-type-buffer)))
+(cl-defmethod helm--setup-source ((_source helm-type-buffer)))
 
-(defmethod helm--setup-source :before ((source helm-type-buffer))
+(cl-defmethod helm--setup-source :before ((source helm-type-buffer))
   (setf (slot-value source 'action) 'helm-type-buffer-actions)
   (setf (slot-value source 'persistent-help) "Show this buffer")
   (setf (slot-value source 'mode-line)
@@ -241,7 +242,7 @@
   ;; autoloaded (like untrace-function).
   :type '(alist :key-type string :value-type symbol))
 
-(defmethod helm-source-get-action-from-type ((object helm-type-function))
+(cl-defmethod helm-source-get-action-from-type ((object helm-type-function))
   (slot-value object 'action))
 
 (defun helm-actions-from-type-function ()
@@ -249,9 +250,9 @@
     (helm--setup-source source)
     (helm-source-get-action-from-type source)))
 
-(defmethod helm--setup-source :primary ((_source helm-type-function)))
+(cl-defmethod helm--setup-source ((_source helm-type-function)))
 
-(defmethod helm--setup-source :before ((source helm-type-function))
+(cl-defmethod helm--setup-source :before ((source helm-type-function))
   (setf (slot-value source 'action) 'helm-type-function-actions)
   (setf (slot-value source 'action-transformer)
         'helm-transform-function-call-interactively)
@@ -278,9 +279,9 @@
   :group 'helm-command
   :type '(alist :key-type string :value-type symbol))
 
-(defmethod helm--setup-source :primary ((_source helm-type-command)))
+(cl-defmethod helm--setup-source ((_source helm-type-command)))
 
-(defmethod helm--setup-source :before ((source helm-type-command))
+(cl-defmethod helm--setup-source :before ((source helm-type-command))
   (setf (slot-value source 'action) 'helm-type-command-actions)
   (setf (slot-value source 'coerce) 'helm-symbolify)
   (setf (slot-value source 'persistent-action) 'helm-M-x-persistent-action)
@@ -308,9 +309,9 @@
   :group 'helm-elisp
   :type '(alist :key-type string :value-type function))
 
-(defmethod helm--setup-source :primary ((_source helm-type-timers)))
+(cl-defmethod helm--setup-source ((_source helm-type-timers)))
 
-(defmethod helm--setup-source :before ((source helm-type-timers))
+(cl-defmethod helm--setup-source :before ((source helm-type-timers))
   (setf (slot-value source 'action) 'helm-type-timers-actions)
   (setf (slot-value source 'persistent-action)
         (lambda (tm)
@@ -329,11 +330,5 @@
   (helm-make-type 'helm-type-command))
 
 (provide 'helm-types)
-
-;; Local Variables:
-;; byte-compile-warnings: (not obsolete)
-;; coding: utf-8
-;; indent-tabs-mode: nil
-;; End:
 
 ;;; helm-types.el ends here
